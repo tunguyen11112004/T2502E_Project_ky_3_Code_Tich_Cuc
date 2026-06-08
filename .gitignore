@@ -1,0 +1,27 @@
+## 1. Các file Build của .NET (Né tuyệt đối)
+bin/
+obj/
+[Bb]in/
+[Oo]bj/
+
+## 2. Thư mục cấu hình của JetBrains Rider (Né file cá nhân)
+.idea/
+*.sln.imb
+*.idea_modules/
+
+## 3. Thư mục cấu hình của Visual Studio (Nếu có mở chéo)
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+## 4. File cấu hình môi trường chứa chuỗi kết nối Database / Mật khẩu
+# Giữ lại appsettings.json làm mẫu, né appsettings.Development.json nếu chứa pass thật
+# Hoặc né các file chứa secret cá nhân
+appsettings.Development.json
+
+## 5. File log và cache hệ thống
+*.log
+.DS_Store
+Thumbs.db
