@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Admin Bus Ticket</title>
+    <link rel="stylesheet" href="~/admin-assets/css/style.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.css" rel="stylesheet" />
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+</head>
+<body class="dark bg-gray-50 dark:bg-gray-900">
+@*Nav-bar*@
+<partial name="_NavbarPartial" />
+
+<div class="flex pt-16 overflow-hidden bg-gray-50 dark:bg-gray-900">
+    @*Sidebar*@
+    <partial name="_SidebarPartial" />
+    <div id="main-content" class="relative w-full h-full overflow-y-auto bg-gray-50 lg:ml-64 dark:bg-gray-900">
+        <main class="p-4 mx-auto max-w-screen-2xl w-full">
+            @RenderBody()
+        </main>
+    </div>
+
+</div>
+
+<script src="~/js/constants.js"></script>
+<script src="~/js/dark-mode.js"></script>
+<script src="~/js/sidebar.js"></script>
+<script src="~/js/charts.js"></script>
+<script src="~/js/index.js"></script>
+@await RenderSectionAsync("Scripts", required: false)
+<script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
+</body>
+</html>
