@@ -1,0 +1,17 @@
+@{
+    ViewData["Title"] = "Employee Dashboard";
+}
+
+<h2>Employee Dashboard</h2>
+
+<p>Only Employee users can access this page.</p>
+
+<form asp-controller="Account"
+      asp-action="Logout"
+      method="post">
+
+    <button type="submit">
+        Logout
+    </button>
+
+</form>
