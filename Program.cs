@@ -13,7 +13,7 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseMySql(
         connectionString,
-        ServerVersion.AutoDetect(connectionString)
+        new MySqlServerVersion(new Version(10, 4, 32))
     ));
 
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
@@ -21,8 +21,8 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
         options.Password.RequiredLength = 6;
         options.Password.RequireDigit = true;
         options.Password.RequireLowercase = true;
-        options.Password.RequireUppercase = false;
-        options.Password.RequireNonAlphanumeric = false;
+        options.Password.RequireUppercase = true;
+        options.Password.RequireNonAlphanumeric = true;
     })
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();

@@ -13,6 +13,10 @@ public class RegisterViewModel
 
     [Required]
     public string FullName { get; set; } = string.Empty;
+    
+    [Required]
+    [Phone]
+    public string PhoneNumber { get; set; } = string.Empty;
 
     [Required]
     public int Age { get; set; }
