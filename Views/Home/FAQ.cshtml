@@ -1,0 +1,287 @@
+@{
+    ViewData["Title"] = "Câu Hỏi Thường Gặp";
+}
+
+<div class="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 py-12">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                Câu Hỏi Thường Gặp
+            </h1>
+            <p class="text-lg text-gray-600 dark:text-gray-400">
+                Tìm hiểu thêm về hệ thống đặt vé xe online của chúng tôi
+            </p>
+        </div>
+
+        <!-- Accordion FAQ -->
+        <div class="space-y-3">
+            
+            <!-- Question 1 -->
+            <div class="collapse collapse-plus bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+                <input type="radio" name="faq-accordion" class="peer" />
+                <div class="collapse-title text-lg font-semibold text-gray-900 dark:text-white peer-checked:bg-blue-50 dark:peer-checked:bg-gray-700">
+                    📋 Làm cách nào để đặt vé?
+                </div>
+                <div class="collapse-content bg-white dark:bg-gray-800">
+                    <p class="text-gray-700 dark:text-gray-300 pt-4">
+                        Để đặt vé, bạn cần:
+                    </p>
+                    <ol class="list-decimal list-inside text-gray-700 dark:text-gray-300 mt-2 space-y-2">
+                        <li>Đăng nhập vào hệ thống bằng tài khoản nhân viên</li>
+                        <li>Chọn menu "Đặt Vé"</li>
+                        <li>Nhập thông tin hành khách (tên, tuổi)</li>
+                        <li>Chọn điểm đi, điểm đến, ngày giờ</li>
+                        <li>Chọn loại xe và ghế</li>
+                        <li>Xác nhận đặt vé</li>
+                        <li>In vé hoặc lưu thông tin đơn hàng</li>
+                    </ol>
+                </div>
+            </div>
+
+            <!-- Question 2 -->
+            <div class="collapse collapse-plus bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+                <input type="radio" name="faq-accordion" class="peer" />
+                <div class="collapse-title text-lg font-semibold text-gray-900 dark:text-white peer-checked:bg-blue-50 dark:peer-checked:bg-gray-700">
+                    💰 Giá vé được tính như thế nào?
+                </div>
+                <div class="collapse-content bg-white dark:bg-gray-800">
+                    <p class="text-gray-700 dark:text-gray-300 pt-4">
+                        Giá vé phụ thuộc vào 3 yếu tố chính:
+                    </p>
+                    <div class="mt-4 space-y-3">
+                        <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded">
+                            <p class="font-semibold text-gray-900 dark:text-white">1. Loại Xe:</p>
+                            <p class="text-sm text-gray-700 dark:text-gray-300">Express &lt; Luxury &lt; Volvo (Non A/C) &lt; Volvo (A/C)</p>
+                        </div>
+                        <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded">
+                            <p class="font-semibold text-gray-900 dark:text-white">2. Quãng Đường:</p>
+                            <p class="text-sm text-gray-700 dark:text-gray-300">Giá tăng theo khoảng cách di chuyển</p>
+                        </div>
+                        <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded">
+                            <p class="font-semibold text-gray-900 dark:text-white">3. Độ Tuổi:</p>
+                            <ul class="text-sm text-gray-700 dark:text-gray-300 mt-2 space-y-1 ml-4 list-disc">
+                                <li>Dưới 5 tuổi: Miễn phí</li>
+                                <li>5-12 tuổi: 50% giá vé</li>
+                                <li>12-50 tuổi: 100% giá vé</li>
+                                <li>Trên 50 tuổi: Giảm 30%</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <p class="text-gray-700 dark:text-gray-300 mt-4 text-sm">
+                        <strong>Lưu ý:</strong> Hệ thống sẽ tự động tính toán giá vé và thuế cho bạn.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Question 3 -->
+            <div class="collapse collapse-plus bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+                <input type="radio" name="faq-accordion" class="peer" />
+                <div class="collapse-title text-lg font-semibold text-gray-900 dark:text-white peer-checked:bg-blue-50 dark:peer-checked:bg-gray-700">
+                    ❌ Chính sách hủy vé như thế nào?
+                </div>
+                <div class="collapse-content bg-white dark:bg-gray-800">
+                    <p class="text-gray-700 dark:text-gray-300 pt-4">
+                        Chúng tôi có chính sách hoàn tiền flexible:
+                    </p>
+                    <div class="mt-4 space-y-2">
+                        <div class="bg-green-50 dark:bg-green-900 border-l-4 border-green-500 p-3 rounded">
+                            <p class="font-semibold text-green-900 dark:text-green-100">Hủy trước 2 ngày:</p>
+                            <p class="text-green-800 dark:text-green-200">Hoàn 100% tiền vé</p>
+                        </div>
+                        <div class="bg-yellow-50 dark:bg-yellow-900 border-l-4 border-yellow-500 p-3 rounded">
+                            <p class="font-semibold text-yellow-900 dark:text-yellow-100">Hủy trước 1 ngày:</p>
+                            <p class="text-yellow-800 dark:text-yellow-200">Trừ 15% - Hoàn 85% tiền vé</p>
+                        </div>
+                        <div class="bg-red-50 dark:bg-red-900 border-l-4 border-red-500 p-3 rounded">
+                            <p class="font-semibold text-red-900 dark:text-red-100">Hủy trong ngày:</p>
+                            <p class="text-red-800 dark:text-red-200">Trừ 30% - Hoàn 70% tiền vé</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Question 4 -->
+            <div class="collapse collapse-plus bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+                <input type="radio" name="faq-accordion" class="peer" />
+                <div class="collapse-title text-lg font-semibold text-gray-900 dark:text-white peer-checked:bg-blue-50 dark:peer-checked:bg-gray-700">
+                    🔍 Làm cách nào để kiểm tra ghế trống?
+                </div>
+                <div class="collapse-content bg-white dark:bg-gray-800">
+                    <p class="text-gray-700 dark:text-gray-300 pt-4">
+                        Bạn có thể kiểm tra tính khả dụng của ghế bằng chức năng "Tra Cứu":
+                    </p>
+                    <ol class="list-decimal list-inside text-gray-700 dark:text-gray-300 mt-3 space-y-2">
+                        <li>Truy cập menu "Tra Cứu"</li>
+                        <li>Nhập điểm đi, điểm đến, và ngày giờ</li>
+                        <li>Không bắt buộc phải nhập tất cả trường</li>
+                        <li>Hệ thống sẽ hiển thị danh sách xe khả dụng và ghế trống</li>
+                    </ol>
+                    <p class="text-gray-700 dark:text-gray-300 mt-3 text-sm">
+                        <strong>Mẹo:</strong> Dữ liệu được cập nhật theo thời gian thực từ tất cả chi nhánh.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Question 5 -->
+            <div class="collapse collapse-plus bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+                <input type="radio" name="faq-accordion" class="peer" />
+                <div class="collapse-title text-lg font-semibold text-gray-900 dark:text-white peer-checked:bg-blue-50 dark:peer-checked:bg-gray-700">
+                    🔐 Tôi quên mật khẩu phải làm sao?
+                </div>
+                <div class="collapse-content bg-white dark:bg-gray-800">
+                    <p class="text-gray-700 dark:text-gray-300 pt-4">
+                        Các bước đổi mật khẩu:
+                    </p>
+                    <ol class="list-decimal list-inside text-gray-700 dark:text-gray-300 mt-3 space-y-2">
+                        <li>Đăng nhập vào hệ thống</li>
+                        <li>Truy cập "Cài Đặt" hoặc "Thay Đổi Mật Khẩu"</li>
+                        <li>Nhập mật khẩu cũ</li>
+                        <li>Nhập mật khẩu mới (2 lần để xác nhận)</li>
+                        <li>Nhấn "Lưu"</li>
+                    </ol>
+                    <p class="text-gray-700 dark:text-gray-300 mt-3 text-sm">
+                        <strong>Lưu ý:</strong> Chỉ bạn có thể đổi mật khẩu của chính mình. Nếu quên hoàn toàn, liên hệ Admin.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Question 6 -->
+            <div class="collapse collapse-plus bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+                <input type="radio" name="faq-accordion" class="peer" />
+                <div class="collapse-title text-lg font-semibold text-gray-900 dark:text-white peer-checked:bg-blue-50 dark:peer-checked:bg-gray-700">
+                    🚌 Hệ thống hỗ trợ loại xe nào?
+                </div>
+                <div class="collapse-content bg-white dark:bg-gray-800">
+                    <p class="text-gray-700 dark:text-gray-300 pt-4">
+                        SRC Travel Agencies vận hành 4 loại xe khác nhau:
+                    </p>
+                    <div class="mt-4 space-y-3">
+                        <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded">
+                            <p class="font-semibold text-gray-900 dark:text-white">1️⃣ Express</p>
+                            <p class="text-sm text-gray-700 dark:text-gray-300">Giá rẻ nhất, phù hợp cho hành trình ngắn</p>
+                        </div>
+                        <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded">
+                            <p class="font-semibold text-gray-900 dark:text-white">2️⃣ Luxury</p>
+                            <p class="text-sm text-gray-700 dark:text-gray-300">Tiện nghi hơn, ghế rộng hơn</p>
+                        </div>
+                        <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded">
+                            <p class="font-semibold text-gray-900 dark:text-white">3️⃣ Volvo (Non A/C)</p>
+                            <p class="text-sm text-gray-700 dark:text-gray-300">Volvo không có điều hòa, giá trung bình</p>
+                        </div>
+                        <div class="bg-blue-50 dark:bg-blue-900 p-3 rounded">
+                            <p class="font-semibold text-blue-900 dark:text-blue-100">4️⃣ Volvo (A/C) - Premium</p>
+                            <p class="text-sm text-blue-800 dark:text-blue-200">Xe Volvo có điều hòa, giá cao nhất, tiện nghi tốt nhất</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Question 7 -->
+            <div class="collapse collapse-plus bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+                <input type="radio" name="faq-accordion" class="peer" />
+                <div class="collapse-title text-lg font-semibold text-gray-900 dark:text-white peer-checked:bg-blue-50 dark:peer-checked:bg-gray-700">
+                    🧑‍💼 Tôi là admin, tôi có quyền gì?
+                </div>
+                <div class="collapse-content bg-white dark:bg-gray-800">
+                    <p class="text-gray-700 dark:text-gray-300 pt-4">
+                        Admin có toàn quyền quản lý hệ thống:
+                    </p>
+                    <ul class="list-disc list-inside text-gray-700 dark:text-gray-300 mt-3 space-y-2">
+                        <li><strong>Quản lý xe:</strong> Thêm, sửa, xóa thông tin xe. Mỗi xe được gán mã 5 chữ số tự động.</li>
+                        <li><strong>Quản lý nhân viên:</strong> Tạo tài khoản nhân viên mới. Mỗi nhân viên được gán mã 6 chữ số tự động.</li>
+                        <li><strong>Quản lý bảng giá:</strong> Cập nhật giá vé, chính sách giá theo loại xe và quãng đường.</li>
+                        <li><strong>Xem báo cáo:</strong> Theo dõi tất cả giao dịch đặt vé trên toàn hệ thống.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Question 8 -->
+            <div class="collapse collapse-plus bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+                <input type="radio" name="faq-accordion" class="peer" />
+                <div class="collapse-title text-lg font-semibold text-gray-900 dark:text-white peer-checked:bg-blue-50 dark:peer-checked:bg-gray-700">
+                    📱 Hệ thống này có dành cho khách hàng không?
+                </div>
+                <div class="collapse-content bg-white dark:bg-gray-800">
+                    <p class="text-gray-700 dark:text-gray-300 pt-4">
+                        <strong>Không.</strong> Hệ thống này chỉ dành cho bộ phận đặt vé của công ty sử dụng. 
+                    </p>
+                    <p class="text-gray-700 dark:text-gray-300 mt-3">
+                        Khách hàng không thể tự đặt vé trực tuyến. Để đặt vé, khách hàng cần liên hệ trực tiếp với bộ phận bán vé hoặc các chi nhánh SRC Travel Agencies.
+                    </p>
+                    <p class="text-gray-700 dark:text-gray-300 mt-3 text-sm">
+                        <strong>Lợi ích:</strong> Nhân viên bán vé có thể nhanh chóng tra cứu ghế trống, tính giá chính xác, và in vé cho khách hàng.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Question 9 -->
+            <div class="collapse collapse-plus bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+                <input type="radio" name="faq-accordion" class="peer" />
+                <div class="collapse-title text-lg font-semibold text-gray-900 dark:text-white peer-checked:bg-blue-50 dark:peer-checked:bg-gray-700">
+                    🔄 Dữ liệu từ các chi nhánh khác nhau được cập nhật như thế nào?
+                </div>
+                <div class="collapse-content bg-white dark:bg-gray-800">
+                    <p class="text-gray-700 dark:text-gray-300 pt-4">
+                        Hệ thống sử dụng <strong>cơ sở dữ liệu tập trung</strong> cho tất cả chi nhánh:
+                    </p>
+                    <ul class="list-disc list-inside text-gray-700 dark:text-gray-300 mt-3 space-y-2">
+                        <li>Tất cả dữ liệu đặt vé được lưu ở một cơ sở dữ liệu chủ</li>
+                        <li>Dữ liệu được cập nhật theo thời gian thực</li>
+                        <li>Mọi chi nhánh có thể tra cứu và cập nhật thông tin một cách đồng bộ</li>
+                        <li>Không bao giờ xảy ra tình trạng double-booking (đặt trùng ghế)</li>
+                    </ul>
+                    <p class="text-gray-700 dark:text-gray-300 mt-3 text-sm">
+                        <strong>Kết quả:</strong> Quản lý tốt hơn, chính xác hơn, đáp ứng nhu cầu khách hàng nhanh hơn.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Question 10 -->
+            <div class="collapse collapse-plus bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+                <input type="radio" name="faq-accordion" class="peer" />
+                <div class="collapse-title text-lg font-semibold text-gray-900 dark:text-white peer-checked:bg-blue-50 dark:peer-checked:bg-gray-700">
+                    💬 Tôi cần hỗ trợ hoặc gặp sự cố, tôi phải liên hệ với ai?
+                </div>
+                <div class="collapse-content bg-white dark:bg-gray-800">
+                    <p class="text-gray-700 dark:text-gray-300 pt-4">
+                        Nếu bạn gặp vấn đề:
+                    </p>
+                    <div class="mt-4 space-y-3">
+                        <div class="bg-blue-50 dark:bg-blue-900 p-3 rounded">
+                            <p class="font-semibold text-blue-900 dark:text-blue-100">Vấn đề về tài khoản / quyền hạn:</p>
+                            <p class="text-blue-800 dark:text-blue-200">Liên hệ <strong>Admin</strong> của công ty</p>
+                        </div>
+                        <div class="bg-blue-50 dark:bg-blue-900 p-3 rounded">
+                            <p class="font-semibold text-blue-900 dark:text-blue-100">Vấn đề kỹ thuật / lỗi hệ thống:</p>
+                            <p class="text-blue-800 dark:text-blue-200">Liên hệ <strong>Bộ phận IT / Support</strong></p>
+                        </div>
+                        <div class="bg-blue-50 dark:bg-blue-900 p-3 rounded">
+                            <p class="font-semibold text-blue-900 dark:text-blue-100">Câu hỏi về quy trình kinh doanh:</p>
+                            <p class="text-blue-800 dark:text-blue-200">Liên hệ <strong>Quản lý bộ phận</strong> bán vé</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Footer Note -->
+        <div class="mt-12 bg-blue-50 dark:bg-blue-900 border border-blue-200 dark:border-blue-700 rounded-lg p-6">
+            <p class="text-blue-900 dark:text-blue-100">
+                <strong>📌 Lưu ý:</strong> Thông tin trên đây được cập nhật vào ngày @DateTime.Now.ToString("dd/MM/yyyy"). 
+                Nếu bạn có thêm câu hỏi không được trả lời ở đây, vui lòng liên hệ với Admin hoặc bộ phận IT.
+            </p>
+        </div>
+    </div>
+</div>
+
+<style>
+    .collapse input:checked ~ .collapse-title {
+        background-color: rgba(59, 130, 246, 0.1);
+    }
+    
+    .dark .collapse input:checked ~ .collapse-title {
+        background-color: rgba(59, 130, 246, 0.2);
+    }
+</style>
