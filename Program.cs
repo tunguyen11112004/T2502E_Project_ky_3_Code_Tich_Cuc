@@ -9,6 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+Console.WriteLine("CONNECTION STRING = " + connectionString);
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseMySql(
