@@ -25,6 +25,8 @@ public class HomeController : Controller
 
     public IActionResult FAQ()
     {
+        // Ngày cập nhật FAQ cuối cùng (cố định)
+        ViewBag.FAQLastUpdated = new DateTime(2026, 6, 12);
         return View();
     }
 
