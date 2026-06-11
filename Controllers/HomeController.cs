@@ -22,6 +22,12 @@ public class HomeController : Controller
     {
         return View();
     }
+    
+    public IActionResult Pricing()
+    {
+        // Trả về file giao diện Views/Home/Pricing.cshtml vừa tạo
+        return View();
+    }
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()
