@@ -27,6 +27,9 @@ public class HomeController : Controller
     public IActionResult Policy()
     {
         // Tìm đến nạp file Views/Home/Policy.cshtml
+    public IActionResult Pricing()
+    {
+        // Trả về file giao diện Views/Home/Pricing.cshtml vừa tạo
         return View();
     }
 
@@ -34,5 +37,9 @@ public class HomeController : Controller
     public IActionResult Error()
     {
         return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+    }
+    public IActionResult About() 
+    {
+        return View();
     }
 }

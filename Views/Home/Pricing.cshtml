@@ -1,0 +1,80 @@
+@{
+    Layout = "_Layout"; // Kế thừa khung Client có Header và Footer
+    ViewData["Title"] = "Bảng Giá Vé Xe Mẫu";
+}
+
+<div class="container mx-auto px-4 py-10 max-w-5xl">
+    
+    <div class="bg-blue-50 border-l-4 border-ternaryColor p-6 rounded-r-lg mb-10 shadow-sm">
+        <h2 class="text-xl font-bold text-titleColor mb-2 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-ternaryColor" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Quy Định Cấu Hình Tính Giá Vé
+        </h2>
+        <p class="text-gray-600 leading-relaxed mb-3">
+            Hệ thống tính toán giá vé tự động một cách minh bạch. Hiện tại, mức giá cuối cùng áp dụng cho mỗi lượt đặt vé của hành khách sẽ phụ thuộc trực tiếp vào <span class="font-semibold text-titleColor">3 yếu tố cốt lõi</span> sau:
+        </p>
+        <ul class="list-disc list-inside space-y-1.5 text-gray-600 pl-2">
+            <li><span class="font-medium text-titleColor">Loại xe:</span> Mỗi dòng xe có mức giá sàn khác nhau (Tăng dần từ Express đến dòng cao cấp Volvo A/C).</li>
+            <li><span class="font-medium text-titleColor">Khoảng cách di chuyển:</span> Tính dựa trên số kilomet thực tế giữa điểm đi và điểm đến.</li>
+            <li><span class="font-medium text-titleColor">Độ tuổi hành khách:</span> Áp dụng chính sách giảm giá riêng cho Trẻ em (Dưới 12 tuổi) và Người cao tuổi (Trên 60 tuổi).</li>
+        </ul>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100">
+        <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+            <div>
+                <h3 class="text-lg font-bold text-titleColor">Bảng Giá Vé Tham Khảo</h3>
+                <p class="text-xs text-gray-500 mt-1">* Giá dưới đây tính trên khoảng cách tiêu chuẩn 100km dành cho người lớn</p>
+            </div>
+            <span class="badge badge-success text-white p-3 font-semibold bg-ternaryColor border-none">Dữ liệu mẫu mã</span>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="table w-full text-left border-collapse">
+                <thead>
+                    <tr class="text-gray-700 bg-gray-100/70 border-b border-gray-200">
+                        <th class="p-4 font-bold text-sm">Thứ tự giá</th>
+                        <th class="p-4 font-bold text-sm">Loại Xe (Vehicle Type)</th>
+                        <th class="p-4 font-bold text-sm">Tiện Nghi</th>
+                        <th class="p-4 font-bold text-sm text-right">Giá Cơ Bản (100km)</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 text-gray-600">
+                    <tr class="hover:bg-gray-50/80 transition-colors">
+                        <td class="p-4 font-medium text-gray-400">#1 (Thấp nhất)</td>
+                        <td class="p-4 font-bold text-gray-800">Express</td>
+                        <td class="p-4"><span class="badge badge-ghost badge-sm">Ghế ngồi tiêu chuẩn, Quạt gió</span></td>
+                        <td class="p-4 text-right font-semibold text-gray-900">120,000 đ</td>
+                    </tr>
+                    
+                    <tr class="hover:bg-gray-50/80 transition-colors">
+                        <td class="p-4 font-medium text-gray-400">#2</td>
+                        <td class="p-4 font-bold text-gray-800">Luxury</td>
+                        <td class="p-4"><span class="badge badge-info badge-outline badge-sm">Giường nằm, Wi-Fi, Nước uống</span></td>
+                        <td class="p-4 text-right font-semibold text-gray-900">180,000 đ</td>
+                    </tr>
+                    
+                    <tr class="hover:bg-gray-50/80 transition-colors">
+                        <td class="p-4 font-medium text-gray-400">#3</td>
+                        <td class="p-4 font-bold text-gray-800">Volvo (Non A/C)</td>
+                        <td class="p-4"><span class="badge badge-warning badge-outline badge-sm">Gầm cao hạng sang, Không điều hòa</span></td>
+                        <td class="p-4 text-right font-semibold text-gray-900">240,000 đ</td>
+                    </tr>
+                    
+                    <tr class="hover:bg-gray-50/80 transition-colors bg-green-50/30">
+                        <td class="p-4 font-medium text-ternaryColor font-semibold">#4 (Cao nhất)</td>
+                        <td class="p-4 font-bold text-gray-900 flex items-center gap-2">
+                            Volvo (A/C)
+                            <span class="badge badge-error badge-xs text-white">Hot</span>
+                        </td>
+                        <td class="p-4"><span class="badge badge-success text-white badge-sm bg-ternaryColor border-none">Điều hòa VIP, Chăn đắp, Cổng sạc USB</span></td>
+                        <td class="p-4 text-right font-bold text-ternaryColor text-lg">350,000 đ</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
