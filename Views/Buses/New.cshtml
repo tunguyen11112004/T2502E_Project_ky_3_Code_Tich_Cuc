@@ -1,0 +1,89 @@
+@model Bus_ticket.Models.Bus
+
+@{
+    ViewData["Title"] = "Thêm xe khách";
+}
+
+<h2>Thêm xe khách mới</h2>
+
+<form asp-action="New" method="post" enctype="multipart/form-data">
+    @Html.AntiForgeryToken()
+
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+    <div class="mb-3">
+        <label asp-for="BusNumber" class="form-label"></label>
+        <input asp-for="BusNumber" class="form-control" placeholder="VD: 29B-12345" />
+        <span asp-validation-for="BusNumber" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="BusType" class="form-label"></label>
+        <select asp-for="BusType" class="form-select">
+            <option value="0">-- Chọn loại xe --</option>
+            <option value="1">Express</option>
+            <option value="2">Luxury</option>
+            <option value="3">Volvo Non-A/C</option>
+            <option value="4">Volvo A/C</option>
+        </select>
+        <span asp-validation-for="BusType" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Route" class="form-label"></label>
+        <input asp-for="Route" class="form-control" placeholder="VD: Hà Nội - Hải Phòng" />
+        <span asp-validation-for="Route" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Distance" class="form-label"></label>
+        <input asp-for="Distance" class="form-control" placeholder="VD: 120" />
+        <span asp-validation-for="Distance" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="DepartureTime" class="form-label"></label>
+        <input asp-for="DepartureTime"
+               type="datetime-local"
+               class="form-control"
+               value="@Model.DepartureTime.ToString("yyyy-MM-ddTHH:mm")" />
+        <span asp-validation-for="DepartureTime" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Description" class="form-label"></label>
+        <textarea asp-for="Description" id="descriptionEditor" class="form-control" rows="5"></textarea>
+        <span asp-validation-for="Description" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="ImageFile" class="form-label"></label>
+        <input asp-for="ImageFile" type="file" class="form-control" accept=".jpg,.jpeg,.png,.webp" />
+        <span asp-validation-for="ImageFile" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Lưu xe</button>
+    <a asp-action="Index" class="btn btn-secondary">Quay lại</a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
+    <script>
+        ClassicEditor
+            .create(document.querySelector('#descriptionEditor'))
+            .catch(error => console.error(error));
+    </script>
+
+    <style>
+        .input-validation-error {
+            border: 1px solid #dc3545 !important;
+        }
+
+        .field-validation-error {
+            color: #dc3545;
+            font-size: 14px;
+        }
+    </style>
+}
