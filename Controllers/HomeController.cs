@@ -33,6 +33,13 @@ public class HomeController : Controller
         return View();
     }
 
+    public IActionResult FAQ()
+    {
+        // Ngày cập nhật FAQ cuối cùng (cố định)
+        ViewBag.FAQLastUpdated = new DateTime(2026, 6, 12);
+        return View();
+    }
+
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()
     {
