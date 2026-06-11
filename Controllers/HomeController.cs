@@ -23,6 +23,10 @@ public class HomeController : Controller
         return View();
     }
     
+    
+    public IActionResult Policy()
+    {
+        // Tìm đến nạp file Views/Home/Policy.cshtml
     public IActionResult Pricing()
     {
         // Trả về file giao diện Views/Home/Pricing.cshtml vừa tạo

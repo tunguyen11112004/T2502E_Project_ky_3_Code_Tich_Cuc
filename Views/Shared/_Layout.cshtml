@@ -48,3 +48,54 @@
 @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
+
+<script>
+    function changeLanguage(langCode, langName, flagUrl) {
+        // Thay đổi icon cờ và text hiển thị trên nút chính
+        document.getElementById('current-lang-flag').src = flagUrl;
+        document.getElementById('current-lang-text').innerText = langName;
+
+        const translations = {
+            vi: {
+                home: "Trang Chủ",
+                about: "Giới Thiệu",
+                pricing: "Bảng Giá Xe",
+                policy: "Chính Sách"
+            },
+            en: {
+                home: "Home",
+                about: "About",
+                pricing: "Pricing",
+                policy: "Policy"
+            }
+        };
+
+        const menu = translations[langCode];
+        
+        // Dịch cho Desktop menu
+        if(document.getElementById('nav-home')) document.getElementById('nav-home').innerText = menu.home;
+        if(document.getElementById('nav-about')) document.getElementById('nav-about').innerText = menu.about;
+        if(document.getElementById('nav-pricing')) document.getElementById('nav-pricing').innerText = menu.pricing;
+        if(document.getElementById('nav-policy')) document.getElementById('nav-policy').innerText = menu.policy;
+
+        // Dịch đồng thời cho cả Mobile menu thông qua ClassName
+        updateTextByClass('mobile-nav-home', menu.home);
+        updateTextByClass('mobile-nav-about', menu.about);
+        updateTextByClass('mobile-nav-pricing', menu.pricing);
+        updateTextByClass('mobile-nav-policy', menu.policy);
+
+        // Mẹo đóng dropdown tự động sau khi chọn xong
+        const activeElement = document.activeElement;
+        if (activeElement) {
+            activeElement.blur();
+        }
+    }
+
+    // Hàm bổ trợ dịch hàng loạt phần tử theo Class
+    function updateTextByClass(className, text) {
+        const elements = document.getElementsByClassName(className);
+        for (let i = 0; i < elements.length; i++) {
+            elements[i].innerText = text;
+        }
+    }
+</script>
