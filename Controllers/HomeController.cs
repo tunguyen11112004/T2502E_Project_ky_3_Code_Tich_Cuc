@@ -22,6 +22,13 @@ public class HomeController : Controller
     {
         return View();
     }
+    
+    
+    public IActionResult Policy()
+    {
+        // Tìm đến nạp file Views/Home/Policy.cshtml
+        return View();
+    }
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()
