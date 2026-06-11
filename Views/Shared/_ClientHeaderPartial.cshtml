@@ -11,15 +11,9 @@
                     </div>
                     <ul tabindex="0" class="dropdown-content mt-3 z-[50] p-2 shadow-md rounded-box w-52 bg-white menu menu-sm border border-gray-100">
                         <li><a asp-controller="Home" asp-action="Index" class="mobile-nav-home">Trang Chủ</a></li>
-                        <li><a class="mobile-nav-about">Giới Thiệu</a></li>
+                        <li><a asp-controller="Home" asp-action="About" class="mobile-nav-about">Giới Thiệu</a></li>
                         <li><a asp-controller="Home" asp-action="Pricing" class="mobile-nav-pricing">Bảng Giá Xe</a></li>
                         <li><a asp-controller="Home" asp-action="Policy" class="mobile-nav-policy">Chính Sách</a></li>
-                    <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow rounded-box w-52 bg-white">
-                        <li> <a class="" href="">Home</a> </li>
-                        <li><a asp-controller="Home" asp-action="Pricing" class="hover:text-ternaryColor">Bảng Giá</a></li>
-                        <li> <a href="">About</a> </li>
-                        <li> <a href="">Destination</a> </li>
-                        <li> <a href="">Search</a> </li>
                         <li> <a href="@Url.Action("FAQ", "Home")">FAQ</a> </li>
                     </ul>
                 </div>
@@ -29,15 +23,9 @@
             <div class="navbar-center hidden lg:flex">
                 <ul class="menu menu-horizontal px-1 gap-6 font-medium text-gray-700">
                     <li><a asp-controller="Home" asp-action="Index" id="nav-home">Trang Chủ</a></li>
-                    <li><a id="nav-about">Giới Thiệu</a></li>
+                    <li><a asp-controller="Home" asp-action="About" id="nav-about">Giới Thiệu</a></li>
                     <li><a asp-controller="Home" asp-action="Pricing" id="nav-pricing">Bảng Giá Xe</a></li>
                     <li><a asp-controller="Home" asp-action="Policy" id="nav-policy">Chính Sách</a></li>
-                <ul class="menu menu-horizontal px-1 bigDisplayMenu">
-                    <li> <a href="">Home</a> </li>
-                    <li><a asp-controller="Home" asp-action="Pricing" class="hover:text-ternaryColor">Bảng Giá</a></li>
-                    <li> <a href="">About</a> </li>
-                    <li> <a href="">Destination</a> </li>
-                    <li> <a href="">Search</a> </li>
                     <li> <a href="@Url.Action("FAQ", "Home")">FAQ</a> </li>
                 </ul>
             </div>
