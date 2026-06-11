@@ -120,6 +120,44 @@ public class AccountController : Controller
         ModelState.AddModelError("", "Invalid username or password.");
         return View(model);
     }
+    [HttpGet]
+    public IActionResult ForgotPassword()
+    {
+        return View();
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel model)
+    {
+        if (!ModelState.IsValid)
+            return View(model);
+
+        var user = await _userManager.FindByEmailAsync(model.Email);
+
+        if (user == null)
+        {
+            ViewBag.Message = "If the email exists, a reset password link has been generated.";
+            return View();
+        }
+
+        var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+
+        var resetLink = Url.Action(
+            "ResetPassword",
+            "Account",
+            new
+            {
+                email = model.Email,
+                token = token
+            },
+            Request.Scheme
+        );
+
+        ViewBag.Message = "Reset password link generated successfully.";
+        ViewBag.ResetLink = resetLink;
+
+        return View();
+    }
 
     [HttpPost]
     public async Task<IActionResult> Logout()
@@ -132,6 +170,68 @@ public class AccountController : Controller
     public IActionResult ChangePassword()
     {
         return View();
+    }
+    
+    [HttpGet]
+    public IActionResult ResetPassword(string email, string token)
+    {
+        if (string.IsNullOrEmpty(email) ||
+            string.IsNullOrEmpty(token))
+        {
+            return RedirectToAction("Login");
+        }
+
+        var model = new ResetPasswordViewModel
+        {
+            Email = email,
+            Token = token
+        };
+
+        return View(model);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> ResetPassword(
+        ResetPasswordViewModel model)
+    {
+        if (!ModelState.IsValid)
+            return View(model);
+
+        var user = await _userManager.FindByEmailAsync(model.Email);
+
+        if (user == null)
+        {
+            ModelState.AddModelError(
+                "",
+                "User not found."
+            );
+
+            return View(model);
+        }
+
+        var result = await _userManager.ResetPasswordAsync(
+            user,
+            model.Token,
+            model.NewPassword
+        );
+
+        if (result.Succeeded)
+        {
+            TempData["SuccessMessage"] =
+                "Password has been reset successfully.";
+
+            return RedirectToAction("Login");
+        }
+
+        foreach (var error in result.Errors)
+        {
+            ModelState.AddModelError(
+                "",
+                error.Description
+            );
+        }
+
+        return View(model);
     }
 
     [Authorize(Roles = "Employee")]
@@ -172,3 +272,4 @@ public class AccountController : Controller
         return View();
     }
 }
+
