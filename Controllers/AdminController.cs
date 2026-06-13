@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace Bus_ticket.Controllers
 {   [Authorize(Roles = "Admin")]
@@ -9,6 +10,6 @@ namespace Bus_ticket.Controllers
         public IActionResult Index()
         {
             return View();
-        }
+        }public IActionResult Booking() { return View(); }
     }
 }
