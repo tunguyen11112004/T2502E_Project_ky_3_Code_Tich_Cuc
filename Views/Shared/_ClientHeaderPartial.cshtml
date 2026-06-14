@@ -1,34 +1,70 @@
 <header class="py-4">
     <div class="mx-auto container px-4">
         <div class="navbar">
+            
             <div class="navbar-start">
                 <div class="dropdown">
-
                     <div tabindex="0" role="button" class="btn btn-ghost lg:hidden">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16" /></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16" />
+                        </svg>
                     </div>
-                    <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow rounded-box w-52 bg-white">
-                        <li> <a class="" href="">Home</a> </li>
-                        <li> <a href="">About</a> </li>
-                        <li> <a href="">Destination</a> </li>
-                        <li> <a href="">Search</a> </li>
+                    <ul tabindex="0" class="dropdown-content mt-3 z-[50] p-2 shadow-md rounded-box w-52 bg-white menu menu-sm border border-gray-100">
+                        <li><a asp-controller="Home" asp-action="Index" class="mobile-nav-home">Trang Chủ</a></li>
+                        <li><a asp-controller="Home" asp-action="About" class="mobile-nav-about">Giới Thiệu</a></li>
+                        <li><a asp-controller="Home" asp-action="Pricing" class="mobile-nav-pricing">Bảng Giá Xe</a></li>
+                        <li><a asp-controller="Home" asp-action="Contact" class="mobile-nav-about">Liên Hệ</a></li>
+                        <li><a asp-controller="Home" asp-action="Policy" class="mobile-nav-policy">Chính Sách</a></li>
+                        <li> <a href="@Url.Action("FAQ", "Home")">FAQ</a> </li>
                     </ul>
                 </div>
-                <a href="" class="lg:font-bold text-titleColor text-[18px] font-extrabold lg:text-3xl text-white"> Matha Paribahan </a>
+                <a asp-controller="Home" asp-action="Index" class="lg:font-bold text-titleColor text-[18px] font-extrabold lg:text-3xl"> Matha Paribahan </a>
             </div>
 
             <div class="navbar-center hidden lg:flex">
-                <ul class="menu menu-horizontal px-1 bigDisplayMenu">
-                    <li> <a href="">Home</a> </li>
-                    <li> <a href="">About</a> </li>
-                    <li> <a href="">Destination</a> </li>
-                    <li> <a href="">Search</a> </li>
+                <ul class="menu menu-horizontal px-1 gap-6 font-medium text-gray-700">
+                    <li><a asp-controller="Home" asp-action="Index" id="nav-home">Trang Chủ</a></li>
+                    <li><a asp-controller="Home" asp-action="About" id="nav-about">Giới Thiệu</a></li>
+                    <li><a asp-controller="Home" asp-action="Pricing" id="nav-pricing">Bảng Giá Xe</a></li>
+                    <li><a asp-controller="Home" asp-action="Contact" id="nav-pricing">Liên Hệ</a></li>
+                    <li><a asp-controller="Home" asp-action="Policy" id="nav-policy">Chính Sách</a></li>
+                    <li> <a href="@Url.Action("FAQ", "Home")">FAQ</a> </li>
                 </ul>
             </div>
 
-            <div class="navbar-end">
-                <a href="#" class="btn text-secColor bg-[#e8ffe5] hover:bg-[#21e802f6] hover:border-[#21e802f6] hover:text-priColor border-2 border-ternaryColor font-bold lg:text-xl text-lg">Bus <span><img src="~/client-assets/images/bus-icon.png" alt=""></span> </a>
+            <div class="navbar-end flex items-center gap-3">
+                
+                <div class="dropdown dropdown-end">
+                    <div tabindex="0" role="button" class="btn btn-ghost btn-sm border border-gray-200 flex items-center gap-2 rounded-lg bg-white" id="current-lang-btn">
+                        <img src="https://flagcdn.com/w20/vn.png" id="current-lang-flag" class="w-5 h-auto rounded-xs" alt="VN Flag">
+                        <span id="current-lang-text" class="text-sm font-medium">Tiếng Việt</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </div>
+        
+                    <ul tabindex="0" class="dropdown-content z-[50] menu p-2 shadow-md bg-base-100 rounded-box w-40 mt-2 border border-gray-100">
+                        <li>
+                            <button type="button" onclick="changeLanguage('vi', 'Tiếng Việt', 'https://flagcdn.com/w20/vn.png')" class="flex items-center gap-3 py-2 w-full text-left">
+                                <img src="https://flagcdn.com/w20/vn.png" class="w-5 h-auto rounded-xs" alt="Vietnam">
+                                <span class="text-sm font-medium">Tiếng Việt</span>
+                            </button>
+                        </li>
+                        <li>
+                            <button type="button" onclick="changeLanguage('en', 'English', 'https://flagcdn.com/w20/us.png')" class="flex items-center gap-3 py-2 w-full text-left">
+                                <img src="https://flagcdn.com/w20/us.png" class="w-5 h-auto rounded-xs" alt="English">
+                                <span class="text-sm font-medium">English</span>
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+
+                <a href="#" class="btn text-secColor bg-[#e8ffe5] hover:bg-[#21e802f6] hover:border-[#21e802f6] hover:text-priColor border-2 border-ternaryColor font-bold lg:text-xl text-lg flex items-center gap-2">
+                    Bus 
+                    <span><img src="~/client-assets/images/bus-icon.png" alt="Bus Icon"></span> 
+                </a>
             </div>
+
         </div>
     </div>
 </header>

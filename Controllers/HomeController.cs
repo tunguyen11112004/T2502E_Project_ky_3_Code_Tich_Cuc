@@ -17,9 +17,33 @@ public class HomeController : Controller
     {
         return View();
     }
-
-    public IActionResult Privacy()
+    
+    public IActionResult About() 
     {
+        return View();
+    }
+    
+    public IActionResult Contact() 
+    {
+        return View();
+    }
+
+    public IActionResult Policy()
+    {
+        return View();
+    }
+
+    // Tìm đến nạp file Views/Home/Policy.cshtml
+    public IActionResult Pricing()
+    {
+        // Trả về file giao diện Views/Home/Pricing.cshtml vừa tạo
+        return View();
+    }
+
+    public IActionResult FAQ()
+    {
+        // Ngày cập nhật FAQ cuối cùng (cố định)
+        ViewBag.FAQLastUpdated = new DateTime(2026, 6, 12);
         return View();
     }
 
@@ -28,4 +52,6 @@ public class HomeController : Controller
     {
         return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
     }
+    
+    
 }
