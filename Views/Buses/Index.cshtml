@@ -1,0 +1,246 @@
+@model IEnumerable<Bus_ticket.Models.Bus>
+
+@{
+    ViewData["Title"] = "Quản lý xe khách";
+}
+
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css" />
+
+@Html.AntiForgeryToken()
+
+<h2>Quản lý xe khách</h2>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+
+<div class="mb-3">
+    <a asp-action="New" class="btn btn-primary">Thêm xe mới</a>
+
+    <button id="btnCancelSelected" class="btn btn-danger" disabled>
+        Cancel (<span id="selectedCount">0</span>)
+    </button>
+</div>
+
+<div class="row mb-3">
+    <div class="col-md-3">
+        <label>Loại xe</label>
+        <select id="filterBusType" class="form-select">
+            <option value="">Tất cả</option>
+            <option value="Express">Express</option>
+            <option value="Luxury">Luxury</option>
+            <option value="Volvo Non-A/C">Volvo Non-A/C</option>
+            <option value="Volvo A/C">Volvo A/C</option>
+        </select>
+    </div>
+
+    <div class="col-md-4">
+        <label>Tuyến đường</label>
+        <input id="filterRoute" class="form-control" placeholder="Nhập tuyến đường..." />
+    </div>
+
+    <div class="col-md-3">
+        <label>Ngày chạy</label>
+        <input id="filterDate" type="date" class="form-control" />
+    </div>
+
+    <div class="col-md-2">
+        <label>Số dòng</label>
+        <select id="pageSize" class="form-select">
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="50">50</option>
+        </select>
+    </div>
+</div>
+
+<table id="busTable" class="table table-bordered table-striped">
+    <thead>
+        <tr>
+            <th>
+                <input type="checkbox" id="checkAll" />
+            </th>
+            <th>Mã xe</th>
+            <th>Số xe</th>
+            <th>Loại xe</th>
+            <th>Tuyến đường</th>
+            <th>Quãng đường</th>
+            <th>Ngày xuất phát</th>
+            <th>Ảnh</th>
+            <th>Trạng thái</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        @foreach (var item in Model)
+        {
+            var typeName = item.BusType switch
+            {
+                Bus_ticket.Models.BusType.Express => "Express",
+                Bus_ticket.Models.BusType.Luxury => "Luxury",
+                Bus_ticket.Models.BusType.VolvoNonAC => "Volvo Non-A/C",
+                Bus_ticket.Models.BusType.VolvoAC => "Volvo A/C",
+                _ => ""
+            };
+
+            <tr>
+                <td>
+                    <input type="checkbox" class="row-check" value="@item.Id" />
+                </td>
+
+                <td>@item.BusCode</td>
+                <td>@item.BusNumber</td>
+                <td>@typeName</td>
+                <td>@item.Route</td>
+                <td>@item.Distance km</td>
+
+                <td class="departure-date" data-date="@item.DepartureTime.ToString("yyyy-MM-dd")">
+                    @item.DepartureTime.ToString("dd/MM/yyyy HH:mm")
+                </td>
+
+                <td>
+                    @if (!string.IsNullOrEmpty(item.ImageUrl))
+                    {
+                        <img src="@item.ImageUrl" style="height:60px;width:90px;object-fit:cover;" />
+                    }
+                    else
+                    {
+                        <span>Chưa có ảnh</span>
+                    }
+                </td>
+
+                <td>
+                    @if (item.Status == Bus_ticket.Models.BusStatus.Active)
+                    {
+                        <span class="badge bg-success">Active</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-danger">Cancelled</span>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@section Scripts {
+    <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+
+    <script>
+        const selectedIds = new Set();
+
+        const table = $('#busTable').DataTable({
+            pageLength: 10,
+            lengthChange: false
+        });
+
+        $('#pageSize').on('change', function () {
+            table.page.len(Number(this.value)).draw();
+        });
+
+        $('#filterBusType').on('change', function () {
+            table.column(3).search(this.value).draw();
+        });
+
+        $('#filterRoute').on('keyup change', function () {
+            table.column(4).search(this.value).draw();
+        });
+
+        $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
+            const selectedDate = $('#filterDate').val();
+
+            if (!selectedDate) {
+                return true;
+            }
+
+            const row = table.row(dataIndex).node();
+            const rowDate = $(row).find('.departure-date').data('date');
+
+            return rowDate === selectedDate;
+        });
+
+        $('#filterDate').on('change', function () {
+            table.draw();
+        });
+
+        function updateBulkButton() {
+            $('#selectedCount').text(selectedIds.size);
+            $('#btnCancelSelected').prop('disabled', selectedIds.size === 0);
+        }
+
+        $('#checkAll').on('change', function () {
+            const checked = this.checked;
+
+            table.rows({ search: 'applied' }).every(function () {
+                const checkbox = $(this.node()).find('.row-check');
+                const id = Number(checkbox.val());
+
+                checkbox.prop('checked', checked);
+
+                if (checked) {
+                    selectedIds.add(id);
+                } else {
+                    selectedIds.delete(id);
+                }
+            });
+
+            updateBulkButton();
+        });
+
+        $('#busTable tbody').on('change', '.row-check', function () {
+            const id = Number(this.value);
+
+            if (this.checked) {
+                selectedIds.add(id);
+            } else {
+                selectedIds.delete(id);
+            }
+
+            updateBulkButton();
+        });
+
+        table.on('draw', function () {
+            table.rows().every(function () {
+                const checkbox = $(this.node()).find('.row-check');
+                const id = Number(checkbox.val());
+
+                checkbox.prop('checked', selectedIds.has(id));
+            });
+        });
+
+        $('#btnCancelSelected').on('click', function () {
+            if (selectedIds.size === 0) {
+                alert('Bạn chưa chọn xe nào');
+                return;
+            }
+
+            if (!confirm('Bạn có chắc muốn hủy các xe đã chọn không?')) {
+                return;
+            }
+
+            const token = $('input[name="__RequestVerificationToken"]').val();
+            const body = new URLSearchParams();
+
+            selectedIds.forEach(id => body.append('ids', id));
+            body.append('__RequestVerificationToken', token);
+
+            fetch('@Url.Action("CancelSelected", "Buses")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: body.toString()
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    location.reload();
+                } else {
+                    alert(result.message);
+                }
+            });
+        });
+    </script>
+}

@@ -1,6 +1,6 @@
+using Bus_ticket.Controllers;
 using Bus_ticket.Data;
-using Bus_ticket.Models;
-using Microsoft.AspNetCore.Identity;
+using Bus_ticket.Services;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -8,38 +8,21 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
+// Kết nối MySQL database
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-Console.WriteLine("CONNECTION STRING = " + connectionString);
 
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseMySql(
-        connectionString,
-        new MySqlServerVersion(new Version(10, 4, 32))
-    ));
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 
-builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
-    {
-        options.Password.RequiredLength = 6;
-        options.Password.RequireDigit = true;
-        options.Password.RequireLowercase = true;
-        options.Password.RequireUppercase = true;
-        options.Password.RequireNonAlphanumeric = true;
-    })
-    .AddEntityFrameworkStores<ApplicationDbContext>()
-    .AddDefaultTokenProviders();
+// Đăng ký service upload ảnh Cloudinary
+builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
 
-builder.Services.ConfigureApplicationCookie(options =>
-{
-    options.LoginPath = "/Account/Login";
-    options.AccessDeniedPath = "/Account/AccessDenied";
-});
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
@@ -54,5 +37,11 @@ app.UseAuthorization();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+
+// Tự động migrate database và seed dữ liệu mẫu khi chạy app
+if (builder.Configuration.GetValue<bool>("SeedDemoDataOnStartup"))
+{
+    await DbSeeder.SeedAsync(app.Services);
+}
 
 app.Run();
