@@ -1,4 +1,5 @@
 using Bus_ticket.Data;
+using Bus_ticket.Middlewares;
 using Bus_ticket.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -11,7 +12,9 @@ builder.Services.AddControllersWithViews();
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 Console.WriteLine("CONNECTION STRING = " + connectionString);
 
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
+builder.Services.AddSingleton<ApplicationDbContext>();
+
+/*builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseMySql(
         connectionString,
         new MySqlServerVersion(new Version(10, 4, 32))
@@ -26,7 +29,7 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
         options.Password.RequireNonAlphanumeric = true;
     })
     .AddEntityFrameworkStores<ApplicationDbContext>()
-    .AddDefaultTokenProviders();
+    .AddDefaultTokenProviders();*/
 
 builder.Services.ConfigureApplicationCookie(options =>
 {
@@ -42,6 +45,12 @@ if (!app.Environment.IsDevelopment())
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
+
+app.UseAuthentication(); // Bước 1: Xác thực danh tính (Đọc token để biết bạn là ai)
+app.UseAuthorization();  // Bước 2: Kích hoạt quyền cơ bản của hệ thống
+
+// Bước 3: Gọi Middleware phân quyền động theo LINK và METHOD của bạn ở đây
+app.UseMiddleware<PermissionMiddleware>();
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();

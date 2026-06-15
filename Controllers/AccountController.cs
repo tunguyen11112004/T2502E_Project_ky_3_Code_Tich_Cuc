@@ -10,13 +10,13 @@ namespace Bus_ticket.Controllers;
 public class AccountController : Controller
 
 {
-    private readonly UserManager<ApplicationUser> _userManager;
+    /*private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly RoleManager<IdentityRole> _roleManager;
 
     public AccountController(
-        UserManager<ApplicationUser> userManager,
-        SignInManager<ApplicationUser> signInManager,
+        /*UserManager<ApplicationUser> userManager,
+        SignInManager<ApplicationUser> signInManager,#1#
         RoleManager<IdentityRole> roleManager)
     {
         _userManager = userManager;
@@ -270,6 +270,6 @@ public class AccountController : Controller
     public IActionResult AccessDenied()
     {
         return View();
-    }
+    }*/
 }
 
