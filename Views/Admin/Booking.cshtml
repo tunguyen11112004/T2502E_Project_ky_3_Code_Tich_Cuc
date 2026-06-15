@@ -1,0 +1,172 @@
+﻿@* /// <summary>
+    /// Giao diện Booking & Enquiry biến đổi từ trang Products cũ.
+    /// Giữ nguyên cấu trúc lưới bảng dữ liệu để chuẩn bị cho việc đổ danh sách chuyến xe sau này.
+    /// </summary>
+*@
+
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Quản Lý Chuyến Xe & Đặt Vé";
+}
+
+<style>
+    .src-bg-main { background-color: #0d235c; }
+    .src-seat { width: 40px; height: 40px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; }
+    .src-seat-available { background-color: #10b981; color: white; }
+    .src-seat-occupied { background-color: #cbd5e1; color: #94a3b8; cursor: not-allowed; }
+</style>
+
+<div class="p-4 bg-gray-50 min-h-screen dark:bg-gray-900" style="font-family: 'Inter', sans-serif;">
+    
+    <div class="src-bg-main text-center py-6 px-4 rounded-xl mb-6 text-white shadow">
+        <h1 class="text-2xl lg:text-4xl font-black mb-2">SRC Travel Agencies</h1>
+        <p class="text-xs lg:text-sm opacity-75 max-w-xl mx-auto">Connecting destinations, elevating journeys.</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <div id="employee-table-wrapper" class="lg:col-span-2 space-y-6">
+            <div class="bg-white p-4 rounded-xl shadow border border-gray-200 dark:bg-gray-800">
+                
+                <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-4">
+                    <div class="w-full md:w-72">
+                        <input type="text" id="txtSearchTrip" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2" placeholder="Tìm kiếm chuyến xe...">
+                    </div>
+                    <button type="button" onclick="handleMockupSearch()" class="text-white src-bg-main hover:bg-blue-900 font-bold rounded-lg text-sm px-4 py-2 shadow w-full md:w-auto">
+                        + Add new booking (Search)
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                            <tr>
+                                <th class="p-3">Mã Chuyến</th>
+                                <th class="p-3">Tuyến Đường</th>
+                                <th class="p-3">Giờ Đi</th>
+                                <th class="p-3">Giá Vé</th>
+                                <th class="p-3">Trạng Thái Ghế</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="border-b dark:border-gray-700 hover:bg-gray-50">
+                                <td class="p-3 font-bold text-gray-900 dark:text-white">#SRC1945</td>
+                                <td class="p-3">Hà Nội → Quảng Ninh</td>
+                                <td class="p-3">08:00 AM</td>
+                                <td class="p-3 font-semibold text-slate-800">550.000đ</td>
+                                <td class="p-3"><span class="bg-green-100 text-green-800 text-xs font-semibold px-2 py-0.5 rounded">Còn 12 ghế trống</span></td>
+                            </tr>
+                            <tr class="border-b dark:border-gray-700 hover:bg-gray-50">
+                                <td class="p-3 font-bold text-gray-900 dark:text-white">#SRC6232</td>
+                                <td class="p-3">Hà Nội → Hải Phòng</td>
+                                <td class="p-3">10:30 AM</td>
+                                <td class="p-3 font-semibold text-slate-800">250.000đ</td>
+                                <td class="p-3"><span class="bg-red-100 text-red-800 text-xs font-semibold px-2 py-0.5 rounded">Hết ghế</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="seat-matrix-wrapper" class="hidden mt-6 bg-gray-50 p-4 rounded-lg border dark:bg-gray-700">
+                    <h4 class="text-sm font-bold text-green-600 mb-2">Sơ Đồ Ma Trận Ghế Trống Thực Tế</h4>
+                    <div class="bg-white p-4 rounded-xl max-w-xs mx-auto border space-y-3 dark:bg-gray-800">
+                        <div class="flex justify-center gap-3">
+                            <div class="src-seat src-seat-available" onclick="selectSeatCode('A1')">A1</div>
+                            <div class="src-seat src-seat-available" onclick="selectSeatCode('A2')">A2</div>
+                            <div class="src-seat src-seat-occupied">A3</div>
+                        </div>
+                        <div class="flex justify-center gap-3">
+                            <div class="src-seat src-seat-occupied">B1</div>
+                            <div class="src-seat src-seat-available" onclick="selectSeatCode('B2')">B2</div>
+                            <div class="src-seat src-seat-available" onclick="selectSeatCode('B3')">B3</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="lg:col-span-1">
+            <div class="bg-white p-4 rounded-xl shadow border border-gray-200 dark:bg-gray-800 space-y-4">
+                <h3 class="text-sm font-bold text-gray-700 uppercase dark:text-white border-b pb-2">Booking Form</h3>
+                <form id="formBooking" class="space-y-3">
+                    <div>
+                        <label class="block mb-1 text-xs font-medium text-gray-900 dark:text-white">Tên hành khách</label>
+                        <input type="text" id="txtPassengerName" class="bg-gray-50 border border-gray-300 text-gray-900 text-xs rounded-lg block w-full p-2" placeholder="Họ tên khách">
+                    </div>
+                    <div>
+                        <label class="block mb-1 text-xs font-medium text-gray-900 dark:text-white">Tuổi</label>
+                        <input type="number" id="txtPassengerAge" class="bg-gray-50 border border-gray-300 text-gray-900 text-xs rounded-lg block w-full p-2">
+                    </div>
+                    <div>
+                        <label class="block mb-1 text-xs font-medium text-gray-900 dark:text-white">Tuyến đường</label>
+                        <input type="text" id="txtRoute" class="bg-gray-100 border text-gray-400 text-xs rounded-lg block w-full p-2" readonly value="Hà Nội → Quảng Ninh">
+                    </div>
+                    <div>
+                        <label class="block mb-1 text-xs font-medium text-gray-900 dark:text-white">Số ghế chọn</label>
+                        <input type="text" id="txtSeatNum" class="bg-yellow-50 border border-yellow-300 text-yellow-900 font-bold text-xs rounded-lg block w-full p-2" readonly placeholder="Chọn trên sơ đồ">
+                    </div>
+
+                    <div class="flex gap-2 justify-end pt-2">
+                        <button type="button" onclick="createNewTicketMockup()" class="bg-green-600 hover:bg-green-700 text-white font-bold text-xs rounded-lg px-3 py-2 shadow">New</button>
+                        <button type="button" onclick="alert('Đã cập nhật!')" class="bg-yellow-500 hover:bg-yellow-600 text-white text-xs rounded-lg px-3 py-2 shadow">Update</button>
+                        <button type="button" onclick="clearBookingData()" class="bg-red-600 hover:bg-red-700 text-white text-xs rounded-lg px-3 py-2 shadow">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div id="invoiceTicketModal" tabindex="-1" aria-hidden="true" class="fixed top-0 left-0 right-0 z-50 hidden w-full p-4 overflow-x-hidden overflow-y-auto md:inset-0 h-full bg-gray-900/50 flex items-center justify-center animate__animated animate__fadeIn">
+    <div class="relative w-full max-w-sm max-h-full bg-white rounded-xl shadow-2xl border-2 border-dashed border-blue-900 p-4">
+        <div class="text-center border-b pb-2 mb-3">
+            <h4 class="text-base font-black text-gray-800">PHÔI VÉ ĐIỆN TỬ - SRC TRAVEL</h4>
+            <p class="text-xs text-blue-700 font-bold">Mã Vé: SRC-2026</p>
+        </div>
+        <div class="space-y-1.5 text-xs">
+            <div class="flex justify-between"><span>Khách hàng:</span> <span id="lblPassenger" class="font-bold">-</span></div>
+            <div class="flex justify-between"><span>Tuyến đường:</span> <span id="lblRouteInfo" class="font-bold">-</span></div>
+            <div class="flex justify-between"><span>Ghế chọn:</span> <span id="lblSeatInfo" class="bg-green-600 text-white text-xs px-1.5 py-0.5 rounded font-bold">-</span></div>
+            <hr class="border-dashed my-2">
+            <div class="flex justify-between text-gray-500"><span>Giá vé gốc (Base Fare):</span> <span>500.000 VND</span></div>
+            <div class="flex justify-between text-gray-500"><span>Thuế GTGT (VAT 10%):</span> <span>50.000 VND</span></div>
+            <div class="flex justify-between pt-2 border-t font-extrabold text-sm text-gray-900">
+                <span>TỔNG TIỀN:</span> <span class="text-red-600">550.000 VND</span>
+            </div>
+        </div>
+        <div class="mt-4 text-center">
+            <button type="button" onclick="closeInvoiceModal()" class="text-white src-bg-main hover:bg-blue-900 font-bold text-xs rounded-lg px-6 py-2 shadow">Đóng</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function handleMockupSearch() {
+        document.getElementById("seat-matrix-wrapper").classList.remove("hidden");
+    }
+    function selectSeatCode(seatName) {
+        document.getElementById("txtSeatNum").value = seatName;
+    }
+    function createNewTicketMockup() {
+        var name = document.getElementById("txtPassengerName").value;
+        var seat = document.getElementById("txtSeatNum").value;
+        if (!name || !seat) {
+            alert("Vui lòng điền tên và chọn ghế!");
+            return;
+        }
+        document.getElementById("lblPassenger").innerText = name;
+        document.getElementById("lblRouteInfo").innerText = document.getElementById("txtRoute").value;
+        document.getElementById("lblSeatInfo").innerText = seat;
+        document.getElementById("invoiceTicketModal").classList.remove("hidden");
+    }
+    function closeInvoiceModal() {
+        document.getElementById("invoiceTicketModal").classList.add("hidden");
+    }
+    function clearBookingData() {
+        document.getElementById("formBooking").reset();
+        document.getElementById("txtSeatNum").value = "";
+        document.getElementById("seat-matrix-wrapper").classList.add("hidden");
+    }
+</script>
