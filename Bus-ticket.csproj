@@ -282,6 +282,7 @@
       </PackageReference>
       <PackageReference Include="MongoDB.Driver" Version="3.9.0" />
       <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="8.0.2" />
+      <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
     </ItemGroup>
 
 </Project>
