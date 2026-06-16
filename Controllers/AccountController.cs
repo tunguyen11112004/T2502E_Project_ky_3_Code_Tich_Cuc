@@ -1,33 +1,40 @@
 using Bus_ticket.Models;
+using Bus_ticket.Services;
 using Bus_ticket.ViewModels;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace Bus_ticket.Controllers;
 
 public class AccountController : Controller
-
 {
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly RoleManager<IdentityRole> _roleManager;
+    private readonly MongoUserService _mongoUserService;
 
     public AccountController(
         UserManager<ApplicationUser> userManager,
         SignInManager<ApplicationUser> signInManager,
-        RoleManager<IdentityRole> roleManager)
+        RoleManager<IdentityRole> roleManager,
+        MongoUserService mongoUserService)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _roleManager = roleManager;
+        _mongoUserService = mongoUserService;
     }
+
     [HttpGet]
     public IActionResult Register()
     {
         return View();
     }
+
     [HttpPost]
     public async Task<IActionResult> Register(RegisterViewModel model)
     {
@@ -77,8 +84,7 @@ public class AccountController : Controller
         {
             if (!await _roleManager.RoleExistsAsync("Employee"))
             {
-                await _roleManager.CreateAsync(
-                    new IdentityRole("Employee"));
+                await _roleManager.CreateAsync(new IdentityRole("Employee"));
             }
 
             await _userManager.AddToRoleAsync(user, "Employee");
@@ -93,6 +99,7 @@ public class AccountController : Controller
 
         return View(model);
     }
+
     [HttpGet]
     public IActionResult Login()
     {
@@ -105,21 +112,59 @@ public class AccountController : Controller
         if (!ModelState.IsValid)
             return View(model);
 
-        var result = await _signInManager.PasswordSignInAsync(
-            model.Username,
-            model.Password,
-            isPersistent: false,
-            lockoutOnFailure: false
-        );
+        var user = await _mongoUserService.GetByEmailAsync(model.Email);
 
-        if (result.Succeeded)
+        if (user == null || user.Status != "Active")
         {
-            return RedirectToAction("Index", "Home");
+            ModelState.AddModelError("", "Invalid email or password.");
+            return View(model);
         }
 
-        ModelState.AddModelError("", "Invalid username or password.");
-        return View(model);
+        var isPasswordValid = BCrypt.Net.BCrypt.Verify(
+            model.Password,
+            user.PasswordHash
+        );
+
+        if (!isPasswordValid)
+        {
+            ModelState.AddModelError("", "Invalid email or password.");
+            return View(model);
+        }
+
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.NameIdentifier, user.Id ?? string.Empty),
+            new Claim(ClaimTypes.Name, user.FullName),
+            new Claim(ClaimTypes.Email, user.Email),
+            new Claim(ClaimTypes.Role, user.Role),
+            new Claim("EmployeeCode", user.EmployeeCode)
+        };
+
+        var identity = new ClaimsIdentity(
+            claims,
+            IdentityConstants.ApplicationScheme
+        );
+
+        var principal = new ClaimsPrincipal(identity);
+
+        await HttpContext.SignInAsync(
+            IdentityConstants.ApplicationScheme,
+            principal
+        );
+
+        if (user.Role == "Admin")
+        {
+            return RedirectToAction("Index", "Admin");
+        }
+
+        if (user.Role == "Employee")
+        {
+            return RedirectToAction("Index", "Employee");
+        }
+
+        return RedirectToAction("AccessDenied", "Account");
     }
+
     [HttpGet]
     public IActionResult ForgotPassword()
     {
@@ -162,21 +207,21 @@ public class AccountController : Controller
     [HttpPost]
     public async Task<IActionResult> Logout()
     {
-        await _signInManager.SignOutAsync();
+        await HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
         return RedirectToAction("Login", "Account");
     }
+
     [Authorize(Roles = "Employee")]
     [HttpGet]
     public IActionResult ChangePassword()
     {
         return View();
     }
-    
+
     [HttpGet]
     public IActionResult ResetPassword(string email, string token)
     {
-        if (string.IsNullOrEmpty(email) ||
-            string.IsNullOrEmpty(token))
+        if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(token))
         {
             return RedirectToAction("Login");
         }
@@ -191,8 +236,7 @@ public class AccountController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> ResetPassword(
-        ResetPasswordViewModel model)
+    public async Task<IActionResult> ResetPassword(ResetPasswordViewModel model)
     {
         if (!ModelState.IsValid)
             return View(model);
@@ -201,11 +245,7 @@ public class AccountController : Controller
 
         if (user == null)
         {
-            ModelState.AddModelError(
-                "",
-                "User not found."
-            );
-
+            ModelState.AddModelError("", "User not found.");
             return View(model);
         }
 
@@ -225,10 +265,7 @@ public class AccountController : Controller
 
         foreach (var error in result.Errors)
         {
-            ModelState.AddModelError(
-                "",
-                error.Description
-            );
+            ModelState.AddModelError("", error.Description);
         }
 
         return View(model);
@@ -272,4 +309,3 @@ public class AccountController : Controller
         return View();
     }
 }
-
