@@ -10,12 +10,12 @@
                         </svg>
                     </div>
                     <ul tabindex="0" class="dropdown-content mt-3 z-[100] p-2 shadow-lg rounded-xl w-52 bg-white menu menu-sm border border-gray-100 font-medium">
-                        <li><a asp-controller="Home" asp-action="Index" class="py-2.5" data-vi="Trang Chủ" data-en="Home">Trang Chủ</a></li>
-                        <li><a asp-controller="Home" asp-action="About" class="py-2.5" data-vi="Giới Thiệu" data-en="About">Giới Thiệu</a></li>
-                        <li><a asp-controller="Home" asp-action="Pricing" class="py-2.5" data-vi="Bảng Giá Xe" data-en="Pricing">Bảng Giá Xe</a></li>
-                        <li><a asp-controller="Home" asp-action="Contact" class="py-2.5" data-vi="Liên Hệ" data-en="Contact">Liên Hệ</a></li>
-                        <li><a asp-controller="Home" asp-action="Policy" class="py-2.5" data-vi="Chính Sách" data-en="Policy">Chính Sách</a></li>
-                        <li><a href="@Url.Action("FAQ", "Home")" class="py-2.5">FAQ</a></li>
+                        <li><a asp-controller="Home" asp-action="Index" class="nav-client-link py-2.5" data-vi="Trang Chủ" data-en="Home">Trang Chủ</a></li>
+                        <li><a asp-controller="Home" asp-action="About" class="nav-client-link py-2.5" data-vi="Giới Thiệu" data-en="About">Giới Thiệu</a></li>
+                        <li><a asp-controller="Home" asp-action="Pricing" class="nav-client-link py-2.5" data-vi="Bảng Giá Xe" data-en="Pricing">Bảng Giá Xe</a></li>
+                        <li><a asp-controller="Home" asp-action="Contact" class="nav-client-link py-2.5" data-vi="Liên Hệ" data-en="Contact">Liên Hệ</a></li>
+                        <li><a asp-controller="Home" asp-action="Policy" class="nav-client-link py-2.5" data-vi="Chính Sách" data-en="Policy">Chính Sách</a></li>
+                        <li><a href="@Url.Action("FAQ", "Home")" class="nav-client-link py-2.5" data-vi="FAQ" data-en="FAQ">FAQ</a></li>
                     </ul>
                 </div>
                 <a asp-controller="Home" asp-action="Index" class="lg:font-black text-titleColor text-[20px] font-extrabold lg:text-2xl tracking-tight transition-colors hover:text-blue-700"> 
@@ -25,12 +25,12 @@
 
             <div class="navbar-center hidden lg:flex">
                 <ul class="menu menu-horizontal px-1 gap-2 font-semibold text-gray-600 text-sm">
-                    <li><a asp-controller="Home" asp-action="Index" id="nav-home" class="hover:text-blue-600 rounded-lg py-2 px-3 transition-colors" data-vi="Trang Chủ" data-en="Home">Trang Chủ</a></li>
-                    <li><a asp-controller="Home" asp-action="About" id="nav-about" class="hover:text-blue-600 rounded-lg py-2 px-3 transition-colors" data-vi="Giới Thiệu" data-en="About">Giới Thiệu</a></li>
-                    <li><a asp-controller="Home" asp-action="Pricing" id="nav-pricing" class="hover:text-blue-600 rounded-lg py-2 px-3 transition-colors" data-vi="Bảng Giá Xe" data-en="Pricing">Bảng Giá Xe</a></li>
-                    <li><a asp-controller="Home" asp-action="Contact" id="nav-contact" class="hover:text-blue-600 rounded-lg py-2 px-3 transition-colors" data-vi="Liên Hệ" data-en="Contact">Liên Hệ</a></li>
-                    <li><a asp-controller="Home" asp-action="Policy" id="nav-policy" class="hover:text-blue-600 rounded-lg py-2 px-3 transition-colors" data-vi="Chính Sách" data-en="Policy">Chính Sách</a></li>
-                    <li><a href="@Url.Action("FAQ", "Home")" id="nav-faq" class="hover:text-blue-600 rounded-lg py-2 px-3 transition-colors">FAQ</a></li>
+                    <li><a asp-controller="Home" asp-action="Index" id="nav-home" class="nav-client-link hover:text-blue-600 rounded-lg py-2 px-3 transition-colors" data-vi="Trang Chủ" data-en="Home">Trang Chủ</a></li>
+                    <li><a asp-controller="Home" asp-action="About" id="nav-about" class="nav-client-link hover:text-blue-600 rounded-lg py-2 px-3 transition-colors" data-vi="Giới Thiệu" data-en="About">Giới Thiệu</a></li>
+                    <li><a asp-controller="Home" asp-action="Pricing" id="nav-pricing" class="nav-client-link hover:text-blue-600 rounded-lg py-2 px-3 transition-colors" data-vi="Bảng Giá Xe" data-en="Pricing">Bảng Giá Xe</a></li>
+                    <li><a asp-controller="Home" asp-action="Contact" id="nav-contact" class="nav-client-link hover:text-blue-600 rounded-lg py-2 px-3 transition-colors" data-vi="Liên Hệ" data-en="Contact">Liên Hệ</a></li>
+                    <li><a asp-controller="Home" asp-action="Policy" id="nav-policy" class="nav-client-link hover:text-blue-600 rounded-lg py-2 px-3 transition-colors" data-vi="Chính Sách" data-en="Policy">Chính Sách</a></li>
+                    <li><a href="@Url.Action("FAQ", "Home")" id="nav-faq" class="nav-client-link hover:text-blue-600 rounded-lg py-2 px-3 transition-colors" data-vi="FAQ" data-en="FAQ">FAQ</a></li>
                 </ul>
             </div>
 
@@ -62,7 +62,7 @@
 
                 <a asp-controller="Account" asp-action="Login" class="btn btn-sm h-9 min-h-0 text-blue-700 bg-blue-50 hover:bg-blue-600 hover:text-white border border-blue-200 font-bold px-3.5 text-xs sm:text-sm flex items-center gap-1.5 rounded-lg transition-all shadow-sm">
                     <i class="far fa-user-circle text-base"></i>
-                    <span data-vi="Đăng nhập" data-en="Login">Đăng nhập</span> 
+                    <span class="js-translate-text" data-vi="Đăng nhập" data-en="Login">Đăng nhập</span> 
                 </a>
             </div>
 
@@ -70,24 +70,3 @@
     </div>
 </header>
 
-<script>
-    function changeLanguage(lang, text, flagUrl) {
-        if(document.getElementById('current-lang-text')) document.getElementById('current-lang-text').innerText = text;
-        if(document.getElementById('current-lang-flag')) document.getElementById('current-lang-flag').src = flagUrl;
-        localStorage.setItem('selectedLang', lang);
-        document.querySelectorAll('[data-en]').forEach(element => {
-            const translation = element.getAttribute(`data-${lang}`);
-            if (translation) {
-                element.innerHTML = translation;
-            }
-        });
-    }
-    document.addEventListener("DOMContentLoaded", () => {
-        const savedLang = localStorage.getItem('selectedLang') || 'vi';
-        if (savedLang === 'en') {
-            changeLanguage('en', 'English', 'https://flagcdn.com/w20/us.png');
-        } else {
-            changeLanguage('vi', 'Tiếng Việt', 'https://flagcdn.com/w20/vn.png');
-        }
-    });
-</script>

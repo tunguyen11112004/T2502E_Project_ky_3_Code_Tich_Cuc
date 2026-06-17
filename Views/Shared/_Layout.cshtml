@@ -117,3 +117,64 @@
 </script>
 </body>
 </html>
+
+<script>
+    // 1. ENGINE XỬ LÝ ĐỔI NGÔN NGỮ (FIX LỖI LOADING LẠI TRANG)
+    function changeLanguage(lang, text, flagUrl) {
+        // Cập nhật giao diện nút dropdown ngôn ngữ hiện tại
+        if(document.getElementById('current-lang-text')) document.getElementById('current-lang-text').innerText = text;
+        if(document.getElementById('current-lang-flag')) document.getElementById('current-lang-flag').src = flagUrl;
+        
+        // Lưu lựa chọn vào trình duyệt để giữ trạng thái khi đổi trang
+        localStorage.setItem('selectedLang', lang);
+        
+        // Tiến hành dịch các phần tử có thuộc tính đa ngôn ngữ
+        document.querySelectorAll('[data-en]').forEach(element => {
+            const translation = element.getAttribute(`data-${lang}`);
+            if (translation) {
+                // Nếu phần tử chứa text thuần thì dùng textContent để bảo vệ cấu trúc layout và icon con
+                if (element.classList.contains('js-translate-text') || element.tagName === 'SPAN' || element.tagName === 'A') {
+                    // Nếu là thẻ A chứa text thì đổi text của nút nhưng vẫn giữ thuộc tính
+                    element.childNodes.forEach(node => {
+                        if (node.nodeType === Node.TEXT_NODE) {
+                            node.textContent = translation;
+                        }
+                    });
+                    // Dự phòng cho phần tử span cô lập
+                    if(element.classList.contains('js-translate-text')) {
+                        element.textContent = translation;
+                    }
+                } else {
+                    element.innerHTML = translation;
+                }
+            }
+        });
+    }
+
+    // 2. ENGINE TỰ ĐỘNG HIGHLIGHT MENU & KHỞI TẠO ĐA NGÔN NGỮ KHI TẢI TRANG
+    document.addEventListener("DOMContentLoaded", () => {
+        // --- Xử lý đa ngôn ngữ ---
+        const savedLang = localStorage.getItem('selectedLang') || 'vi';
+        if (savedLang === 'en') {
+            changeLanguage('en', 'English', 'https://flagcdn.com/w20/us.png');
+        } else {
+            changeLanguage('vi', 'Tiếng Việt', 'https://flagcdn.com/w20/vn.png');
+        }
+
+        // --- Xử lý Highlight Menu khách hàng ---
+        const currentUrl = window.location.pathname.toLowerCase();
+        const clientLinks = document.querySelectorAll(".nav-client-link");
+
+        clientLinks.forEach(link => {
+            const linkUrl = link.getAttribute("href")?.toLowerCase();
+            if (!linkUrl) return;
+
+            // Kiểm tra xem URL trình duyệt hiện tại có khớp với link menu không
+            if (currentUrl === linkUrl || (linkUrl !== "/" && currentUrl.startsWith(linkUrl))) {
+                link.classList.remove("text-gray-600");
+                // Thêm màu sắc xanh thương hiệu nổi bật cho menu đang đứng
+                link.classList.add("text-blue-600", "bg-blue-50/80", "lg:bg-transparent", "font-bold");
+            }
+        });
+    });
+</script>

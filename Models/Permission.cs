@@ -8,13 +8,21 @@ public class Permission
 {
     [BsonId]
     [BsonRepresentation(BsonType.ObjectId)]
-    public string Id { get; set; }
+    public string? Id { get; set; } // Thêm dấu hỏi (?) để cho phép null khi Tạo mới
 
-    [BsonElement("name")] [Required] public string Name { get; set; }
+    [BsonElement("name")]
+    [Required(ErrorMessage = "Vui lòng nhập tên quyền")]
+    public string Name { get; set; } = null!;
 
-    [BsonElement("description")] public string Description { get; set; }
+    [BsonElement("description")]
+    [Required(ErrorMessage = "Vui lòng nhập mô tả")]
+    public string Description { get; set; } = null!;
 
-    [BsonElement("link")] [Required] public string Link { get; set; }
+    [BsonElement("link")]
+    [Required(ErrorMessage = "Vui lòng nhập đường dẫn")]
+    public string Link { get; set; } = null!;
 
-    [BsonElement("method")] [Required] public string Method { get; set; }
+    [BsonElement("method")]
+    [Required(ErrorMessage = "Vui lòng chọn phương thức")]
+    public string Method { get; set; } = null!;
 }
