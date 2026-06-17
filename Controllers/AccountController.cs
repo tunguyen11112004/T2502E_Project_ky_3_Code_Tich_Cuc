@@ -10,11 +10,11 @@ namespace Bus_ticket.Controllers;
 
 public class AccountController : Controller
 {
-    private readonly MongoUserService _mongoUserService;
+    private readonly UserService _userService;
 
-    public AccountController(MongoUserService mongoUserService)
+    public AccountController(UserService userService)
     {
-        _mongoUserService = mongoUserService;
+        _userService = userService;
     }
 
     [HttpGet]
@@ -31,7 +31,7 @@ public class AccountController : Controller
 
         var email = model.Email.Trim().ToLower();
 
-        var user = await _mongoUserService.GetByEmailAsync(email);
+        var user = await _userService.GetByEmailAsync(email);
 
         if (user == null || user.Status != "Active")
         {
