@@ -23,6 +23,7 @@ namespace Bus_ticket.Data
         public IMongoCollection<Permission> Permissions => _database.GetCollection<Permission>("permissions");
         public IMongoCollection<Customer> Customers => _database.GetCollection<Customer>("customers");
         public IMongoCollection<Bus> Buses => _database.GetCollection<Bus>("buses");
+        public IMongoCollection<BusClass> BusClasses => _database.GetCollection<BusClass>("busclasses");
         public IMongoCollection<BusRoute> BusRoutes => _database.GetCollection<BusRoute>("routes");
         public IMongoCollection<Trip> Trips => _database.GetCollection<Trip>("trips");
         public IMongoCollection<Booking> Bookings => _database.GetCollection<Booking>("bookings");
