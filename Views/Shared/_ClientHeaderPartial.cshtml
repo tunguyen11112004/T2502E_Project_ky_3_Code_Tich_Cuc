@@ -1,70 +1,93 @@
-<header class="py-4">
+<header class="sticky top-0 z-[100] bg-white/95 backdrop-blur-sm border-b border-gray-100 shadow-sm transition-all duration-300 py-3 lg:py-4">
     <div class="mx-auto container px-4">
-        <div class="navbar">
+        <div class="navbar min-h-0 p-0">
             
             <div class="navbar-start">
                 <div class="dropdown">
-                    <div tabindex="0" role="button" class="btn btn-ghost lg:hidden">
+                    <div tabindex="0" role="button" class="btn btn-ghost lg:hidden pl-0">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16" />
                         </svg>
                     </div>
-                    <ul tabindex="0" class="dropdown-content mt-3 z-[50] p-2 shadow-md rounded-box w-52 bg-white menu menu-sm border border-gray-100">
-                        <li><a asp-controller="Home" asp-action="Index" class="mobile-nav-home">Trang Chủ</a></li>
-                        <li><a asp-controller="Home" asp-action="About" class="mobile-nav-about">Giới Thiệu</a></li>
-                        <li><a asp-controller="Home" asp-action="Pricing" class="mobile-nav-pricing">Bảng Giá Xe</a></li>
-                        <li><a asp-controller="Home" asp-action="Contact" class="mobile-nav-contact">Liên Hệ</a></li>
-                        <li><a asp-controller="Home" asp-action="Policy" class="mobile-nav-policy">Chính Sách</a></li>
-                        <li> <a href="@Url.Action("FAQ", "Home")">FAQ</a> </li>
+                    <ul tabindex="0" class="dropdown-content mt-3 z-[100] p-2 shadow-lg rounded-xl w-52 bg-white menu menu-sm border border-gray-100 font-medium">
+                        <li><a asp-controller="Home" asp-action="Index" class="py-2.5" data-vi="Trang Chủ" data-en="Home">Trang Chủ</a></li>
+                        <li><a asp-controller="Home" asp-action="About" class="py-2.5" data-vi="Giới Thiệu" data-en="About">Giới Thiệu</a></li>
+                        <li><a asp-controller="Home" asp-action="Pricing" class="py-2.5" data-vi="Bảng Giá Xe" data-en="Pricing">Bảng Giá Xe</a></li>
+                        <li><a asp-controller="Home" asp-action="Contact" class="py-2.5" data-vi="Liên Hệ" data-en="Contact">Liên Hệ</a></li>
+                        <li><a asp-controller="Home" asp-action="Policy" class="py-2.5" data-vi="Chính Sách" data-en="Policy">Chính Sách</a></li>
+                        <li><a href="@Url.Action("FAQ", "Home")" class="py-2.5">FAQ</a></li>
                     </ul>
                 </div>
-                <a asp-controller="Home" asp-action="Index" class="lg:font-bold text-titleColor text-[18px] font-extrabold lg:text-3xl"> Matha Paribahan </a>
+                <a asp-controller="Home" asp-action="Index" class="lg:font-black text-titleColor text-[20px] font-extrabold lg:text-2xl tracking-tight transition-colors hover:text-blue-700"> 
+                    SRC Travel
+                </a>
             </div>
 
             <div class="navbar-center hidden lg:flex">
-                <ul class="menu menu-horizontal px-1 gap-6 font-medium text-gray-700">
-                    <li><a asp-controller="Home" asp-action="Index" id="nav-home">Trang Chủ</a></li>
-                    <li><a asp-controller="Home" asp-action="About" id="nav-about">Giới Thiệu</a></li>
-                    <li><a asp-controller="Home" asp-action="Pricing" id="nav-pricing">Bảng Giá Xe</a></li>
-                    <li><a asp-controller="Home" asp-action="Contact" id="nav-contact">Liên Hệ</a></li>
-                    <li><a asp-controller="Home" asp-action="Policy" id="nav-policy">Chính Sách</a></li>
-                    <li> <a href="@Url.Action("FAQ", "Home")">FAQ</a> </li>
+                <ul class="menu menu-horizontal px-1 gap-2 font-semibold text-gray-600 text-sm">
+                    <li><a asp-controller="Home" asp-action="Index" id="nav-home" class="hover:text-blue-600 rounded-lg py-2 px-3 transition-colors" data-vi="Trang Chủ" data-en="Home">Trang Chủ</a></li>
+                    <li><a asp-controller="Home" asp-action="About" id="nav-about" class="hover:text-blue-600 rounded-lg py-2 px-3 transition-colors" data-vi="Giới Thiệu" data-en="About">Giới Thiệu</a></li>
+                    <li><a asp-controller="Home" asp-action="Pricing" id="nav-pricing" class="hover:text-blue-600 rounded-lg py-2 px-3 transition-colors" data-vi="Bảng Giá Xe" data-en="Pricing">Bảng Giá Xe</a></li>
+                    <li><a asp-controller="Home" asp-action="Contact" id="nav-contact" class="hover:text-blue-600 rounded-lg py-2 px-3 transition-colors" data-vi="Liên Hệ" data-en="Contact">Liên Hệ</a></li>
+                    <li><a asp-controller="Home" asp-action="Policy" id="nav-policy" class="hover:text-blue-600 rounded-lg py-2 px-3 transition-colors" data-vi="Chính Sách" data-en="Policy">Chính Sách</a></li>
+                    <li><a href="@Url.Action("FAQ", "Home")" id="nav-faq" class="hover:text-blue-600 rounded-lg py-2 px-3 transition-colors">FAQ</a></li>
                 </ul>
             </div>
 
             <div class="navbar-end flex items-center gap-3">
-                
                 <div class="dropdown dropdown-end">
-                    <div tabindex="0" role="button" class="btn btn-ghost btn-sm border border-gray-200 flex items-center gap-2 rounded-lg bg-white" id="current-lang-btn">
-                        <img src="https://flagcdn.com/w20/vn.png" id="current-lang-flag" class="w-5 h-auto rounded-xs" alt="VN Flag">
-                        <span id="current-lang-text" class="text-sm font-medium">Tiếng Việt</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div tabindex="0" role="button" class="btn btn-ghost btn-sm border border-gray-200 flex items-center gap-2 rounded-lg bg-white hover:bg-slate-50 h-9 min-h-0 px-2.5" id="current-lang-btn">
+                        <img src="https://flagcdn.com/w20/vn.png" id="current-lang-flag" class="w-5 h-auto rounded-sm" alt="VN Flag">
+                        <span id="current-lang-text" class="text-xs font-semibold text-gray-700">Tiếng Việt</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                         </svg>
                     </div>
         
-                    <ul tabindex="0" class="dropdown-content z-[50] menu p-2 shadow-md bg-base-100 rounded-box w-40 mt-2 border border-gray-100">
+                    <ul tabindex="0" class="dropdown-content z-[100] menu p-1.5 shadow-xl bg-white rounded-xl w-36 mt-2 border border-gray-100">
                         <li>
-                            <button type="button" onclick="changeLanguage('vi', 'Tiếng Việt', 'https://flagcdn.com/w20/vn.png')" class="flex items-center gap-3 py-2 w-full text-left">
-                                <img src="https://flagcdn.com/w20/vn.png" class="w-5 h-auto rounded-xs" alt="Vietnam">
-                                <span class="text-sm font-medium">Tiếng Việt</span>
+                            <button type="button" onclick="changeLanguage('vi', 'Tiếng Việt', 'https://flagcdn.com/w20/vn.png')" class="flex items-center gap-2.5 py-2 px-2.5 w-full text-left rounded-lg hover:bg-slate-50">
+                                <img src="https://flagcdn.com/w20/vn.png" class="w-5 h-auto rounded-sm" alt="Vietnam">
+                                <span class="text-xs font-semibold text-gray-700">Tiếng Việt</span>
                             </button>
                         </li>
                         <li>
-                            <button type="button" onclick="changeLanguage('en', 'English', 'https://flagcdn.com/w20/us.png')" class="flex items-center gap-3 py-2 w-full text-left">
-                                <img src="https://flagcdn.com/w20/us.png" class="w-5 h-auto rounded-xs" alt="English">
-                                <span class="text-sm font-medium">English</span>
+                            <button type="button" onclick="changeLanguage('en', 'English', 'https://flagcdn.com/w20/us.png')" class="flex items-center gap-2.5 py-2 px-2.5 w-full text-left rounded-lg hover:bg-slate-50">
+                                <img src="https://flagcdn.com/w20/us.png" class="w-5 h-auto rounded-sm" alt="English">
+                                <span class="text-sm font-semibold text-gray-700">English</span>
                             </button>
                         </li>
                     </ul>
                 </div>
 
-                <a href="#" class="btn text-secColor bg-[#e8ffe5] hover:bg-[#21e802f6] hover:border-[#21e802f6] hover:text-priColor border-2 border-ternaryColor font-bold lg:text-xl text-lg flex items-center gap-2">
-                    Bus 
-                    <span><img src="~/client-assets/images/bus-icon.png" alt="Bus Icon"></span> 
+                <a asp-controller="Account" asp-action="Login" class="btn btn-sm h-9 min-h-0 text-blue-700 bg-blue-50 hover:bg-blue-600 hover:text-white border border-blue-200 font-bold px-3.5 text-xs sm:text-sm flex items-center gap-1.5 rounded-lg transition-all shadow-sm">
+                    <i class="far fa-user-circle text-base"></i>
+                    <span data-vi="Đăng nhập" data-en="Login">Đăng nhập</span> 
                 </a>
             </div>
 
         </div>
     </div>
 </header>
+
+<script>
+    function changeLanguage(lang, text, flagUrl) {
+        if(document.getElementById('current-lang-text')) document.getElementById('current-lang-text').innerText = text;
+        if(document.getElementById('current-lang-flag')) document.getElementById('current-lang-flag').src = flagUrl;
+        localStorage.setItem('selectedLang', lang);
+        document.querySelectorAll('[data-en]').forEach(element => {
+            const translation = element.getAttribute(`data-${lang}`);
+            if (translation) {
+                element.innerHTML = translation;
+            }
+        });
+    }
+    document.addEventListener("DOMContentLoaded", () => {
+        const savedLang = localStorage.getItem('selectedLang') || 'vi';
+        if (savedLang === 'en') {
+            changeLanguage('en', 'English', 'https://flagcdn.com/w20/us.png');
+        } else {
+            changeLanguage('vi', 'Tiếng Việt', 'https://flagcdn.com/w20/vn.png');
+        }
+    });
+</script>
