@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans">
+    
     <section class="bg-white border-b border-slate-200 py-6 px-6">
         <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center">
             <h1 class="text-2xl font-bold text-blue-900 tracking-tight">Contact Us</h1>
@@ -18,7 +19,9 @@
             </nav>
         </div>
     </section>
+
     <main class="max-w-7xl mx-auto py-12 px-6 grid grid-cols-1 lg:grid-cols-12 gap-10">
+        
         <section class="lg:col-span-5 space-y-8">
             <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                 <h3 class="text-lg font-bold text-blue-900 mb-4 flex items-center">
@@ -43,6 +46,7 @@
                     </li>
                 </ul>
             </div>
+            
             <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                 <h3 class="text-lg font-bold text-blue-900 mb-4 flex items-center">
                     <i class="fas fa-phone-alt text-green-600 mr-2"></i> Communication Channels
@@ -64,44 +68,56 @@
                 </div>
             </div>
         </section>
+
         <section class="lg:col-span-7 bg-white p-8 rounded-xl border border-slate-200 shadow-sm">
             <h2 class="text-xl font-bold text-slate-900 mb-2">Send Us an Enquiry</h2>
             <p class="text-sm text-slate-500 mb-6">Have questions or feedback? Fill out the form below, and our team will get back to you within 24 hours.</p>
-            <form action="/home/submit-enquiry" method="POST" enctype="multipart/form-data" class="space-y-4">
+            
+            <form id="enquiryForm" 
+                  action="https://docs.google.com/forms/d/e/1FAIpQLSdQvHUWMPCoSvwhvdEuU6n2n3uHEUCOs3OOsl31nYG8JbN5Qg/formResponse" 
+                  method="POST" 
+                  target="hidden_iframe" 
+                  enctype="application/x-www-form-urlencoded" 
+                  class="space-y-4">
+                
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Full Name *</label>
-                        <input type="text" name="fullName" required placeholder="John Doe" 
+                        <input type="text" name="entry.1545679060" required placeholder="John Doe" 
                                class="w-full text-sm px-4 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:border-blue-500 bg-slate-50/50 transition-colors">
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Phone Number *</label>
-                        <input type="tel" name="phone" required placeholder="0934xxxxxx" 
+                        <input type="tel" name="entry.291558798" required placeholder="0934xxxxxx" 
                                class="w-full text-sm px-4 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:border-blue-500 bg-slate-50/50 transition-colors">
                     </div>
                 </div>
+                
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Address</label>
-                        <input type="text" name="address" placeholder="Hanoi, Vietnam" 
+                        <input type="text" name="entry.1914429505" placeholder="Hanoi, Vietnam" 
                                class="w-full text-sm px-4 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:border-blue-500 bg-slate-50/50 transition-colors">
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Email Address</label>
-                        <input type="email" name="email" placeholder="example@domain.com" 
+                        <input type="email" name="entry.594246472" placeholder="example@domain.com" 
                                class="w-full text-sm px-4 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:border-blue-500 bg-slate-50/50 transition-colors">
                     </div>
                 </div>
+                
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Subject *</label>
-                    <input type="text" name="subject" required placeholder="Ticket booking inquiry, Refund issue, etc." 
+                    <input type="text" name="entry.791339830" required placeholder="Ticket booking inquiry, Refund issue, etc." 
                            class="w-full text-sm px-4 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:border-blue-500 bg-slate-50/50 transition-colors">
                 </div>
+                
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Message Content *</label>
-                    <textarea name="message" rows="4" required placeholder="Please write your detailed request here..." 
+                    <textarea name="entry.1727653371" rows="4" required placeholder="Please write your detailed request here..." 
                               class="w-full text-sm px-4 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:border-blue-500 bg-slate-50/50 transition-colors resize-none"></textarea>
                 </div>
+                
                 <div class="flex items-center space-x-3 pt-2">
                     <button type="submit" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm rounded-lg shadow-sm hover:shadow transition-all">
                         <i class="fas fa-paper-plane mr-1.5"></i> Submit Enquiry
@@ -111,8 +127,11 @@
                     </button>
                 </div>
             </form>
+
+            <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;" onload="if(submitted) { alert('Thank you! Your enquiry has been submitted successfully.'); window.location.reload(); }"></iframe>
         </section>
     </main>
+
     <section class="max-w-7xl mx-auto px-6 pb-12">
         <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm h-[400px] overflow-hidden">
             <iframe 
@@ -124,5 +143,12 @@
             </iframe>
         </div>
     </section>
+
+    <script type="text/javascript">
+        var submitted = false;
+        document.getElementById('enquiryForm').addEventListener('submit', function() {
+            submitted = true;
+        });
+    </script>
 </body>
 </html>
