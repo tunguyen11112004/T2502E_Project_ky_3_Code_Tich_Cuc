@@ -1,5 +1,4 @@
 using Bus_ticket.Data;
-using Bus_ticket.Interfaces;
 using Bus_ticket.Middlewares;
 using Bus_ticket.Models;
 using Bus_ticket.Services;
@@ -7,9 +6,6 @@ using Bus_ticket.Settings;
 using Microsoft.AspNetCore.Authentication.Cookies;
 
 var builder = WebApplication.CreateBuilder(args);
-
-//Seeder
-builder.Services.AddScoped<IDbSeeder, DataSeeder>();
 
 // MVC
 builder.Services.AddControllersWithViews();
@@ -74,12 +70,6 @@ using (var scope = app.Services.CreateScope())
             CreatedAt = DateTime.UtcNow
         });
     }
-}
-
-using (var scope = app.Services.CreateScope())
-{
-    var seeder = scope.ServiceProvider.GetRequiredService<IDbSeeder>();
-    await seeder.SeedAllAsync();
 }
 
 // Configure HTTP request pipeline
