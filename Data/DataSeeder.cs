@@ -19,16 +19,13 @@ namespace Bus_ticket.Data
         public async Task SeedAllAsync()
         {
             Console.WriteLine("--> Bắt đầu quá trình seeding dữ liệu...");
-
-            // Gọi tuần tự các hàm seeding, mỗi hàm tự kiểm tra dữ liệu tồn tại
             await SeedPermissions();
             await SeedRoles();
             await SeedUsers();
             await SeedBranches();
-            await SeedBusClasses(); // Thẻ 2
+            await SeedBusClasses();
             await SeedBusesAndRoutes();
             await SeedTrips();
-
             Console.WriteLine("--> Hoàn tất khởi tạo dữ liệu hệ thống!");
         }
 
@@ -50,8 +47,6 @@ namespace Bus_ticket.Data
                 PermissionIds = perms.Select(p => p.Id).ToList() 
             });
         }
-
-        // Thẻ 1: Seeding tài khoản hệ thống (Admin & Employee)
         private async Task SeedUsers()
         {
             if (await _context.Users.CountDocumentsAsync(_ => true) > 0) return;
@@ -78,8 +73,6 @@ namespace Bus_ticket.Data
             };
             await _context.Branches.InsertManyAsync(branches);
         }
-
-        // Thẻ 2: Phân lớp xe và giá sàn
         private async Task SeedBusClasses()
         {
             if (await _context.BusClasses.CountDocumentsAsync(_ => true) > 0) return;

@@ -76,6 +76,12 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+using (var scope = app.Services.CreateScope())
+{
+    var seeder = scope.ServiceProvider.GetRequiredService<IDbSeeder>();
+    await seeder.SeedAllAsync();
+}
+
 // Configure HTTP request pipeline
 if (!app.Environment.IsDevelopment())
 {
