@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="@System.Threading.Thread.CurrentThread.CurrentCulture.TwoLetterISOLanguageName">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -12,27 +12,27 @@
     <link href="https://cdn.jsdelivr.net/npm/daisyui@4.7.2/dist/full.min.css" rel="stylesheet" type="text/css" />
     <script src="https://cdn.tailwindcss.com"></script>
 
-    <link rel="stylesheet" href="~/client-assets/css/style.css" /> 
+    <link rel="stylesheet" href="~/client-assets/css/style.css" />
 
     <script>
-    tailwind.config = {
-        theme: {
-            extend: {
-                // Kích hoạt font Raleway làm font chữ chủ đạo (font-sans) cho toàn trang
-                fontFamily: {
-                    sans: ['Raleway', 'sans-serif'],
-                },
-                colors: {
-                    clifford: '#da373d',
-                    priColor: '#fff',
-                    titleColor: '#030712',
-                    secColor: '#21e802',
-                    ternaryColor: '#1DD100',
+        tailwind.config = {
+            theme: {
+                extend: {
+                    // Kích hoạt font Raleway làm font chữ chủ đạo (font-sans) cho toàn trang
+                    fontFamily: {
+                        sans: ['Raleway', 'sans-serif'],
+                    },
+                    colors: {
+                        clifford: '#da373d',
+                        priColor: '#fff',
+                        titleColor: '#030712',
+                        secColor: '#21e802',
+                        ternaryColor: '#1DD100',
+                    }
                 }
             }
         }
-    }
-</script>
+    </script>
 </head>
 <body class="dark bg-gray-50 dark:bg-gray-900">
 
@@ -46,14 +46,26 @@
 
 <script src="~/client-assets/js/utility.js"></script>
 @await RenderSectionAsync("Scripts", required: false)
-</body>
-</html>
 
 <script>
+    // --- 1. HÀM DỊCH NỘI DUNG TRANG CHỦ (QUÉT DATA-VI / DATA-EN) ---
+    function applyBodyLanguage(lang) {
+        const elements = document.querySelectorAll('[data-vi], [data-en]');
+        elements.forEach(el => {
+            const text = lang === 'en' ? el.getAttribute('data-en') : el.getAttribute('data-vi');
+            if (text) {
+                el.innerHTML = text;
+            }
+        });
+    }
+
+    // --- 2. HÀM DỊCH THANH MENU + ĐƯỢC GỌI KHI BẤM NÚT ĐỔI NGÔN NGỮ ---
     function changeLanguage(langCode, langName, flagUrl) {
         // Thay đổi icon cờ và text hiển thị trên nút chính
-        document.getElementById('current-lang-flag').src = flagUrl;
-        document.getElementById('current-lang-text').innerText = langName;
+        const flagImg = document.getElementById('current-lang-flag');
+        const langText = document.getElementById('current-lang-text');
+        if(flagImg) flagImg.src = flagUrl;
+        if(langText) langText.innerText = langName;
 
         const translations = {
             vi: {
@@ -73,22 +85,26 @@
         };
 
         const menu = translations[langCode];
-        
-        // Dịch cho Desktop menu
-        if(document.getElementById('nav-home')) document.getElementById('nav-home').innerText = menu.home;
-        if(document.getElementById('nav-about')) document.getElementById('nav-about').innerText = menu.about;
-        if(document.getElementById('nav-pricing')) document.getElementById('nav-pricing').innerText = menu.pricing;
-        if(document.getElementById('nav-contact')) document.getElementById('nav-contact').innerText = menu.contact;
-        if(document.getElementById('nav-policy')) document.getElementById('nav-policy').innerText = menu.policy;
+        if (menu) {
+            // Dịch cho Desktop menu
+            if(document.getElementById('nav-home')) document.getElementById('nav-home').innerText = menu.home;
+            if(document.getElementById('nav-about')) document.getElementById('nav-about').innerText = menu.about;
+            if(document.getElementById('nav-pricing')) document.getElementById('nav-pricing').innerText = menu.pricing;
+            if(document.getElementById('nav-contact')) document.getElementById('nav-contact').innerText = menu.contact;
+            if(document.getElementById('nav-policy')) document.getElementById('nav-policy').innerText = menu.policy;
 
-        // Dịch đồng thời cho cả Mobile menu thông qua ClassName
-        updateTextByClass('mobile-nav-home', menu.home);
-        updateTextByClass('mobile-nav-about', menu.about);
-        updateTextByClass('mobile-nav-pricing', menu.pricing);
-        updateTextByClass('mobile-nav-contact', menu.contact);
-        updateTextByClass('mobile-nav-policy', menu.policy);
+            // Dịch đồng thời cho cả Mobile menu thông qua ClassName
+            updateTextByClass('mobile-nav-home', menu.home);
+            updateTextByClass('mobile-nav-about', menu.about);
+            updateTextByClass('mobile-nav-pricing', menu.pricing);
+            updateTextByClass('mobile-nav-contact', menu.contact);
+            updateTextByClass('mobile-nav-policy', menu.policy);
+        }
 
-        // Mẹo đóng dropdown tự động sau khi chọn xong
+        // KÍCH HOẠT DỊCH LUÔN NỘI DUNG TRANG CHỦ KHI USER BẤM ĐỔI
+        applyBodyLanguage(langCode);
+
+        // Tự động đóng dropdown sau khi chọn xong
         const activeElement = document.activeElement;
         if (activeElement) {
             activeElement.blur();
@@ -102,4 +118,25 @@
             elements[i].innerText = text;
         }
     }
+
+    // --- 3. TỰ ĐỘNG CHẠY KHI TẢI TRANG XONG ---
+    document.addEventListener("DOMContentLoaded", function () {
+        // Lấy ngôn ngữ động từ thuộc tính lang của thẻ html (sinh ra từ .NET ở Bước 1)
+        let currentLang = document.documentElement.lang || 'vi';
+
+        // Kiểm tra thêm cookie .AspNetCore.Culture để đảm bảo chính xác tuyệt đối
+        const cultureCookie = document.cookie.split('; ').find(row => row.startsWith('.AspNetCore.Culture='));
+        if (cultureCookie) {
+            if (cultureCookie.includes('c=en') || cultureCookie.includes('uic=en')) {
+                currentLang = 'en';
+            } else if (cultureCookie.includes('c=vi') || cultureCookie.includes('uic=vi')) {
+                currentLang = 'vi';
+            }
+        }
+
+        // Thực thi quét và dịch nội dung trang chủ đúng theo ngôn ngữ hiện tại
+        applyBodyLanguage(currentLang);
+    });
 </script>
+</body>
+</html>
