@@ -72,14 +72,9 @@
 
 <script>
     function changeLanguage(lang, text, flagUrl) {
-        // 1. Cập nhật giao diện nút bấm hiển thị ở Header
         if(document.getElementById('current-lang-text')) document.getElementById('current-lang-text').innerText = text;
         if(document.getElementById('current-lang-flag')) document.getElementById('current-lang-flag').src = flagUrl;
-        
-        // 2. Lưu trạng thái lựa chọn vào trình duyệt
         localStorage.setItem('selectedLang', lang);
-
-        // 3. Thực hiện quét và thay đổi nội dung dịch tương ứng
         document.querySelectorAll('[data-en]').forEach(element => {
             const translation = element.getAttribute(`data-${lang}`);
             if (translation) {
@@ -87,8 +82,6 @@
             }
         });
     }
-
-    // Tự động kiểm tra và áp dụng ngôn ngữ khi F5 hoặc chuyển trang
     document.addEventListener("DOMContentLoaded", () => {
         const savedLang = localStorage.getItem('selectedLang') || 'vi';
         if (savedLang === 'en') {
