@@ -1,118 +1,296 @@
-﻿@* /// <summary>
-    /// Trang chủ Dashboard điều hướng nội bộ dành cho SRC Travel Agencies.
-    /// Giữ nguyên cấu trúc giao diện mẫu nhưng tối ưu hóa theo nghiệp vụ quản lý.
-    /// </summary>
-*@
-
-@{
-    Layout = "_Layout";
-    ViewData["Title"] = "Dashboard Điều Hành - SRC Travel Agencies";
-
-    // Quy tắc 3 & 4.1: Đặt tên biến bool có tiền tố rõ ràng, mỗi câu lệnh trên một dòng riêng biệt.
-    bool isAdmin = true;
-    bool isStaff = true;
-}
-
-<main class="pb-10">
-    <section>
-        <div class="mx-auto container px-4">
-            <div class="hero min-h-[40vh] lg:min-h-[50vh] rounded-[20px]" style="background-image: url('./client-assets/images/banner.png'); background-position: center; background-size: cover;">
-                <div class="hero-overlay rounded-[20px] bg-opacity-60"></div>
-                <div class="hero-content text-center text-neutral-content p-4">
-                    <div class="w-full lg:w-3/5 mx-auto">
-                        <h1 class="mb-5 text-3xl lg:text-5xl font-bold text-white">SRC Travel Agencies <br> <span class="text-2xl lg:text-3xl font-light">Hệ Thống Điều Hành Nội Bộ</span> </h1>
-                        <p class="mb-5 text-priColor">Chào mừng nhân viên trở lại hệ thống quản lý. Vui lòng sử dụng các lối tắt bên dưới để xử lý nghiệp vụ bán vé và quản lý đội xe nhanh chóng.</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="myCard lg:flex justify-evenly lg:mt-[-56px] relative z-10 p-4 lg:p-0 gap-4">
-                <div class="card card-side shadow-xl border-b-4 border-secColor px-7 bg-white w-full lg:w-[48%] py-4">
-                    <figure><img src="~/client-assets/images/stoppage.png" alt="Buses" class="w-16 h-16"/></figure>
-                    <div class="card-body p-4 justify-center">
-                        <h2 class="card-title font-bold lg:text-4xl text-3xl text-slate-800">42 Xe</h2>
-                        <p class="text-sm text-gray-500 m-0">Tổng số xe hiện có (Mã định danh 5 số: e.g. 29001)</p>
-                    </div>
-                </div>
-                
-                <div class="card card-side shadow-xl border-b-4 border-secColor px-7 bg-white w-full lg:w-[48%] py-4">
-                    <figure><img src="~/client-assets/images/people.png" alt="Employees" class="w-16 h-16"/></figure>
-                    <div class="card-body p-4 justify-center">
-                        <h2 class="card-title font-bold lg:text-4xl text-3xl text-slate-800">150 Nhân Viên</h2>
-                        <p class="text-sm text-gray-500 m-0">Đang vận hành hệ thống (Mã nhân viên 6 số: e.g. 100204)</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section class="mt-12">
-        <div class="mx-auto container px-4">
+﻿<section class="relative bg-slate-900 overflow-hidden">
+    <img src="https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=1600" 
+         alt="SRC Limousine Banner" 
+         class="w-full h-[350px] sm:h-[450px] lg:h-[520px] object-cover opacity-60 -scale-x-100">    
+    
+    <div class="absolute inset-0 flex items-center">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full text-white space-y-4">
+            <span class="bg-orange-500 text-xs font-bold px-3 py-1.5 rounded-full tracking-wider uppercase"
+                  data-vi="Chương Trình Đặc Biệt"
+                  data-en="Special Program">Chương Trình Đặc Biệt</span>
             
-            @if (isStaff)
-            {
-                <div class="mb-8">
-                    <h2 class="text-2xl font-bold mb-6 text-white border-b border-gray-700 pb-2">🎯 Nghiệp Vụ Quầy Vé & Tra Cứu</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        
-                        <a href="@Url.Action("Enquiry", "Booking")" class="flex items-center justify-between bg-white rounded-xl p-5 shadow-lg border-2 border-transparent hover:border-secColor transition-all group">
-                            <div class="flex items-center gap-4">
-                                <span class="text-4xl">🔍</span>
-                                <div>
-                                    <h3 class="text-xl font-bold text-slate-800 group-hover:text-secColor transition-colors">Tra Cứu Chuyến Đi</h3>
-                                    <p class="text-gray-500 text-sm mt-1">Enquiry Form - Kiểm tra lịch trình, giá vé và số ghế trống.</p>
-                                </div>
-                            </div>
-                            <span class="text-2xl text-gray-400 group-hover:translate-x-2 transition-transform">→</span>
-                        </a>
-
-                        <a href="@Url.Action("Create", "Booking")" class="flex items-center justify-between bg-white rounded-xl p-5 shadow-lg border-2 border-transparent hover:border-secColor transition-all group">
-                            <div class="flex items-center gap-4">
-                                <span class="text-4xl">🎟️</span>
-                                <div>
-                                    <h3 class="text-xl font-bold text-slate-800 group-hover:text-secColor transition-colors">Đặt Vé Xe Khách</h3>
-                                    <p class="text-gray-500 text-sm mt-1">Booking Form - Giữ chỗ và xuất vé trực tiếp cho khách hàng.</p>
-                                </div>
-                            </div>
-                            <span class="text-2xl text-gray-400 group-hover:translate-x-2 transition-transform">→</span>
-                        </a>
-
-                    </div>
-                </div>
-            }
-
-            @if (isAdmin)
-            {
-                <div class="mt-10">
-                    <h2 class="text-2xl font-bold mb-6 text-red-400 border-b border-gray-700 pb-2">🔒 Quản Trị Hệ Thống (Admin Only)</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        
-                        <a href="@Url.Action("Index", "Buses")" class="flex items-center justify-between bg-slate-800 rounded-xl p-5 shadow-lg border-2 border-transparent hover:border-red-400 transition-all group">
-                            <div class="flex items-center gap-4">
-                                <span class="text-4xl">🚌</span>
-                                <div>
-                                    <h3 class="text-xl font-bold text-white group-hover:text-red-400 transition-colors">Quản Lý Đội Xe</h3>
-                                    <p class="text-gray-400 text-sm mt-1">Buses Management - Cập nhật trạng thái xe và quản lý đầu xe.</p>
-                                </div>
-                            </div>
-                            <span class="text-2xl text-gray-400 group-hover:translate-x-2 transition-transform">→</span>
-                        </a>
-
-                        <a href="@Url.Action("Index", "Employees")" class="flex items-center justify-between bg-slate-800 rounded-xl p-5 shadow-lg border-2 border-transparent hover:border-red-400 transition-all group">
-                            <div class="flex items-center gap-4">
-                                <span class="text-4xl">👔</span>
-                                <div>
-                                    <h3 class="text-xl font-bold text-white group-hover:text-red-400 transition-colors">Quản Lý Nhân Viên</h3>
-                                    <p class="text-gray-400 text-sm mt-1">Employees Management - Quản lý hồ sơ tài xế và phân quyền nhân viên.</p>
-                                </div>
-                            </div>
-                            <span class="text-2xl text-gray-400 group-hover:translate-x-2 transition-transform">→</span>
-                        </a>
-
-                    </div>
-                </div>
-            }
-
+            <h2 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-tight max-w-2xl text-orange-400 drop-shadow"
+                data-vi="XE XUYÊN VIỆT: <br>CÀNG ĐI CÀNG TUYỆT"
+                data-en="CROSS-COUNTRY BUS: <br>THE MORE YOU GO, THE BETTER">XE XUYÊN VIỆT: <br>CÀNG ĐI CÀNG TUYỆT</h2>
+            
+            <p class="text-sm sm:text-base max-w-xl text-slate-200 leading-relaxed"
+               data-vi="Giảm ngay <span class='text-orange-400 font-bold'>10% giá vé</span> khi đặt dịch vụ di chuyển qua hệ thống SRC Vietnam Limousine hành trình đi xuyên Việt."
+               data-en="Get <span class='text-orange-400 font-bold'>10% off ticket price</span> when booking travel services through SRC Vietnam Limousine system for cross-country journeys.">Giảm ngay <span class="text-orange-400 font-bold">10% giá vé</span> khi đặt dịch vụ di chuyển qua hệ thống SRC Vietnam Limousine hành trình đi xuyên Việt.</p>
+            
+            <div class="pt-2 flex flex-wrap gap-3">
+                <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg px-4 py-2 text-xs sm:text-sm"
+                     data-vi="Người lớn: <span class='text-orange-400 font-bold'>755.000đ</span>"
+                     data-en="Adult: <span class='text-orange-400 font-bold'>755.000đ</span>">Người lớn: <span class="text-orange-400 font-bold">755.000đ</span></div>
+                <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg px-4 py-2 text-xs sm:text-sm"
+                     data-vi="Trẻ em: <span class='text-orange-400 font-bold'>555.000đ</span>"
+                     data-en="Children: <span class='text-orange-400 font-bold'>555.000đ</span>">Trẻ em: <span class="text-orange-400 font-bold">555.000đ</span></div>
+            </div>
+            
+            <div class="pt-4">
+                <a asp-controller="Home" asp-action="Contact" class="btn bg-[#f15a24] hover:bg-[#d43f0b] text-white font-bold border-none uppercase px-6 py-3 rounded-lg inline-flex items-center gap-2 shadow-lg transition-all transform hover:scale-105">
+                    <i class="fas fa-bus text-base"></i>
+                    <span data-vi="ĐẶT VÉ NGAY" data-en="BOOK TICKETS NOW">ĐẶT VÉ NGAY</span>
+                </a>
+            </div>
         </div>
-    </section>
-</main>
+    </div>
+</section>
+
+<section id="about" class="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center max-w-3xl mx-auto mb-12">
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-blue-900 tracking-tight uppercase"
+            data-vi="Giới thiệu về SRC Việt Nam" 
+            data-en="Introduction about SRC Vietnam">Giới thiệu về SRC Việt Nam</h2>
+        <div class="h-1 w-20 bg-orange-500 mx-auto mt-3 rounded"></div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+        <div class="lg:col-span-5 space-y-6">
+            <p class="text-base text-slate-600 leading-relaxed font-medium"
+               data-vi="<span class='text-blue-700 font-bold'>SRC Việt Nam</span> – Hệ sinh thái vận tải đa năng phục vụ <span class='text-slate-900 font-bold'>khách hàng trên toàn quốc</span>. Chúng tôi tự hào sở hữu:"
+               data-en="<span class='text-blue-700 font-bold'>SRC Vietnam</span> – A multi-functional transportation ecosystem serving <span class='text-slate-900 font-bold'>customers nationwide</span>. We are proud to own:"><span class="text-blue-700 font-bold">SRC Việt Nam</span> – Hệ sinh thái vận tải đa năng phục vụ <span class="text-slate-900 font-bold">khách hàng trên toàn quốc</span>. Chúng tôi tự hào sở hữu:</p>
+            
+            <ul class="space-y-4">
+                <li class="flex items-start space-x-3">
+                    <div class="bg-blue-100 text-blue-700 p-2 rounded-lg mt-0.5"><i class="fas fa-bus text-sm"></i></div>
+                    <div>
+                        <h4 class="font-bold text-slate-900 text-sm sm:text-base" data-vi="Vận tải hành khách:" data-en="Passenger Transport:">Vận tải hành khách:</h4>
+                        <p class="text-xs sm:text-sm text-slate-600" data-vi="Dòng xe Limousine hiện đại, tiện nghi chuẩn mực đẳng cấp." data-en="Modern Limousine fleet, elite standards of comfort and amenities.">Dòng xe Limousine hiện đại, tiện nghi chuẩn mực đẳng cấp.</p>
+                    </div>
+                </li>
+                <li class="flex items-start space-x-3">
+                    <div class="bg-green-100 text-green-700 p-2 rounded-lg mt-0.5"><i class="fas fa-truck text-sm"></i></div>
+                    <div>
+                        <h4 class="font-bold text-slate-900 text-sm sm:text-base" data-vi="Logistics chuyên dụng:" data-en="Specialized Logistics:">Logistics chuyên dụng:</h4>
+                        <p class="text-xs sm:text-sm text-slate-600" data-vi="Đội xe tải vận chuyển linh hoạt, an toàn xuyên suốt 63 tỉnh thành." data-en="Flexible and safe truck cargo delivery operating seamlessly across 63 provinces.">Đội xe tải vận chuyển linh hoạt, an toàn xuyên suốt 63 tỉnh thành.</p>
+                    </div>
+                </li>
+                <li class="flex items-start space-x-3">
+                    <div class="bg-orange-100 text-orange-700 p-2 rounded-lg mt-0.5"><i class="fas fa-tools text-sm"></i></div>
+                    <div>
+                        <h4 class="font-bold text-slate-900 text-sm sm:text-base" data-vi="Hậu cần kỹ thuật:" data-en="Technical Logistics & Support:">Hậu cần kỹ thuật:</h4>
+                        <p class="text-xs sm:text-sm text-slate-600" data-vi="Hệ thống Xưởng dịch vụ quy mô lớn, đảm bảo vận hành tối ưu cho mọi hành trình." data-en="Large-scale Service Workshop system, ensuring optimal operation for every journey.">Hệ thống Xưởng dịch vụ quy mô lớn, đảm bảo vận hành tối ưu cho mọi hành trình.</p>
+                    </div>
+                </li>
+            </ul>
+            <div class="pt-2">
+                <a asp-controller="Home" asp-action="About" class="px-5 py-2.5 bg-blue-700 hover:bg-blue-800 text-white rounded-lg text-sm font-semibold shadow transition-all inline-flex items-center space-x-2">
+                    <span data-vi="XEM CHI TIẾT" data-en="VIEW DETAILS">XEM CHI TIẾT</span> 
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                </a>
+            </div>
+        </div>
+        <div class="lg:col-span-7 grid grid-cols-12 gap-4">
+            <div class="col-span-8">
+                <img src="https://cdnphoto.dantri.com.vn/xiqGaee2WGW_REldb9-HW9KSXTU=/2025/08/05/soi-chi-tiet-vinfast-limo-green-ban-thuong-mai-anh9jpg-1754369586810.jpg" class="w-full h-64 object-cover rounded-xl shadow-md border border-slate-200" alt="Fleet 1">
+            </div>
+            <div class="col-span-4 space-y-4">
+                <img src="https://vielimousine.com/wp-content/uploads/2021/12/DSC6090.jpg" class="w-full h-[120px] object-cover rounded-xl shadow-sm border border-slate-200" alt="Fleet 2">
+                <img src="https://xetaibaoloc.com/images/stories/virtuemart/product/mercedes-benz-mb120s-47-ghe.jpg" class="w-full h-[120px] object-cover rounded-xl shadow-sm border border-slate-200" alt="Fleet 3">
+            </div>
+        </div>
+    </div>
+</section>
+
+<section id="routes" class="bg-slate-100/60 py-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center max-w-3xl mx-auto mb-12">
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-blue-900 tracking-tight uppercase"
+                data-vi="Lộ trình xe phổ biến có tại nhà xe" 
+                data-en="Popular Routes Available">Lộ trình xe phổ biến có tại nhà xe</h2>
+            <div class="h-1 w-20 bg-orange-500 mx-auto mt-3 rounded"></div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="bg-white rounded-xl overflow-hidden shadow-sm border border-slate-200 hover:shadow-md transition-shadow group">
+                <div class="h-48 overflow-hidden relative">
+                    <img src="https://quynhontourist.vn/wp-content/uploads/2017/04/thanh-pho-quy-nhon-tuyet-dep.jpg" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" alt="Đà Nẵng - Quy Nhơn">
+                    <span class="absolute top-3 left-3 bg-blue-700 text-white font-bold text-xs px-2.5 py-1 rounded">Luxury</span>
+                </div>
+                <div class="p-5 text-center space-y-3">
+                    <h4 class="font-bold text-blue-900 text-base sm:text-lg" 
+                        data-vi="TP. Đà Nẵng <span class='text-orange-500'>↔</span> TP. Quy Nhơn" 
+                        data-en="Da Nang City <span class='text-orange-500'>↔</span> Quy Nhon City">TP. Đà Nẵng <span class="text-orange-500">↔</span> TP. Quy Nhơn</h4>
+                    <div class="text-red-600 font-extrabold text-sm sm:text-base bg-red-50 py-1.5 rounded-lg border border-red-100" 
+                         data-vi="CHỈ TỪ 180K" data-en="FROM ONLY 180K">CHỈ TỪ 180K</div>
+                    <div class="grid grid-cols-3 gap-2 pt-2">
+                        <a asp-controller="Home" asp-action="Pricing" class="py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded transition-colors inline-flex items-center justify-center" data-vi="CHI TIẾT" data-en="DETAILS">CHI TIẾT</a>
+                        <a asp-controller="Home" asp-action="Contact" class="py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded transition-colors inline-flex items-center justify-center" data-vi="ĐẶT XE" data-en="BOOK">ĐẶT XE</a>
+                        <a href="https://www.facebook.com/ntd.606" target="_blank" class="py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded transition-colors inline-flex items-center justify-center"><i class="fab fa-facebook-f mr-1"></i> <span data-vi="HỖ TRỢ" data-en="HELP">HỖ TRỢ</span></a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl overflow-hidden shadow-sm border border-slate-200 hover:shadow-md transition-shadow group">
+                <div class="h-48 overflow-hidden relative">
+                    <img src="https://ik.imagekit.io/tvlk/blog/2022/09/dia-diem-check-in-da-nang-cover.jpeg" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" alt="Hà Nội - Đà Nẵng">
+                    <span class="absolute top-3 left-3 bg-blue-700 text-white font-bold text-xs px-2.5 py-1 rounded">Volvo</span>
+                </div>
+                <div class="p-5 text-center space-y-3">
+                    <h4 class="font-bold text-blue-900 text-base sm:text-lg" 
+                        data-vi="TP. HÀ NỘI <span class='text-orange-500'>↔</span> TP. ĐÀ NẴNG" 
+                        data-en="HANOI CITY <span class='text-orange-500'>↔</span> DA NANG CITY">TP. HÀ NỘI <span class="text-orange-500">↔</span> TP. ĐÀ NẴNG</h4>
+                    <div class="text-red-600 font-extrabold text-sm sm:text-base bg-red-50 py-1.5 rounded-lg border border-red-100" 
+                         data-vi="CHỈ TỪ 240K" data-en="FROM ONLY 240K">CHỈ TỪ 240K</div>
+                    <div class="grid grid-cols-3 gap-2 pt-2">
+                        <a asp-controller="Home" asp-action="Pricing" class="py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded transition-colors inline-flex items-center justify-center" data-vi="CHI TIẾT" data-en="DETAILS">CHI TIẾT</a>
+                        <a asp-controller="Home" asp-action="Contact" class="py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded transition-colors inline-flex items-center justify-center" data-vi="ĐẶT XE" data-en="BOOK">ĐẶT XE</a>
+                        <a href="https://www.facebook.com/ntd.606" target="_blank" class="py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded transition-colors inline-flex items-center justify-center"><i class="fab fa-facebook-f mr-1"></i> <span data-vi="HỖ TRỢ" data-en="HELP">HỖ TRỢ</span></a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl overflow-hidden shadow-sm border border-slate-200 hover:shadow-md transition-shadow group">
+                <div class="h-48 overflow-hidden relative">
+                    <img src="https://ktmt.vnmediacdn.com/images/2022/04/29/33-1651216407-hinh-anh-sai-gon-cho-ben-thanh.jpg" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" alt="Quy Nhơn - TP.HCM">
+                    <span class="absolute top-3 left-3 bg-blue-700 text-white font-bold text-xs px-2.5 py-1 rounded">Express</span>
+                </div>
+                <div class="p-5 text-center space-y-3">
+                    <h4 class="font-bold text-blue-900 text-base sm:text-lg" 
+                        data-vi="TP. QUY NHƠN <span class='text-orange-500'>↔</span> TP. Hồ Chí Minh" 
+                        data-en="QUY NHON CITY <span class='text-orange-500'>↔</span> HO CHI MINH CITY">TP. QUY NHƠN <span class="text-orange-500">↔</span> TP. Hồ Chí Minh</h4>
+                    <div class="text-red-600 font-extrabold text-sm sm:text-base bg-red-50 py-1.5 rounded-lg border border-red-100" 
+                         data-vi="CHỈ TỪ 120K" data-en="FROM ONLY 120K">CHỈ TỪ 120K</div>
+                    <div class="grid grid-cols-3 gap-2 pt-2">
+                        <a asp-controller="Home" asp-action="Pricing" class="py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded transition-colors inline-flex items-center justify-center" data-vi="CHI TIẾT" data-en="DETAILS">CHI TIẾT</a>
+                        <a asp-controller="Home" asp-action="Contact" class="py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded transition-colors inline-flex items-center justify-center" data-vi="ĐẶT XE" data-en="BOOK">ĐẶT XE</a>
+                        <a href="https://www.facebook.com/ntd.606" target="_blank" class="py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded transition-colors inline-flex items-center justify-center"><i class="fab fa-facebook-f mr-1"></i> <span data-vi="HỖ TRỢ" data-en="HELP">HỖ TRỢ</span></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section id="features" class="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center max-w-3xl mx-auto mb-12">
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-blue-900 tracking-tight uppercase"
+            data-vi="Vì sao nên chọn SRC Việt Nam" 
+            data-en="Why Choose SRC Vietnam">Vì sao nên chọn SRC Việt Nam</h2>
+        <div class="h-1 w-20 bg-orange-500 mx-auto mt-3 rounded"></div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+        <div class="lg:col-span-4 space-y-5">
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-start space-x-4">
+                <div class="text-blue-600 text-2xl mt-1"><i class="fas fa-medal"></i></div>
+                <div>
+                    <h4 class="font-bold text-slate-900 text-sm sm:text-base" data-vi="THƯƠNG HIỆU UY TÍN" data-en="TRUSTED BRAND">THƯƠNG HIỆU UY TÍN</h4>
+                    <p class="text-xs sm:text-sm text-slate-500 mt-1" data-vi="SRC Việt Nam được sự tin trọn từ đông đảo khách hàng toàn quốc." data-en="SRC Vietnam is fully trusted by customers nationwide.">SRC Việt Nam được sự tin trọn từ đông đảo khách hàng toàn quốc.</p>
+                </div>
+            </div>
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-start space-x-4">
+                <div class="text-blue-600 text-2xl mt-1"><i class="fas fa-route"></i></div>
+                <div>
+                    <h4 class="font-bold text-slate-900 text-sm sm:text-base" data-vi="ĐÓN TRẢ TẬN NƠI" data-en="DOOR-TO-DOOR PICKUP">ĐÓN TRẢ TẬN NƠI</h4>
+                    <p class="text-xs sm:text-sm text-slate-500 mt-1" data-vi="Đưa đón tận nhà nhanh chóng, đúng giờ và tiết kiệm thời gian." data-en="Quick, punctual home pickup and drop-off that saves your time.">Đưa đón tận nhà nhanh chóng, đúng giờ và tiết kiệm thời gian.</p>
+                </div>
+            </div>
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-start space-x-4">
+                <div class="text-blue-600 text-2xl mt-1"><i class="fas fa-wallet"></i></div>
+                <div>
+                    <h4 class="font-bold text-slate-900 text-sm sm:text-base" data-vi="THANH TOÁN TIỆN LỢI" data-en="EASY PAYMENT">THANH TOÁN TIỆN LỢI</h4>
+                    <p class="text-xs sm:text-sm text-slate-500 mt-1" data-vi="Đa dạng hình thức thanh toán, đảm bảo an toàn tiện lợi." data-en="Diverse payment methods, ensuring high security and convenience.">Đa dạng hình thức thanh toán, đảm bảo an toàn tiện lợi.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="lg:col-span-4">
+            <img src="https://images.unsplash.com/photo-1557425955-df376b5903c8?auto=format&fit=crop&q=80&w=400" class="w-full h-80 object-cover rounded-2xl border-4 border-white shadow-xl" alt="SRC Office">
+        </div>
+
+        <div class="lg:col-span-4 space-y-5">
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-start space-x-4">
+                <div class="text-blue-600 text-2xl mt-1"><i class="fas fa-star"></i></div>
+                <div>
+                    <h4 class="font-bold text-slate-900 text-sm sm:text-base" data-vi="ĐẶT XE DỄ DÀNG" data-en="EFFORTLESS BOOKING">ĐẶT XE DỄ DÀNG</h4>
+                    <p class="text-xs sm:text-sm text-slate-500 mt-1" data-vi="Đặt xe linh hoạt qua hệ thống tổng đài, mạng xã hội 24/7." data-en="Flexible booking via hotlines and social network channels 24/7.">Đặt xe linh hoạt qua hệ thống tổng đài, mạng xã hội 24/7.</p>
+                </div>
+            </div>
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-start space-x-4">
+                <div class="text-blue-600 text-2xl mt-1"><i class="fas fa-wifi"></i></div>
+                <div>
+                    <h4 class="font-bold text-slate-900 text-sm sm:text-base" data-vi="TIỆN NGHI HIỆN ĐẠI" data-en="MODERN AMENITIES">TIỆN NGHI HIỆN ĐẠI</h4>
+                    <p class="text-xs sm:text-sm text-slate-500 mt-1" data-vi="Hệ thống xe trang bị wifi tốc độ cao, khăn lạnh, nước uống free." data-en="Vehicles equipped with high-speed Wi-Fi, cold towels, and free water.">Hệ thống xe trang bị wifi tốc độ cao, khăn lạnh, nước uống free.</p>
+                </div>
+            </div>
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-start space-x-4">
+                <div class="text-blue-600 text-2xl mt-1"><i class="fas fa-bus-alt"></i></div>
+                <div>
+                    <h4 class="font-bold text-slate-900 text-sm sm:text-base" data-vi="SỐ LƯỢNG XE LỚN" data-en="LARGE VEHICLE FLEET">SỐ LƯỢNG XE LỚN</h4>
+                    <p class="text-xs sm:text-sm text-slate-500 mt-1" data-vi="Dàn phương tiện dịch vụ chạy liên tục phục vụ tần suất dày đặc." data-en="A massive service fleet running continuously with dense daily departures.">Dàn phương tiện dịch vụ chạy liên tục phục vụ tần suất dày đặc.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section id="news" class="bg-slate-100/60 py-16 border-t border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-10">
+        
+        <div class="lg:col-span-5 space-y-6">
+            <div class="flex justify-between items-center border-b border-slate-300 pb-3">
+                <h3 class="text-lg font-extrabold text-blue-900 uppercase tracking-tight">
+                    <i class="far fa-newspaper mr-1.5"></i> <span data-vi="Tin tức nhà xe" data-en="Company News">Tin tức nhà xe</span>
+                </h3>
+                <a href="#" class="text-xs font-semibold text-blue-600 hover:underline" data-vi="Xem tất cả" data-en="View all">Xem tất cả <i class="fas fa-angle-right"></i></a>
+            </div>
+            <div class="space-y-4">
+                <div class="flex space-x-4 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                    <img src="https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=150" class="w-24 h-20 object-cover rounded-md flex-shrink-0" alt="News 1">
+                    <div class="space-y-1">
+                        <h4 class="font-bold text-sm text-slate-900 line-clamp-2 hover:text-blue-600 transition-colors">
+                            <a href="#" data-vi="SRC Vietnam X Be : Đi xe sang nhận ưu đãi vàng hấp dẫn" data-en="SRC Vietnam X Be: Ride luxury, receive amazing gold rewards">SRC Vietnam X Be : Đi xe sang nhận ưu đãi vàng hấp dẫn</a>
+                        </h4>
+                        <p class="text-xs text-slate-500 line-clamp-2" data-vi="Chương trình ưu đãi phối hợp cùng ví điện tử giảm giá vé cực sốc..." data-en="A promotional program in collaboration with e-wallets offers massive ticket discounts...">Chương trình ưu đãi phối hợp cùng ví điện tử giảm giá vé cực sốc...</p>
+                    </div>
+                </div>
+                <div class="flex space-x-4 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                    <img src="https://images.unsplash.com/photo-1501183007986-d0d080b147f9?auto=format&fit=crop&q=80&w=150" class="w-24 h-20 object-cover rounded-md flex-shrink-0" alt="News 2">
+                    <div class="space-y-1">
+                        <h4 class="font-bold text-sm text-slate-900 line-clamp-2 hover:text-blue-600 transition-colors">
+                            <a href="#" data-vi="Thông báo lịch vận tải hành khách dịp nghỉ lễ lớn Giỗ tổ Hùng Vương" data-en="Announcement of passenger transport schedule for Hung Kings Commemoration Day holiday">Thông báo lịch vận tải hành khách dịp nghỉ lễ lớn Giỗ tổ Hùng Vương</a>
+                        </h4>
+                        <p class="text-xs text-slate-500 line-clamp-2" data-vi="Nhằm đáp ứng nhu cầu đi lại tăng mạnh của hành khách trong kỳ nghỉ lễ..." data-en="In order to meet the heavily increasing travel demands of passengers during the holiday period...">Nhằm đáp ứng nhu cầu đi lại tăng mạnh của hành khách trong kỳ nghỉ lễ...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="lg:col-span-7 space-y-6">
+            <div class="flex justify-between items-center border-b border-slate-300 pb-3">
+                <h3 class="text-lg font-extrabold text-blue-900 uppercase tracking-tight">
+                    <i class="fas fa-user-tie mr-1.5"></i> <span data-vi="Tin tuyển dụng" data-en="Recruitment Careers">Tin tuyển dụng</span>
+                </h3>
+                <a href="#" class="text-xs font-semibold text-blue-600 hover:underline" data-vi="Xem tất cả" data-en="View all">Xem tất cả <i class="fas fa-angle-right"></i></a>
+            </div>
+            
+            <div class="bg-gradient-to-br from-blue-800 to-indigo-900 text-white rounded-xl p-6 shadow-md relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6">
+                <div class="space-y-3 z-10 text-center md:text-left">
+                    <span class="bg-red-600 text-xs font-bold px-2.5 py-1 rounded">HOT RECRUITMENT</span>
+                    <h4 class="text-xl sm:text-2xl font-black tracking-tight leading-tight"
+                        data-vi="TUYỂN LÁI XE <br><span class='text-orange-400'>Toàn Quốc</span>"
+                        data-en="DRIVERS WANTED <br><span class='text-orange-400'>Nationwide</span>">TUYỂN LÁI XE <br><span class="text-orange-400">Toàn Quốc</span></h4>
+                    
+                    <div class="text-sm font-semibold"
+                         data-vi="THU NHẬP LÊN ĐẾN: <span class='text-yellow-400 text-xl font-black'>22 TRIỆU / THÁNG</span>"
+                         data-en="INCOME UP TO: <span class='text-yellow-400 text-xl font-black'>22M VND / MONTH</span>">THU NHẬP LÊN ĐẾN: <span class="text-yellow-400 text-xl font-black">22 TRIỆU / THÁNG</span></div>
+                    
+                    <p class="text-xs text-slate-300 max-w-sm"
+                       data-vi="Yêu cầu bằng hạng D, có kinh nghiệm lái xe, cam kết đóng bảo hiểm đầy đủ."
+                       data-en="Requires class D driver license, proven driving experience, full insurance packages committed.">Yêu cầu bằng hạng D, có kinh nghiệm lái xe, cam kết đóng bảo hiểm đầy đủ.</p>
+                </div>
+                <div class="z-10 flex-shrink-0 text-center space-y-2">
+                    <div class="bg-white text-blue-900 font-extrabold px-4 py-3 rounded-xl text-xs sm:text-sm shadow-lg">
+                        <i class="fas fa-phone-alt text-red-600 mr-1 animate-bounce"></i> 090.606.1999
+                    </div>
+                    <p class="text-[10px] text-slate-300" data-vi="hoặc gửi CV về: tuyendung@src.vn" data-en="or send CV to: tuyendung@src.vn">hoặc gửi CV về: tuyendung@src.vn</p>
+                </div>
+                <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-white/5 rounded-full pointer-events-none"></div>
+            </div>
+        </div>
+
+    </div>
+</section>
