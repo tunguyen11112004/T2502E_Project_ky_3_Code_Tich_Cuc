@@ -95,7 +95,6 @@ public class UserService
             UserCode = employeeCode,
             EmployeeCode = employeeCode,
             FullName = model.FullName.Trim(),
-            Age = model.Age,
             Email = normalizedEmail,
             PhoneNumber = model.PhoneNumber?.Trim() ?? string.Empty,
             EducationLevel = model.Qualifications?.Trim() ?? string.Empty,

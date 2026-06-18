@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 using Bus_ticket.Data;
 using Bus_ticket.Models;
+using MongoDB.Bson;
 
 namespace Bus_ticket.Controllers
 {
@@ -17,34 +18,32 @@ namespace Bus_ticket.Controllers
         {
             _context = context;
         }
+
         // 1. DANH SÁCH VAI TRÒ
         // GET: /DynamicRoles hoặc /DynamicRoles/Index
         public async Task<IActionResult> Index(string searchTerm, int page = 1, int pageSize = 10)
         {
-            // 1. Bộ lọc tìm kiếm theo Tên vai trò hoặc Mô tả
             var filterBuilder = Builders<DynamicRole>.Filter;
             var filter = filterBuilder.Empty;
 
+            // ĐÃ SỬA: Đổi r.Name thành r.RoleName theo đúng Model. Loại bỏ Description vì Model không có.
             if (!string.IsNullOrEmpty(searchTerm))
             {
-                filter = filterBuilder.Regex(r => r.Name, new MongoDB.Bson.BsonRegularExpression(searchTerm, "i")) |
-                         filterBuilder.Regex(r => r.Description, new MongoDB.Bson.BsonRegularExpression(searchTerm, "i"));
+                filter = filterBuilder.Regex(r => r.RoleName, new BsonRegularExpression(searchTerm, "i"));
             }
 
-            // 2. Tính toán phân trang
+            // Tính toán phân trang
             long totalItems = await _context.DynamicRoles.CountDocumentsAsync(filter);
             int totalPages = (int)Math.Ceiling((double)totalItems / pageSize);
 
             if (page < 1) page = 1;
             if (page > totalPages && totalPages > 0) page = totalPages;
 
-            // 3. Truy vấn dữ liệu Skip & Limit
             var roles = await _context.DynamicRoles.Find(filter)
                 .Skip((page - 1) * pageSize)
                 .Limit(pageSize)
                 .ToListAsync();
 
-            // 4. Đẩy thông số ra View
             ViewBag.SearchTerm = searchTerm;
             ViewBag.CurrentPage = page;
             ViewBag.PageSize = pageSize;
@@ -54,19 +53,17 @@ namespace Bus_ticket.Controllers
             return View(roles);
         }
         
-        // 2. GIAO DIỆN TẠO MỚI (Đổ danh sách quyền ra ma trận)
+        // 2. GIAO DIỆN TẠO MỚI
         public async Task<IActionResult> Create()
         {
-            // Lấy 33 quyền xếp theo tên để giao diện tự động gom cụm nhóm Checkbox
+            // Đã cập nhật nạp đủ 37 quyền
             var allPermissions = await _context.Permissions.Find(_ => true).SortBy(p => p.Name).ToListAsync();
             ViewBag.AllPermissions = allPermissions;
             
             return View(new DynamicRole());
         }
 
-        
         // 3. XỬ LÝ LƯU VAI TRÒ MỚI
-        
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(DynamicRole role, List<string> selectedPermissions)
@@ -77,13 +74,20 @@ namespace Bus_ticket.Controllers
             {
                 role.PermissionIds = selectedPermissions ?? new List<string>();
 
-                var isExist = await _context.DynamicRoles.Find(r => r.Name.ToLower() == role.Name.ToLower()).AnyAsync();
+                // ĐÃ SỬA: Kiểm tra trùng tên theo r.RoleName và gán các trường audit lúc tạo mới
+                var isExist = await _context.DynamicRoles.Find(r => r.RoleName.ToLower() == role.RoleName.ToLower()).AnyAsync();
                 if (isExist)
                 {
-                    ModelState.AddModelError("Name", "Tên vai trò này đã tồn tại trong hệ thống.");
+                    ModelState.AddModelError("RoleName", "Tên vai trò này đã tồn tại trong hệ thống.");
                     ViewBag.AllPermissions = await _context.Permissions.Find(_ => true).SortBy(p => p.Name).ToListAsync();
                     return View(role);
                 }
+
+                // THÊM: Gán thông tin audit khi tạo mới
+                role.CreatedAt = DateTime.UtcNow;
+                role.CreatedBy = User.Identity?.Name ?? "Admin"; // Lấy tên người dùng đăng nhập hoặc mặc định Admin
+                role.UpdatedAt = DateTime.UtcNow;
+                role.UpdatedBy = User.Identity?.Name ?? "Admin";
 
                 await _context.DynamicRoles.InsertOneAsync(role);
                 return RedirectToAction(nameof(Index));
@@ -93,9 +97,7 @@ namespace Bus_ticket.Controllers
             return View(role);
         }
 
-        
         // 4. GIAO DIỆN CHỈNH SỬA VAI TRÒ
-        
         public async Task<IActionResult> Edit(string id)
         {
             if (string.IsNullOrEmpty(id)) return NotFound();
@@ -107,9 +109,7 @@ namespace Bus_ticket.Controllers
             return View(role);
         }
 
-        
         // 5. XỬ LÝ CẬP NHẬT VAI TRÒ XUỐNG DATABASE
-        
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(string id, DynamicRole role, List<string> selectedPermissions)
@@ -118,10 +118,12 @@ namespace Bus_ticket.Controllers
 
             if (ModelState.IsValid)
             {
+                // ĐÃ SỬA: Cập nhật các trường audit UpdateAt, UpdateBy và đổi Name thành RoleName
                 var update = Builders<DynamicRole>.Update
-                    .Set(r => r.Name, role.Name)
-                    .Set(r => r.Description, role.Description)
-                    .Set(r => r.PermissionIds, selectedPermissions ?? new List<string>());
+                    .Set(r => r.RoleName, role.RoleName)
+                    .Set(r => r.PermissionIds, selectedPermissions ?? new List<string>())
+                    .Set(r => r.UpdatedAt, DateTime.UtcNow)
+                    .Set(r => r.UpdatedBy, User.Identity?.Name ?? "Admin");
 
                 await _context.DynamicRoles.UpdateOneAsync(r => r.Id == id, update);
                 return RedirectToAction(nameof(Index));
@@ -131,16 +133,14 @@ namespace Bus_ticket.Controllers
             return View(role);
         }
 
-        
         // 6. XỬ LÝ XÓA VAI TRÒ
-        
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(string id)
         {
             if (string.IsNullOrEmpty(id)) return NotFound();
 
-            // Kiểm tra ràng buộc thực thể User (RoleId)
+            // Kiểm tra ràng buộc thực thể User (RoleId) trước khi cho phép xóa
             var isUsed = await _context.Users.Find(u => u.RoleId == id).AnyAsync();
             if (isUsed)
             {

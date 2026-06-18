@@ -23,9 +23,6 @@ public class User
     [BsonElement("dob")]
     public DateTime? Dob { get; set; }
 
-    [BsonElement("age")]
-    public int? Age { get; set; }
-
     [BsonElement("email")]
     [EmailAddress]
     public string Email { get; set; } = string.Empty;
