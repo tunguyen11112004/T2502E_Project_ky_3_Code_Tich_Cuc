@@ -74,7 +74,7 @@ namespace Bus_ticket.Data
         {
             if (await _context.Users.CountDocumentsAsync(_ => true) > 0) return;
             var admin = new User { Username = "admin@src.com", FullName = "System Admin" };
-            admin.Password = _passwordHasher.HashPassword(admin, "Admin@123");
+            admin.PasswordHash = _passwordHasher.HashPassword(admin, "Admin@123");
             await _context.Users.InsertOneAsync(admin);
         }
 
