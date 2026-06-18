@@ -21,6 +21,7 @@ builder.Services.Configure<MongoDbSettings>(
 // Services
 builder.Services.AddSingleton<ApplicationDbContext>();
 builder.Services.AddSingleton<UserService>();
+builder.Services.AddScoped<ITicketSearchService, TicketSearchService>();
 
 // Cookie Authentication
 // Used for MVC login session after successful MongoDB authentication.
@@ -139,5 +140,7 @@ app.UseWhen(context => context.Request.Path.StartsWithSegments("/api"), apiApp =
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+
+app.MapControllers();
 
 app.Run();
