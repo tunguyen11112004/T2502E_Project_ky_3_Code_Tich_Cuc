@@ -1,23 +1,9 @@
 using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
 namespace Bus_ticket.Models;
-
-public class Seat
-{
-    [BsonElement("seatNumber")] public string SeatNumber { get; set; }
-
-    [BsonElement("row")] public int Row { get; set; }
-
-    [BsonElement("column")] public int Column { get; set; }
-
-    [BsonElement("floor")] public int Floor { get; set; } // 1: Tầng dưới, 2: Tầng trên
-
-    [BsonElement("seatType")] public string SeatType { get; set; } = "Standard"; // Standard / VIP
-}
 
 public class Bus
 {
@@ -25,32 +11,38 @@ public class Bus
     [BsonRepresentation(BsonType.ObjectId)]
     public string Id { get; set; }
 
-    [BsonElement("busCode")] [Required] public string BusCode { get; set; }
+    [BsonElement("busCode")] 
+    [Required] 
+    public string BusCode { get; set; } // Ví dụ: BUS-001, BUS-002
 
     [BsonElement("licensePlate")]
     [Required]
-    public string LicensePlate { get; set; }
+    public string LicensePlate { get; set; } // Ví dụ: 29B-123.45
 
-    [BsonElement("busType")] public string BusType { get; set; } // Express_Seat, Luxury_Sleeper
+    [BsonElement("status")] 
+    public string Status { get; set; } = "Active"; // Active, Maintenance, Inactive
 
-    [BsonElement("totalSeats")] public int TotalSeats { get; set; }
-
-    [BsonElement("totalRows")] public int TotalRows { get; set; }
-
-    [BsonElement("totalColumns")] public int TotalColumns { get; set; }
-
-    [BsonElement("totalFloors")] public int TotalFloors { get; set; } = 1;
-
-    [BsonElement("status")] public string Status { get; set; } = "Active";
-
+    // Liên kết với bảng chi nhánh quản lý xe này
     [BsonElement("branchId")]
     [BsonRepresentation(BsonType.ObjectId)]
+    [Required]
     public string BranchId { get; set; }
 
-    [BsonElement("seatsLayout")] public List<Seat> SeatsLayout { get; set; } = new List<Seat>();
+    // THAY ĐỔI QUAN TRỌNG: Liên kết tham chiếu đến Hạng xe / Sơ đồ xe tương ứng
+    [BsonElement("busClassId")]
+    [BsonRepresentation(BsonType.ObjectId)]
+    [Required]
+    public string BusClassId { get; set; }
 
+    [BsonElement("createdAt")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    [BsonElement("createdBy")]
     public string CreatedBy { get; set; }
+
+    [BsonElement("updatedAt")]
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+    [BsonElement("updatedBy")]
     public string UpdatedBy { get; set; }
 }
