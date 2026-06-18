@@ -42,7 +42,7 @@ public class PermissionMiddleware
             return;
         }
 
-        var role = await dbContext.Roles.Find(r => r.Id == roleId).FirstOrDefaultAsync();
+        var role = await dbContext.DynamicRoles.Find(r => r.Id == roleId).FirstOrDefaultAsync();
         if (role == null || role.PermissionIds == null || !role.PermissionIds.Any())
         {
             context.Response.StatusCode = StatusCodes.Status403Forbidden;

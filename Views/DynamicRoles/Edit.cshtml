@@ -1,0 +1,130 @@
+@model Bus_ticket.Models.DynamicRole
+
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Cập Nhật Vai Trò";
+    var allPermissions = ViewBag.AllPermissions as List<Bus_ticket.Models.Permission> ?? new List<Bus_ticket.Models.Permission>();
+
+    var groupedPermissions = allPermissions
+        .GroupBy(p => p.Name.Contains(".") ? p.Name.Split('.')[1] : "Hệ Thống Khác")
+        .ToList();
+}
+
+<div class="p-6 sm:p-8 space-y-6 max-w-6xl mx-auto">
+    <div class="border-b border-gray-700/50 pb-4">
+        <a asp-action="Index" class="inline-flex items-center text-sm font-medium text-gray-400 hover:text-amber-400 transition-colors duration-150 mb-2">
+            Quay lại danh sách
+        </a>
+        <h1 class="text-2xl font-bold tracking-tight text-white">Chỉnh Sửa Cấu Hình Ma Trận Quyền</h1>
+    </div>
+
+    <form asp-controller="DynamicRoles" asp-action="Edit" asp-route-id="@Model.Id" method="post" class="space-y-6">
+        <input type="hidden" asp-for="Id" />
+
+        <div class="p-6 bg-[#1e1e24] border border-gray-700/50 rounded-xl space-y-4 shadow-md">
+            <h3 class="text-lg font-semibold text-white">1. Thông tin Vai trò</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label asp-for="Name" class="block mb-2 text-sm font-medium text-gray-300">Tên Vai Trò</label>
+                    <input asp-for="Name" class="w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400" required />
+                    <span asp-validation-for="Name" class="text-xs text-red-400"></span>
+                </div>
+                <div>
+                    <label asp-for="Description" class="block mb-2 text-sm font-medium text-gray-300">Mô Tả Chức Trách</label>
+                    <input asp-for="Description" class="w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400" required />
+                    <span asp-validation-for="Description" class="text-xs text-red-400"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-6 bg-[#1e1e24] border border-gray-700/50 rounded-xl space-y-4 shadow-md">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-gray-700 pb-3 gap-3">
+                <div>
+                    <h3 class="text-lg font-semibold text-white">2. Điều chỉnh Ma trận chức năng cho phép</h3>
+                    <p class="text-xs text-gray-400">Chỉnh sửa lại các quyền hạn truy cập của nhóm vai trò này.</p>
+                </div>
+                <div>
+                    <button type="button" id="btn-select-all-global" class="inline-flex items-center px-3.5 py-2 text-xs font-bold text-gray-900 bg-cyan-400 hover:bg-cyan-500 rounded-lg transition-colors shadow-sm">
+                        Chọn tất cả hệ thống
+                    </button>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                @foreach (var group in groupedPermissions)
+                {
+                    <div class="js-module-block border border-gray-700/60 rounded-xl bg-[#141419]/50 overflow-hidden shadow-sm">
+                        <div class="px-4 py-3 bg-[#141419] border-b border-gray-700/60 flex items-center justify-between gap-4">
+                            <span class="text-sm font-bold tracking-wide text-amber-400 uppercase">Module: @group.Key</span>
+                            <button type="button" class="js-btn-select-module text-[11px] font-bold text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 px-2.5 py-1 rounded border border-gray-700 transition-all">
+                                Chọn nhóm này
+                            </button>
+                        </div>
+                        
+                        <div class="p-4 space-y-3">
+                            @foreach (var permission in group)
+                            {
+                                bool isChecked = Model.PermissionIds != null && Model.PermissionIds.Contains(permission.Id!);
+                                
+                                <label class="flex items-start gap-3 cursor-pointer select-none group p-2 hover:bg-gray-800/30 rounded-lg transition-all duration-100">
+                                    <input type="checkbox" name="selectedPermissions" value="@permission.Id" checked="@isChecked" class="js-permission-checkbox mt-0.5 w-4 h-4 text-amber-400 bg-gray-900 border-gray-600 rounded focus:ring-amber-400 focus:ring-offset-gray-900" />
+                                    <div>
+                                        <span class="block text-sm font-semibold text-gray-200 group-hover:text-white">@permission.Name</span>
+                                        <span class="block text-xs text-gray-400">@permission.Description</span>
+                                        <span class="inline-block mt-1 font-mono text-[10px] text-cyan-400 bg-gray-900 border border-gray-700 px-1 rounded">/@permission.Link (@permission.Method)</span>
+                                    </div>
+                                </label>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-4">
+            <a asp-action="Index" class="px-5 py-2.5 text-sm font-medium text-gray-400 hover:text-white transition-colors">Hủy bỏ</a>
+            <button type="submit" class="px-6 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg shadow-sm">Cập Nhật Thay Đổi</button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // 1. Toàn hệ thống
+            const btnSelectAllGlobal = document.getElementById("btn-select-all-global");
+            const allCheckboxes = document.querySelectorAll(".js-permission-checkbox");
+            let isAllGlobalChecked = false;
+
+            btnSelectAllGlobal.addEventListener("click", function () {
+                isAllGlobalChecked = !isAllGlobalChecked;
+                allCheckboxes.forEach(cb => cb.checked = isAllGlobalChecked);
+                
+                this.textContent = isAllGlobalChecked ? "Bỏ chọn tất cả" : "Chọn tất cả hệ thống";
+                this.classList.toggle("bg-cyan-400", !isAllGlobalChecked);
+                this.classList.toggle("bg-rose-500", isAllGlobalChecked);
+                this.classList.toggle("text-white", isAllGlobalChecked);
+                this.classList.toggle("text-gray-900", !isAllGlobalChecked);
+            });
+
+            // 2. Theo từng module
+            const moduleBlocks = document.querySelectorAll(".js-module-block");
+            moduleBlocks.forEach(block => {
+                const btnSelectModule = block.querySelector(".js-btn-select-module");
+                const moduleCheckboxes = block.querySelectorAll(".js-permission-checkbox");
+                let isModuleChecked = false;
+
+                btnSelectModule.addEventListener("click", function () {
+                    isModuleChecked = !isModuleChecked;
+                    moduleCheckboxes.forEach(cb => cb.checked = isModuleChecked);
+                    
+                    this.textContent = isModuleChecked ? "Bỏ chọn" : "Chọn nhóm này";
+                    this.classList.toggle("text-amber-400", isModuleChecked);
+                    this.classList.toggle("border-amber-500/40", isModuleChecked);
+                    this.classList.toggle("text-gray-400", !isModuleChecked);
+                    this.classList.toggle("border-gray-700", !isModuleChecked);
+                });
+            });
+        });
+    </script>
+}

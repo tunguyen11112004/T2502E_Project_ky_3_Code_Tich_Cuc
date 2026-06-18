@@ -1,0 +1,81 @@
+@model Bus_ticket.Models.Permission
+
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Create Permission";
+}
+
+<div class="p-6 sm:p-8 space-y-6 max-w-5xl mx-auto">
+    <div class="border-b border-gray-700/50 pb-4">
+        <a asp-action="Index" class="inline-flex items-center text-sm font-medium text-gray-400 hover:text-amber-400 transition-colors duration-150 mb-2">
+            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+            Quay lại danh sách
+        </a>
+        <h1 class="text-2xl font-bold tracking-tight text-white">Thêm Quyền Hệ Thống Mới</h1>
+        <p class="text-sm text-gray-400 mt-1">Tạo một Endpoint quyền mới để phục vụ cấu hình nhóm chức năng toàn cục.</p>
+    </div>
+
+    <div class="p-6 sm:p-8 bg-[#1e1e24] border border-gray-700/50 rounded-xl shadow-xl">
+        <form asp-controller="Permissions" asp-action="Create" method="post" class="space-y-6">
+            
+            @if (!ViewData.ModelState.IsValid && ViewData.ModelState.ErrorCount > 0)
+            {
+                <div class="p-4 mb-4 text-sm text-red-400 rounded-lg bg-red-950/30 border border-red-800">
+                    <p class="font-semibold mb-1">Vui lòng kiểm tra lại dữ liệu nhập vào:</p>
+                    <div asp-validation-summary="All" class="list-disc pl-5 text-xs space-y-1"></div>
+                </div>
+            }
+
+            <div>
+                <label asp-for="Name" class="block mb-2 text-sm font-semibold text-gray-200">Tên Quyền (HànhĐộng.Module)</label>
+                <input asp-for="Name" name="Name" class="w-full px-4 py-3 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 placeholder-gray-500 transition-colors" placeholder="Ví dụ: Create.User, View.Bus" required />
+                <span asp-validation-for="Name" class="text-xs text-red-400 mt-1 block"></span>
+                <p class="mt-2 text-xs text-gray-400 flex items-center">
+                    <svg class="w-3.5 h-3.5 mr-1 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Nên viết hoa chữ cái đầu của hành động và module, nối với nhau bằng dấu chấm.
+                </p>
+            </div>
+
+            <div>
+                <label asp-for="Description" class="block mb-2 text-sm font-semibold text-gray-200">Mô Tả Chức Năng</label>
+                <input asp-for="Description" name="Description" class="w-full px-4 py-3 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 placeholder-gray-500 transition-colors" placeholder="Ví dụ: Cho phép thêm mới tài khoản nhân viên" required />
+                <span asp-validation-for="Description" class="text-xs text-red-400 mt-1 block"></span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label asp-for="Link" class="block mb-2 text-sm font-semibold text-gray-200">Đường Dẫn API / Router Xử Lý</label>
+                    <div class="flex rounded-lg shadow-sm">
+                        <span class="inline-flex items-center px-4 text-sm text-gray-400 bg-gray-800 border border-r-0 border-gray-700 rounded-l-lg select-none">
+                            /
+                        </span>
+                        <input asp-for="Link" name="Link" class="w-full px-4 py-3 text-sm text-white bg-gray-900 border border-gray-700 rounded-r-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 placeholder-gray-500 transition-colors" placeholder="api/users" required />
+                    </div>
+                    <span asp-validation-for="Link" class="text-xs text-red-400 mt-1 block"></span>
+                </div>
+
+                <div>
+                    <label asp-for="Method" class="block mb-2 text-sm font-semibold text-gray-200">Phương Thức HTTP (Method)</label>
+                    <select asp-for="Method" name="Method" class="w-full px-4 py-3 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-colors bg-[url('data:image/svg+xml;charset=utf-8,<svg xmlns=%22http://www.w3.org/2000/svg%22 fill=%22none%22 viewBox=%220 0 10 6%22><path stroke=%22%239ca3af%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22 stroke-width=%222%22.5%22 d=%22m1 1 4 4 4-4%22/></svg>')] bg-[length:1.25rem_1.25rem] bg-[right_1rem_center] bg-no-repeat appearance-none">
+                        <option value="GET">GET</option>
+                        <option value="POST">POST</option>
+                        <option value="PUT">PUT</option>
+                        <option value="DELETE">DELETE</option>
+                    </select>
+                    <span asp-validation-for="Method" class="text-xs text-red-400 mt-1 block"></span>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-3 pt-6 border-t border-gray-700/50 mt-4">
+                <a asp-action="Index" class="px-5 py-2.5 text-sm font-medium text-gray-400 hover:text-white bg-transparent hover:bg-gray-800 rounded-lg transition-colors">
+                    Hủy bỏ
+                </a>
+                <button type="submit" class="px-6 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-400">
+                    Lưu lại
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

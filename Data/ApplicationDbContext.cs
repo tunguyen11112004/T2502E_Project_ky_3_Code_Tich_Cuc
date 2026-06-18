@@ -19,7 +19,7 @@ namespace Bus_ticket.Data
 
         public IMongoCollection<Branch> Branches => _database.GetCollection<Branch>("branches");
         public IMongoCollection<User> Users => _database.GetCollection<User>("users");
-        public IMongoCollection<DynamicRole> Roles => _database.GetCollection<DynamicRole>("roles");
+        public IMongoCollection<DynamicRole> DynamicRoles => _database.GetCollection<DynamicRole>("DynamicRoles");
         public IMongoCollection<Permission> Permissions => _database.GetCollection<Permission>("permissions");
         public IMongoCollection<Customer> Customers => _database.GetCollection<Customer>("customers");
         public IMongoCollection<Bus> Buses => _database.GetCollection<Bus>("buses");
