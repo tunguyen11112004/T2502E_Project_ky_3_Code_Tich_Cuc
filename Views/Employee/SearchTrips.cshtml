@@ -1,0 +1,77 @@
+@model Bus_ticket.DTOs.TicketSearchResponse
+@{
+    ViewData["Title"] = "Search Trips";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    var from = ViewBag.From as string ?? string.Empty;
+    var to = ViewBag.To as string ?? string.Empty;
+    var date = ViewBag.Date as string ?? string.Empty;
+}
+
+<div class="p-4 sm:ml-64">
+    <div class="p-4 mt-14 space-y-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Tra cứu chuyến xe</h1>
+            <p class="mt-2 text-gray-600 dark:text-gray-400">Để trống điểm đi hoặc điểm đến để xem tất cả chuyến đang hoạt động.</p>
+        </div>
+
+        <form method="get" asp-controller="Employee" asp-action="SearchTrips" class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+            <div>
+                <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Điểm đi</label>
+                <input type="text" name="from" value="@from" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="Hà Nội" />
+            </div>
+            <div>
+                <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Điểm đến</label>
+                <input type="text" name="to" value="@to" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="Hải Phòng" />
+            </div>
+            <div>
+                <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Ngày đi</label>
+                <input type="date" name="date" value="@date" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+            </div>
+            <div class="flex items-end">
+                <button type="submit" class="w-full text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-sm px-5 py-2.5">Search</button>
+            </div>
+        </form>
+
+        <div class="overflow-hidden bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+            <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Kết quả (@Model.Total chuyến)</h2>
+            </div>
+
+            @if (Model.Data.Count == 0)
+            {
+                <p class="p-4 text-gray-500 dark:text-gray-400">Không tìm thấy chuyến xe phù hợp.</p>
+            }
+            else
+            {
+                @foreach (var trip in Model.Data)
+                {
+                    <div class="p-4 border-b border-gray-200 dark:border-gray-700 last:border-b-0">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2 text-sm">
+                            <div><span class="font-semibold text-gray-900 dark:text-white">Mã chuyến:</span> @trip.TripCode</div>
+                            <div><span class="font-semibold text-gray-900 dark:text-white">Biển số:</span> @trip.LicensePlate</div>
+                            <div><span class="font-semibold text-gray-900 dark:text-white">Loại xe:</span> @trip.BusClass</div>
+                            <div><span class="font-semibold text-gray-900 dark:text-white">Giờ chạy:</span> @trip.DepartureTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
+                            <div class="md:col-span-2"><span class="font-semibold text-gray-900 dark:text-white">Tuyến:</span> @trip.DeparturePoint → @trip.DestinationPoint</div>
+                        </div>
+
+                        <div class="mt-3">
+                            <p class="text-sm font-semibold text-gray-900 dark:text-white mb-2">Trạng thái ghế (@trip.Seats.Count ghế)</p>
+                            <div class="flex flex-wrap gap-2">
+                                @foreach (var seat in trip.Seats)
+                                {
+                                    var seatClass = seat.Status switch
+                                    {
+                                        "Booked" => "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+                                        "Holding" => "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+                                        _ => "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                                    };
+                                    <span class="px-2 py-1 text-xs rounded @seatClass">@seat.SeatNumber</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>

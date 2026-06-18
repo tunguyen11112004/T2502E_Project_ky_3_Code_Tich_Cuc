@@ -22,8 +22,7 @@ public class PermissionMiddleware
         string currentLink = context.Request.Path.Value.TrimStart('/');
         string currentMethod = context.Request.Method.ToUpper();
 
-        if (currentLink.StartsWith("api/auth")
-            || currentLink.StartsWith("api/v1/tickets/search", StringComparison.OrdinalIgnoreCase))
+        if (currentLink.StartsWith("api/auth"))
         {
             await _next(context);
             return;
