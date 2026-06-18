@@ -1,7 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
 using Bus_ticket.Data;
-using Bus_ticket.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -17,7 +14,7 @@ namespace Bus_ticket.Controllers
             _dbContext = dbContext;
         }
 
-        // Định tuyến truy cập vào trang chủ Admin (Ví dụ: https://localhost:xxxx/Admin)
+        // Trang chủ Admin
         public IActionResult Index()
         {
             return View();
@@ -26,44 +23,6 @@ namespace Bus_ticket.Controllers
         public IActionResult Booking()
         {
             return View();
-        }
-
-        [HttpGet]
-        public IActionResult Create()
-        {
-            return View();
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(string licensePlate, string vehicleClass, string route, decimal distanceKm)
-        {
-            if (string.IsNullOrWhiteSpace(licensePlate) || string.IsNullOrWhiteSpace(vehicleClass) || string.IsNullOrWhiteSpace(route))
-            {
-                ModelState.AddModelError(string.Empty, "Biển số, lớp xe và tuyến đường là bắt buộc.");
-                return View();
-            }
-
-            var bus = new Bus
-            {
-                BusCode = GenerateBusCode(),
-                LicensePlate = licensePlate,
-                BusType = vehicleClass,
-                TotalSeats = 0,
-                TotalRows = 0,
-                TotalColumns = 0,
-                TotalFloors = 1,
-                Status = "Active"
-            };
-
-            await _dbContext.Buses.InsertOneAsync(bus);
-
-            return RedirectToAction("Index");
-        }
-
-        private static string GenerateBusCode()
-        {
-            return new Random().Next(10000, 99999).ToString();
         }
     }
 }
