@@ -5,36 +5,40 @@ using MongoDB.Driver;
 
 namespace Bus_ticket.Services;
 
-public class MongoUserService
+public class UserService
 {
-    private readonly IMongoCollection<MongoUser> _users;
+    private readonly IMongoCollection<User> _users;
 
-    public MongoUserService(IOptions<MongoDbSettings> mongoDbSettings)
+    public UserService(IOptions<MongoDbSettings> mongoDbSettings)
     {
         var settings = mongoDbSettings.Value;
 
         var mongoClient = new MongoClient(settings.ConnectionString);
         var mongoDatabase = mongoClient.GetDatabase(settings.DatabaseName);
 
-        _users = mongoDatabase.GetCollection<MongoUser>(settings.UsersCollectionName);
+        _users = mongoDatabase.GetCollection<User>(settings.UsersCollectionName);
     }
 
-    public async Task<MongoUser?> GetByEmailAsync(string email)
+    public async Task<User?> GetByEmailAsync(string email)
     {
+        var normalizedEmail = email.Trim().ToLower();
+
         return await _users
-            .Find(user => user.Email == email)
+            .Find(user => user.Email == normalizedEmail)
             .FirstOrDefaultAsync();
     }
 
-    public async Task<MongoUser?> GetByIdAsync(string id)
+    public async Task<User?> GetByIdAsync(string id)
     {
         return await _users
             .Find(user => user.Id == id)
             .FirstOrDefaultAsync();
     }
 
-    public async Task CreateAsync(MongoUser user)
+    public async Task CreateAsync(User user)
     {
+        user.Email = user.Email.Trim().ToLower();
+
         await _users.InsertOneAsync(user);
     }
 }

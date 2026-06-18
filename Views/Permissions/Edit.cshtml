@@ -1,0 +1,72 @@
+@model Bus_ticket.Models.Permission
+
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Edit Permission";
+}
+
+<div class="p-6 sm:p-8 space-y-6 max-w-5xl mx-auto">
+    <div class="border-b border-gray-700/50 pb-4">
+        <a asp-action="Index" class="inline-flex items-center text-sm font-medium text-gray-400 hover:text-amber-400 transition-colors duration-150 mb-2">
+            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+            Quay lại danh sách
+        </a>
+        <h1 class="text-2xl font-bold tracking-tight text-white">Chỉnh Sửa Quyền Hệ Thống</h1>
+        <p class="text-sm text-gray-400 mt-1">Cập nhật lại các thông tin định tuyến API hoặc mô tả hiển thị của quyền.</p>
+    </div>
+
+    <div class="p-6 sm:p-8 bg-[#1e1e24] border border-gray-700/50 rounded-xl shadow-xl">
+        <form asp-action="Edit" method="post" class="space-y-6">
+            <div asp-validation-summary="ModelOnly" class="p-4 mb-4 text-sm text-red-400 rounded-lg bg-gray-800/50 border border-red-800/50"></div>
+            
+            <input type="hidden" asp-for="Id" />
+
+            <div>
+                <label asp-for="Name" class="block mb-2 text-sm font-semibold text-gray-200">Tên Quyền (HànhĐộng.Module)</label>
+                <input asp-for="Name" class="w-full px-4 py-3 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-colors" required />
+                <span asp-validation-for="Name" class="text-xs text-red-400 mt-1 block"></span>
+            </div>
+
+            <div>
+                <label asp-for="Description" class="block mb-2 text-sm font-semibold text-gray-200">Mô Tả Chức Năng</label>
+                <input asp-for="Description" class="w-full px-4 py-3 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-colors" required />
+                <span asp-validation-for="Description" class="text-xs text-red-400 mt-1 block"></span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label asp-for="Link" class="block mb-2 text-sm font-semibold text-gray-200">Đường Dẫn API / Router Xử Lý</label>
+                    <div class="flex rounded-lg shadow-sm">
+                        <span class="inline-flex items-center px-4 text-sm text-gray-400 bg-gray-800 border border-r-0 border-gray-700 rounded-l-lg select-none">
+                            /
+                        </span>
+                        <input asp-for="Link" class="w-full px-4 py-3 text-sm text-white bg-gray-900 border border-gray-700 rounded-r-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-colors" required />
+                    </div>
+                    <span asp-validation-for="Link" class="text-xs text-red-400 mt-1 block"></span>
+                </div>
+
+                <div>
+                    <label asp-for="Method" class="block mb-2 text-sm font-semibold text-gray-200">Phương Thức HTTP (Method)</label>
+                    <select asp-for="Method" class="w-full px-4 py-3 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-colors">
+                        <option value="GET">GET</option>
+                        <option value="POST">POST</option>
+                        <option value="PUT">PUT</option>
+                        <option value="DELETE">DELETE</option>
+                    </select>
+                    <span asp-validation-for="Method" class="text-xs text-red-400 mt-1 block"></span>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-3 pt-6 border-t border-gray-700/50 mt-4">
+                <a asp-action="Index" class="px-4 py-2.5 text-sm font-medium text-gray-400 hover:text-white bg-transparent hover:bg-gray-800 rounded-lg transition-colors">
+                    Hủy bỏ
+                </a>
+                <button type="submit" class="px-6 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-400">
+                    Cập nhật
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

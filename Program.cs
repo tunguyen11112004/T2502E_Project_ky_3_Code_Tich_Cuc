@@ -20,7 +20,7 @@ builder.Services.Configure<MongoDbSettings>(
 
 // Services
 builder.Services.AddSingleton<ApplicationDbContext>();
-builder.Services.AddSingleton<MongoUserService>();
+builder.Services.AddSingleton<UserService>();
 
 // Cookie Authentication
 // Used for MVC login session after successful MongoDB authentication.
@@ -33,14 +33,27 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 
 builder.Services.AddAuthorization();
 
+builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
+
+builder.Services.AddControllersWithViews()
+    .AddViewLocalization(Microsoft.AspNetCore.Mvc.Razor.LanguageViewLocationExpanderFormat.Suffix);
+
 var app = builder.Build();
+
+var supportedCultures = new[] { "vi", "en" };
+var localizationOptions = new RequestLocalizationOptions()
+    .SetDefaultCulture(supportedCultures[0])
+    .AddSupportedCultures(supportedCultures)
+    .AddSupportedUICultures(supportedCultures);
+
+app.UseRequestLocalization(localizationOptions);
 
 // Seed default MongoDB users for testing login.
 // NOTE: These accounts are only for local/demo testing.
 // Later, real Admin/Employee accounts should be created from the system flow.
 using (var scope = app.Services.CreateScope())
 {
-    var userService = scope.ServiceProvider.GetRequiredService<MongoUserService>();
+    var userService = scope.ServiceProvider.GetRequiredService<UserService>();
 
     var adminEmail = "admin@src.com";
     var employeeEmail = "employee@src.com";
@@ -48,30 +61,36 @@ using (var scope = app.Services.CreateScope())
     var existingAdmin = await userService.GetByEmailAsync(adminEmail);
     if (existingAdmin == null)
     {
-        await userService.CreateAsync(new MongoUser
+        await userService.CreateAsync(new User
         {
-            FullName = "System Admin",
+            UserCode = "ADM001",
             EmployeeCode = "000001",
+            FullName = "System Admin",
             Email = adminEmail,
+            Username = "admin",
             PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin@123"),
             Role = "Admin",
             Status = "Active",
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            CreatedBy = "System"
         });
     }
 
     var existingEmployee = await userService.GetByEmailAsync(employeeEmail);
     if (existingEmployee == null)
     {
-        await userService.CreateAsync(new MongoUser
+        await userService.CreateAsync(new User
         {
-            FullName = "Ticket Agent",
+            UserCode = "EMP001",
             EmployeeCode = "123456",
+            FullName = "Ticket Agent",
             Email = employeeEmail,
+            Username = "employee01",
             PasswordHash = BCrypt.Net.BCrypt.HashPassword("Employee@123"),
             Role = "Employee",
             Status = "Active",
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            CreatedBy = "System"
         });
     }
 }
