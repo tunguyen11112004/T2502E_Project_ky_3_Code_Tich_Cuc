@@ -1,103 +1,174 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>About Us - SRC Travel Agencies</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-icons/6.4.0/css/all.min.css">
-</head>
-<body class="bg-slate-50 text-slate-800 font-sans">
-    <section class="relative bg-gradient-to-r class bg-blue-900 text-white py-24 px-6 text-center">
+@{
+    ViewData["Title"] = "Giới Thiệu - ";
+}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+
+<div class="bg-slate-50 text-slate-800 font-sans min-h-screen">
+    <section class="relative bg-gradient-to-r from-blue-900 to-blue-950 text-white py-20 px-6 text-center">
         <div class="max-w-4xl mx-auto z-10 relative">
-            <h1 class="text-4xl md:text-5xl font-bold mb-4 tracking-tight">SRC Travel Agencies</h1>
-            <p class="text-lg md:text-xl text-blue-200 font-light max-w-2xl mx-auto">
-                Connecting destinations, elevating journeys. We are proud to be the nation's leading private transport enterprise.
+            <h1 class="text-4xl md:text-5xl font-extrabold mb-4 tracking-tight uppercase"
+                data-vi="GIỚI THIỆU VỀ SRC VIỆT NAM"
+                data-en="ABOUT SRC VIETNAM">
+                GIỚI THIỆU VỀ SRC VIỆT NAM
+            </h1>
+            <p class="text-lg md:text-xl text-blue-200 font-light max-w-2xl mx-auto"
+               data-vi="Kết nối điểm đến, nâng tầm hành trình. Chúng tôi tự hào là hệ sinh thái vận tải đa năng phục vụ khách hàng trên toàn quốc."
+               data-en="Connecting destinations, elevating journeys. We are proud to be a multi-functional transportation ecosystem serving customers nationwide.">
+                Kết nối điểm đến, nâng tầm hành trình. Chúng tôi tự hào là hệ sinh thái vận tải đa năng phục vụ khách hàng trên toàn quốc.
             </p>
         </div>
         <div class="absolute inset-0 bg-blue-950 opacity-40 mix-blend-multiply"></div>
     </section>
-    <section class="py-16 px-6 max-w-6xl mx-auto">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-            <div>
-                <h2 class="text-3xl font-bold text-blue-900 mb-6 relative after:content-[''] after:block after:w-16 after:h-1 after:bg-blue-600 after:mt-2">
-                    Our Story
+    <section class="py-16 px-6 max-w-7xl mx-auto">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            <div class="lg:col-span-7">
+                <h2 class="text-3xl font-bold text-blue-900 mb-6 relative after:content-[''] after:block after:w-16 after:h-1 after:bg-orange-500 after:mt-2 uppercase"
+                    data-vi="CHÚNG TÔI LÀ AI?"
+                    data-en="WHO WE ARE?">
+                    CHÚNG TÔI LÀ AI?
                 </h2>
-                <p class="text-slate-600 mb-4 leading-relaxed">
-                    Established with a vision to redefine inter-provincial travel, <strong>SRC Travel Agencies</strong> has grown from a regional operator into a nationwide transportation network. We bridge distances, linking central branches with distant provinces to ensure seamless transit for thousands of passengers daily.
-                </p>
-                <p class="text-slate-600 leading-relaxed">
-                    By transitioning from traditional, counter-based ledger booking to an advanced, real-time centralized management ecosystem, we continuously optimize our operational flows to put passenger comfort and security first.
-                </p>
+                <div class="space-y-4 text-slate-600 leading-relaxed text-base">
+                    <p data-vi="<strong class='text-blue-900'>SRC Travel</strong> tự hào là đơn vị tiên phong và dẫn đầu trong lĩnh vực vận tải cao cấp. Với triết lý lấy khách hàng làm trung tâm, chúng tôi không ngừng mở rộng hệ sinh thái dịch vụ để mang đến những giải pháp di chuyển và vận chuyển toàn diện nhất."
+                       data-en="<strong class='text-blue-900'>SRC Travel</strong> is proud to be a pioneer and leader in the premium transportation sector. With a customer-centric philosophy, we continuously expand our ecosystem to provide the most comprehensive travel and transport solutions.">
+                        <strong class="text-blue-900">SRC Travel</strong> tự hào là đơn vị tiên phong và dẫn đầu trong lĩnh vực vận tải cao cấp. Với triết lý lấy khách hàng làm trung tâm, chúng tôi không ngừng mở rộng hệ sinh thái dịch vụ để mang đến những giải pháp di chuyển và vận chuyển toàn diện nhất.
+                    </p>
+                    <p data-vi="Bằng việc chuyển đổi từ quy trình ghi sổ truyền thống tại quầy sang hệ thống quản lý tập trung thời gian thực tiên tiến, chúng tôi liên tục tối ưu hóa các luồng vận hành để đặt sự an toàn, thoải mái và bảo mật của hành khách lên hàng đầu."
+                       data-en="By transitioning from traditional counter-based ledger booking to an advanced real-time centralized management system, we continuously optimize operational workflows to put passenger safety, comfort, and security first.">
+                        Bằng việc chuyển đổi từ quy trình ghi sổ truyền thống tại quầy sang hệ thống quản lý tập trung thời gian thực tiên tiến, chúng tôi liên tục tối ưu hóa các luồng vận hành để đặt sự an toàn, thoải mái và bảo mật của hành khách lên hàng đầu.
+                    </p>
+                </div>
             </div>
-            <div class="bg-blue-100 rounded-2xl h-80 flex items-center justify-center text-blue-900 shadow-inner relative overflow-hidden">
-                <span class="font-semibold text-lg z-10">SRC Nationwide Fleet</span>
-                <div class="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-blue-900/20"></div>
+            <div class="lg:col-span-5">
+                <div class="relative rounded-2xl overflow-hidden shadow-2xl bg-blue-100 border border-slate-200">
+                    <img src="https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=800" alt="SRC Fleet" class="w-full h-72 object-cover" />
+                    <div class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent p-4 text-white text-center font-medium"
+                         data-vi="Hệ thống xe vận tải hiện đại SRC"
+                         data-en="SRC Modern Transport Fleet">
+                        Hệ thống xe vận tải hiện đại SRC
+                    </div>
+                </div>
             </div>
         </div>
     </section>
     <section class="bg-white py-16 px-6 border-y border-slate-200">
-        <div class="max-w-6xl mx-auto">
-            <div class="text-center mb-12">
-                <h2 class="text-3xl font-bold text-blue-900 mb-3">Our Premium Fleet</h2>
-                <p class="text-slate-500">Tailored comfort for every passenger on every route</p>
+        <div class="max-w-7xl mx-auto">
+            <div class="mb-12">
+                <p class="text-slate-500 font-medium uppercase tracking-wider" data-vi="Mô hình hoạt động" data-en="Operational Model">Mô hình hoạt động</p>
+                <h2 class="text-2xl md:text-3xl font-bold text-blue-900" 
+                    data-vi="Hiện nay, hệ sinh thái của SRC Travel tập trung vào 3 trụ cột chính:"
+                    data-en="Currently, the SRC Travel ecosystem focuses on 3 main pillars:">
+                    Hiện nay, hệ sinh thái của SRC Travel tập trung vào 3 trụ cột chính:
+                </h2>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div class="border border-slate-200 rounded-xl p-6 hover:shadow-xl transition-shadow bg-slate-50">
-                    <div class="text-blue-600 text-3xl mb-4"><i class="fas fa-bus"></i></div>
-                    <h3 class="text-xl font-bold text-slate-900 mb-2">Express Class</h3>
-                    <p class="text-slate-600 text-sm leading-relaxed">
-                        Our standard, highly cost-effective option available in both Air-Conditioned (A/C) and Non-A/C variants. Perfect for regular inter-city commuters.
-                    </p>
+            <div class="space-y-16">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                    <div class="lg:col-span-5 order-last lg:order-first">
+                        <img src="https://images.unsplash.com/photo-1570125909232-eb263c188f7e?auto=format&fit=crop&q=80&w=600" alt="Limousine" class="w-full h-64 object-cover rounded-xl shadow-md" />
+                    </div>
+                    <div class="lg:col-span-7">
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-lg flex-shrink-0">1</div>
+                            <div>
+                                <h3 class="text-xl font-bold text-slate-900 mb-3" data-vi="Vận tải hành khách Limousine cao cấp" data-en="Premium Limousine Passenger Transport">Vận tải hành khách Limousine cao cấp</h3>
+                                <p class="text-slate-600 leading-relaxed text-sm md:text-base"
+                                   data-vi="Là cái tên bảo chứng cho sự uy tín, SRC Travel đã nhận được sự tin chọn của hàng triệu khách hàng. Chúng tôi sở hữu dàn xe Limousine hiện đại, đội ngũ tài xế chuyên nghiệp, giàu kinh nghiệm, cam kết mang lại trải nghiệm đẳng cấp và sự hài lòng tối ưu trong mỗi chuyến đi."
+                                   data-en="As a benchmark of prestige, SRC Travel has earned the trust of millions of passengers. We own a modern Limousine fleet and a team of professional, highly experienced drivers, committed to delivering top-tier experiences and optimal satisfaction on every journey.">
+                                    Là cái tên bảo chứng cho sự uy tín, SRC Travel đã nhận được sự tin chọn của hàng triệu khách hàng. Chúng tôi sở hữu dàn xe Limousine hiện đại, đội ngũ tài xế chuyên nghiệp, giàu kinh nghiệm, cam kết mang lại trải nghiệm đẳng cấp và sự hài lòng tối ưu trong mỗi chuyến đi.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="border border-slate-200 rounded-xl p-6 hover:shadow-xl transition-shadow bg-slate-50">
-                    <div class="text-blue-600 text-3xl mb-4"><i class="fas fa-couch"></i></div>
-                    <h3 class="text-xl font-bold text-slate-900 mb-2">Luxury Class</h3>
-                    <p class="text-slate-600 text-sm leading-relaxed">
-                        An upgraded travel experience featuring enhanced seating ergonomics, climate control, and additional amenities to make mid-distance trips refreshing.
-                    </p>
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                    <div class="lg:col-span-7">
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-lg flex-shrink-0">2</div>
+                            <div>
+                                <h3 class="text-xl font-bold text-slate-900 mb-3" data-vi="Dịch vụ Logistics & Vận tải xe tải" data-en="Logistics & Truck Freight Services">Dịch vụ Logistics & Vận tải xe tải</h3>
+                                <p class="text-slate-600 leading-relaxed text-sm md:text-base"
+                                   data-vi="Nắm bắt nhu cầu giao thương ngày càng lớn, chúng tôi đã mở rộng mạnh mẽ sang mảng Logistics. Với đội ngũ xe tải đa dạng tải trọng, quy trình vận hành khoa học và mạng lưới kết nối rộng khắp, SRC cung cấp giải pháp vận chuyển hàng hóa an toàn, nhanh chóng và tối ưu chi phí cho các doanh nghiệp và cá nhân."
+                                   data-en="Seizing the growing demand for trade, we have expanded robustly into Logistics. With a diverse fleet of various tonnage capacities, scientific operational workflows, and a widespread network, SRC provides safe, fast, and cost-optimized cargo transport solutions for businesses and individuals.">
+                                    Nắm bắt nhu cầu giao thương ngày càng lớn, chúng tôi đã mở rộng mạnh mẽ sang mảng Logistics. Với đội ngũ xe tải đa dạng tải trọng, quy trình vận hành khoa học và mạng lưới kết nối rộng khắp, SRC cung cấp giải pháp vận chuyển hàng hóa an toàn, nhanh chóng và tối ưu chi phí cho các doanh nghiệp và cá nhân.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="lg:col-span-5">
+                        <img src="https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fit=crop&q=80&w=600" alt="Logistics" class="w-full h-64 object-cover rounded-xl shadow-md" />
+                    </div>
                 </div>
-                <div class="border border-blue-200 rounded-xl p-6 hover:shadow-xl transition-shadow bg-blue-50/50 relative">
-                    <span class="absolute -top-3 right-4 bg-blue-600 text-white text-xs px-2 py-1 rounded-full font-semibold">Flagship</span>
-                    <div class="text-blue-600 text-3xl mb-4"><i class="fas fa-crown"></i></div>
-                    <h3 class="text-xl font-bold text-slate-900 mb-2">Volvo Flagship</h3>
-                    <p class="text-slate-600 text-sm leading-relaxed">
-                        The ultimate luxury. Our top-tier premium coaches equipped with advanced suspension, spacious berths, and top-of-the-line real-time seat synchronization tracking.
-                    </p>
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                    <div class="lg:col-span-5 order-last lg:order-first">
+                        <img src="https://sonhailimousine.com/upload/filemanager/Son-Hai-Limousine.jpg" alt="Workshop" class="w-full h-64 object-cover rounded-xl shadow-md" />
+                    </div>
+                    <div class="lg:col-span-7">
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-lg flex-shrink-0">3</div>
+                            <div>
+                                <h3 class="text-xl font-bold text-slate-900 mb-3" data-vi="Hệ thống Xưởng dịch vụ chuyên nghiệp" data-en="Professional Service Workshop System">Hệ thống Xưởng dịch vụ chuyên nghiệp</h3>
+                                <p class="text-slate-600 leading-relaxed text-sm md:text-base"
+                                   data-vi="Để đảm bảo mỗi chuyến hành trình luôn thông suốt, chúng tôi đầu tư hệ thống Xưởng dịch vụ hiện đại. Đây không chỉ là nơi bảo trì, bảo dưỡng cho đội xe của công ty mà còn là địa chỉ tin cậy cung cấp dịch vụ sửa chữa chất lượng cao cho khách hàng, với đội ngũ kỹ thuật viên tay nghề cao và phụ tùng chính hãng."
+                                   data-en="To ensure every journey is smooth and continuous, we invest in a modern Service Workshop system. This is not only a maintenance hub for our own corporate fleet but also a trusted location offering high-quality repair services to the public, backed by highly skilled technicians and genuine spare parts.">
+                                    Để đảm bảo mỗi chuyến hành trình luôn thông suốt, chúng tôi đầu tư hệ thống Xưởng dịch vụ hiện đại. Đây không chỉ là nơi bảo trì, bảo dưỡng cho đội xe của công ty mà còn là địa chỉ tin cậy cung cấp dịch vụ sửa chữa chất lượng cao cho khách hàng, với đội ngũ kỹ thuật viên tay nghề cao và phụ tùng chính hãng.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </section>
-    <section class="py-16 px-6 max-w-6xl mx-auto">
+    <section class="py-16 px-6 max-w-7xl mx-auto">
         <div class="text-center mb-12">
-            <h2 class="text-3xl font-bold text-blue-900 mb-3">Core Commitments</h2>
-            <p class="text-slate-500">Driven by technology, structured for reliability</p>
+            <h2 class="text-3xl font-bold text-blue-900 mb-3" data-vi="Cam Kết Cốt Lõi" data-en="Core Commitments">Cam Kết Cốt Lõi</h2>
+            <p class="text-slate-500" data-vi="Vận hành bằng công nghệ, phát triển bằng uy tín" data-en="Driven by technology, structured for reliability">Vận hành bằng công nghệ, phát triển bằng uy tín</p>
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div class="p-5 text-center">
-                <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 mx-auto mb-4 text-xl"><i class="fas fa-clock"></i></div>
-                <h4 class="font-bold text-slate-900 mb-2">Real-time Booking</h4>
-                <p class="text-slate-500 text-xs">Instantly update and synchronize seat availability across all ticket counters.</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div class="group p-6 bg-white rounded-xl shadow-sm border border-slate-100 text-center hover:shadow-md transition-all duration-300 transform hover:-translate-y-1">
+                <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
+                    <i class="fas fa-hourglass-start transition-transform duration-500 group-hover:rotate-[360deg]"></i>
+                </div>
+                <h4 class="font-bold text-slate-900 mb-2 text-base md:text-lg" data-vi="Đặt vé Thời gian thực" data-en="Real-time Booking">Đặt vé Thời gian thực</h4>
+                <p class="text-slate-500 text-xs md:text-sm leading-relaxed" 
+                   data-vi="Cập nhật và đồng bộ hóa tức thì tình trạng ghế trống trên toàn hệ thống." 
+                   data-en="Instantly update and synchronize seat availability across all channels.">
+                   Cập nhật và đồng bộ hóa tức thì tình trạng ghế trống trên toàn hệ thống.
+                </p>
             </div>
-            <div class="p-5 text-center">
-                <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 mx-auto mb-4 text-xl"><i class="fas fa-calculator"></i></div>
-                <h4 class="font-bold text-slate-900 mb-2">Fair Pricing Rules</h4>
-                <p class="text-slate-500 text-xs">Automated fare structures dynamically calculated by age, distance, and vehicle tier.</p>
+            <div class="group p-6 bg-white rounded-xl shadow-sm border border-slate-100 text-center hover:shadow-md transition-all duration-300 transform hover:-translate-y-1">
+                <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
+                    <i class="fas fa-money-bill-wave transition-transform duration-500 group-hover:rotate-[360deg]"></i>
+                </div>
+                <h4 class="font-bold text-slate-900 mb-2 text-base md:text-lg" data-vi="Giá vé Minh bạch" data-en="Fair Pricing Rules">Giá vé Minh bạch</h4>
+                <p class="text-slate-500 text-xs md:text-sm leading-relaxed" 
+                   data-vi="Cấu trúc giá tự động tính toán chính xác theo độ tuổi, quãng đường và hạng xe." 
+                   data-en="Automated fare structures dynamically calculated by age, distance, and vehicle tier.">
+                   Cấu trúc giá tự động tính toán chính xác theo độ tuổi, quãng đường và hạng xe.
+                </p>
             </div>
-            <div class="p-5 text-center">
-                <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 mx-auto mb-4 text-xl"><i class="fas fa-shield-alt"></i></div>
-                <h4 class="font-bold text-slate-900 mb-2">Centralized Security</h4>
-                <p class="text-slate-500 text-xs">Strict role-based management ensuring that operational data is fully guarded.</p>
+            <div class="group p-6 bg-white rounded-xl shadow-sm border border-slate-100 text-center hover:shadow-md transition-all duration-300 transform hover:-translate-y-1">
+                <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
+                    <i class="fas fa-lock transition-transform duration-500 group-hover:rotate-[360deg]"></i>
+                </div>
+                <h4 class="font-bold text-slate-900 mb-2 text-base md:text-lg" data-vi="An toàn Hệ thống" data-en="Centralized Security">An toàn Hệ thống</h4>
+                <p class="text-slate-500 text-xs md:text-sm leading-relaxed" 
+                   data-vi="Phân quyền quản trị chặt chẽ, đảm bảo dữ liệu vận hành được bảo mật tuyệt đối." 
+                   data-en="Strict role-based management ensuring that operational data is fully guarded.">
+                   Quản lý chặt chẽ, đảm bảo dữ liệu vận hành được bảo mật tuyệt đối.
+                </p>
             </div>
-            <div class="p-5 text-center">
-                <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 mx-auto mb-4 text-xl"><i class="fas fa-users"></i></div>
-                <h4 class="font-bold text-slate-900 mb-2">Inclusive Care</h4>
-                <p class="text-slate-500 text-xs">Dedicated discount policies to guarantee accessible transit for all age groups.</p>
+            <div class="group p-6 bg-white rounded-xl shadow-sm border border-slate-100 text-center hover:shadow-md transition-all duration-300 transform hover:-translate-y-1">
+                <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
+                    <i class="fas fa-gift transition-transform duration-500 group-hover:rotate-[360deg]"></i>
+                </div>
+                <h4 class="font-bold text-slate-900 mb-2 text-base md:text-lg" data-vi="Chính sách Ưu đãi" data-en="Inclusive Care">Chính sách Ưu đãi</h4>
+                <p class="text-slate-500 text-xs md:text-sm leading-relaxed" 
+                   data-vi="Hệ thống giảm giá tích hợp giúp mọi tầng lớp nhân dân đều dễ dàng tiếp cận." 
+                   data-en="Dedicated discount policies to guarantee accessible transit for all age groups.">
+                   Hệ thống giảm giá tích hợp giúp mọi tầng lớp nhân dân đều dễ dàng tiếp cận.
+                </p>
             </div>
         </div>
     </section>
-    <footer class="bg-slate-900 text-slate-400 py-8 text-center text-sm border-t border-slate-800">
-        <p>&copy; 2026 SRC Travel Agencies. Integrated Central System. Developed by Team Code Tích Cực.</p>
-    </footer>
-</body>
-</html>
+</div>
