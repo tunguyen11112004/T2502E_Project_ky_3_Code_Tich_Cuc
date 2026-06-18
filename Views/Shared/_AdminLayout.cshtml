@@ -4,9 +4,13 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - Admin Bus Ticket</title>
-    <link rel="stylesheet" href="~/admin-assets/css/style.css" />
+    
+    <link rel="stylesheet" href="/admin-assets/css/style.css" />
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.css" rel="stylesheet" />
+    
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -29,22 +33,15 @@
 
         <partial name="_AdminFooterPartial" />
     </div>
-
 </div>
 
-<script src="~/js/constants.js"></script>
-<script src="~/js/dark-mode.js"></script>
-<script src="~/js/sidebar.js"></script>
-<script src="~/js/charts.js"></script>
-<script src="~/js/index.js"></script>
+<script type="module" src="/admin-assets/js/index.js"></script>
+
 @await RenderSectionAsync("Scripts", required: false)
 <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
-</body>
-</html>
 
 <script>
     document.addEventListener("DOMContentLoaded", function () {
-        // Lấy pathname hiện tại (ví dụ: /DynamicRoles hoặc /DynamicRoles/Create)
         const currentUrl = window.location.pathname.toLowerCase();
         const navLinks = document.querySelectorAll(".nav-link-item");
 
@@ -52,10 +49,8 @@
             const linkUrl = link.getAttribute("href")?.toLowerCase();
             if (!linkUrl || linkUrl === "#" || linkUrl === "/") return;
 
-            // Kiểm tra khớp URL chính xác hoặc khớp phân hệ cha (ví dụ: /DynamicRoles/Create chứa /DynamicRoles)
             if (currentUrl === linkUrl || currentUrl.startsWith(linkUrl + "/") || currentUrl.startsWith(linkUrl + "?")) {
                 
-                // 🎨 Áp dụng hiệu ứng sáng đèn nút (Phối màu Dark/Light chuẩn Flowbite)
                 link.classList.remove("text-gray-900", "dark:text-gray-200", "hover:bg-gray-100", "dark:hover:bg-gray-700");
                 link.classList.add(
                     "bg-amber-500/10", 
@@ -69,13 +64,10 @@
                     "rounded-l-none"
                 );
 
-                // 📂 Tự động mở rộng Dropdown cha nếu menu con này đang hoạt động
                 const parentUl = link.closest("ul");
                 if (parentUl && parentUl.id && parentUl.id.startsWith("dropdown-")) {
-                    // Loại bỏ class 'hidden' để bung danh sách con
                     parentUl.classList.remove("hidden");
 
-                    // Tìm nút cha điều khiển và xoay icon mũi tên chỉ xuống
                     const toggleButton = document.querySelector(`[aria-controls="${parentUl.id}"]`);
                     if (toggleButton) {
                         toggleButton.classList.add("text-gray-900", "dark:text-white", "bg-gray-100", "dark:bg-gray-700");
@@ -89,3 +81,5 @@
         });
     });
 </script>
+</body>
+</html>

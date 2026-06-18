@@ -4,6 +4,8 @@ using Bus_ticket.Models;
 using Bus_ticket.Services;
 using Bus_ticket.Settings;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using MongoDB.Driver;
+using System.Linq;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,7 +21,6 @@ builder.Services.AddSingleton<ApplicationDbContext>();
 builder.Services.AddSingleton<UserService>();
 
 // Cookie Authentication
-// Used for MVC login session after successful MongoDB authentication.
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
@@ -44,13 +45,13 @@ var localizationOptions = new RequestLocalizationOptions()
 
 app.UseRequestLocalization(localizationOptions);
 
-// Seed default MongoDB users for testing login.
-// NOTE: These accounts are only for local/demo testing.
-// Later, real Admin/Employee accounts should be created from the system flow.
+// ==================== SEED DATA INITIALIZER ====================
 using (var scope = app.Services.CreateScope())
 {
     var userService = scope.ServiceProvider.GetRequiredService<UserService>();
+    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
+    // 1. Seed Accounts (Admin & Employee)
     var adminEmail = "admin@src.com";
     var employeeEmail = "employee@src.com";
 
@@ -89,7 +90,42 @@ using (var scope = app.Services.CreateScope())
             CreatedBy = "System"
         });
     }
+
+    // 2. Seed Buses & Trips (Đã khớp hoàn toàn thuộc tính của RealtimeSeat)
+    var busCollection = dbContext.Buses;
+    var tripCollection = dbContext.Trips;
+
+    if (await busCollection.Find(_ => true).CountDocumentsAsync() == 0)
+    {
+        var mockBus = new Bus
+        {
+            BusCode = "BUS-SRC01",
+            LicensePlate = "30F-123.45",
+            BusType = "Standard (Seat)",
+            TotalSeats = 40
+        };
+        await busCollection.InsertOneAsync(mockBus);
+
+        if (await tripCollection.Find(_ => true).CountDocumentsAsync() == 0)
+        {
+            var mockTrip = new Trip
+            {
+                BusId = mockBus.Id,
+                DepartureTime = DateTime.UtcNow.AddDays(1),
+                BaseFare = 150000,
+                Status = "Active",
+                CreatedAt = DateTime.UtcNow,
+                RealtimeSeats = Enumerable.Range(1, 40).Select(i => new RealtimeSeat
+                {
+                    SeatNumber = i < 10 ? "0" + i : i.ToString(),
+                    Status = "Available"
+                }).ToList()
+            };
+            await tripCollection.InsertOneAsync(mockTrip);
+        }
+    }
 }
+// ===============================================================
 
 // Configure HTTP request pipeline
 if (!app.Environment.IsDevelopment())
@@ -98,12 +134,6 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-// NOTE:
-// If local development only runs on http://localhost:5280,
-// this line may show "Failed to determine the https port for redirect".
-// It is safe to comment it during local testing.
-// app.UseHttpsRedirection();
-
 app.UseStaticFiles();
 
 app.UseRouting();
@@ -111,16 +141,6 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// NOTE:
-// PermissionMiddleware belongs to the MongoDB dynamic RBAC/database structure branch.
-// It checks permissions by RoleId + permissions collection.
-//
-// We only apply it to /api routes to avoid blocking MVC pages such as:
-// /Account/Login
-// /Admin
-// /Employee
-//
-// MVC pages are protected by [Authorize] and [Authorize(Roles = "...")] in controllers.
 app.UseWhen(context => context.Request.Path.StartsWithSegments("/api"), apiApp =>
 {
     apiApp.UseMiddleware<PermissionMiddleware>();

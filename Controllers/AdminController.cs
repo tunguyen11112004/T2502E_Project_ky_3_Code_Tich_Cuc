@@ -4,6 +4,9 @@ using Bus_ticket.Data;
 using Bus_ticket.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MongoDB.Driver;
+using System;
+using System.Linq;
 
 namespace Bus_ticket.Controllers
 {
@@ -19,11 +22,6 @@ namespace Bus_ticket.Controllers
 
         // Định tuyến truy cập vào trang chủ Admin (Ví dụ: https://localhost:xxxx/Admin)
         public IActionResult Index()
-        {
-            return View();
-        }
-
-        public IActionResult Booking()
         {
             return View();
         }

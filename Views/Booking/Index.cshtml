@@ -1,0 +1,248 @@
+﻿@model List<Bus_ticket.Models.Trip>
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Quản Lý Chuyến Xe & Đặt Vé";
+}
+
+<style>
+    .src-bg-main { background-color: #0d235c; }
+    .src-seat { width: 44px; height: 44px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; font-size: 0.8rem; user-select: none; }
+    .src-seat-available { background-color: #10b981; color: white; }
+    .src-seat-occupied { background-color: #dc2626; color: white; cursor: not-allowed; }
+    .src-seat-selected { background-color: #fbbf24 !important; color: #1e293b !important; border: 2px solid #d97706; }
+</style>
+
+<div class="p-4 bg-gray-50 min-h-screen dark:bg-gray-900" style="font-family: 'Inter', sans-serif;">
+    
+    <div class="src-bg-main text-center py-6 px-4 rounded-xl mb-6 text-white shadow">
+        <h1 class="text-2xl lg:text-4xl font-black mb-2">SRC Travel Agencies</h1>
+        <p class="text-xs lg:text-sm opacity-75 max-w-xl mx-auto">Connecting destinations, elevating journeys.</p>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="p-4 mb-4 text-sm text-green-800 rounded-lg bg-green-50 dark:bg-gray-800 dark:text-green-400 font-bold shadow-sm">
+            🎉 @TempData["SuccessMessage"]
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400 font-bold shadow-sm">
+            🛑 @TempData["ErrorMessage"]
+        </div>
+    }
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <div id="employee-table-wrapper" class="lg:col-span-2 space-y-6">
+            <div class="bg-white p-4 rounded-xl shadow border border-gray-200 dark:bg-gray-800">
+                
+                <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-4">
+                    <div class="w-full md:w-72">
+                        <input type="text" id="txtSearchTrip" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2" placeholder="Tìm kiếm chuyến xe...">
+                    </div>
+                    <div class="text-xs text-gray-400 font-medium">💡 Click vào dòng chuyến xe để tải sơ đồ ghế</div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                        <tr>
+                            <th class="p-3">Mã Chuyến</th>
+                            <th class="p-3">Giờ Đi</th>
+                            <th class="p-3">Giá Vé</th>
+                            <th class="p-3">Trạng Thái Chuyến</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        @if (Model != null && Model.Any())
+                        {
+                            foreach (var trip in Model)
+                            {
+                                <tr class="border-b dark:border-gray-700 hover:bg-blue-50 cursor-pointer transition" onclick="loadSeatMatrix('@trip.Id')">
+                                    <td class="p-3 font-bold text-blue-900 dark:text-white">#@trip.Id.Substring(trip.Id.Length - 6).ToUpper()</td>
+                                    <td class="p-3">@trip.DepartureTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td class="p-3 font-semibold text-emerald-600 dark:text-gray-200">@trip.BaseFare.ToString("N0")đ</td>
+                                    <td class="p-3"><span class="bg-green-100 text-green-800 text-xs font-semibold px-2 py-0.5 rounded">@trip.Status</span></td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="4" class="p-4 text-center text-gray-500">Không có chuyến xe nào được tìm thấy trong Database.</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="seat-matrix-wrapper" class="hidden mt-6 bg-gray-50 p-4 rounded-lg border dark:bg-gray-700 transition-all">
+                    <div class="flex justify-between items-center border-b pb-2 mb-3">
+                        <h4 id="lblBusType" class="text-sm font-bold text-green-600">Sơ Đồ Ghế Xe Thực Tế</h4>
+                        <div class="flex gap-3 text-[11px] text-gray-500">
+                            <div class="flex items-center gap-1"><div class="w-3 h-3 bg-emerald-600 rounded"></div> Trống</div>
+                            <div class="flex items-center gap-1"><div class="w-3 h-3 bg-yellow-400 rounded"></div> Đang Chọn</div>
+                            <div class="flex items-center gap-1"><div class="w-3 h-3 bg-red-600 rounded"></div> Đã Đặt</div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white p-4 rounded-xl max-w-sm mx-auto border dark:bg-gray-800 shadow-sm">
+                        <div id="grid-seats" class="grid gap-3 justify-center"></div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="lg:col-span-1">
+            <div class="bg-white p-4 rounded-xl shadow border border-gray-200 dark:bg-gray-800 space-y-4">
+                <h3 class="text-sm font-bold text-gray-700 uppercase dark:text-white border-b pb-2">Booking Form</h3>
+                
+                <form asp-action="BookTicket" asp-controller="Booking" method="post" id="formBooking" class="space-y-3">
+                    @Html.AntiForgeryToken()
+                    
+                    <input type="hidden" name="tripId" id="hidTripId" />
+                    <div id="hidden-seats-container"></div>
+
+                    <div>
+                        <label class="block mb-1 text-xs font-medium text-gray-900 dark:text-white">Tên hành khách</label>
+                        <input type="text" name="passengerName" id="txtPassengerName" required class="bg-gray-50 border border-gray-300 text-gray-900 text-xs rounded-lg block w-full p-2" placeholder="Họ tên khách mua vé">
+                    </div>
+                    <div>
+                        <label class="block mb-1 text-xs font-medium text-gray-900 dark:text-white">Tuổi (Phục vụ giảm trừ tiền lẻ)</label>
+                        <input type="number" name="passengerAge" id="txtPassengerAge" min="1" max="100" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2 dark:bg-gray-700 dark:text-white" required value="20">
+                        <p class="text-[10px] text-amber-600 mt-0.5">* Giảm 10% vé cho Trẻ em (&lt; 12t) hoặc Người già (&gt; 60t).</p>
+                    </div>
+                    <div>
+                        <label class="block mb-1 text-xs font-medium text-gray-900 dark:text-white">Số ghế chọn</label>
+                        <input type="text" id="txtSeatNum" class="bg-yellow-50 border border-yellow-300 text-yellow-900 font-bold text-xs rounded-lg block w-full p-2 dark:bg-yellow-900 dark:text-yellow-100" readonly placeholder="Chọn trực tiếp trên sơ đồ xe">
+                    </div>
+
+                    <div class="flex gap-2 justify-end pt-2">
+                        <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-bold text-xs rounded-lg px-4 py-2 shadow transition">New (Đặt vé)</button>
+                        <button type="button" onclick="alert('Tính năng nâng cao đang phát triển!')" class="bg-yellow-500 hover:bg-yellow-600 text-white text-xs rounded-lg px-3 py-2 shadow">Update</button>
+                        <button type="button" onclick="clearBookingData()" class="bg-red-600 hover:bg-red-700 text-white text-xs rounded-lg px-3 py-2 shadow">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    const selectedSeats = [];
+    const container = document.getElementById('hidden-seats-container');
+    const txtSeatNum = document.getElementById('txtSeatNum');
+
+    async function loadSeatMatrix(tripId) {
+        clearBookingData(); 
+        document.getElementById('hidTripId').value = tripId;
+        
+        try {
+            const response = await fetch(`/Booking/GetSeats?tripId=${tripId}`);
+            if (!response.ok) {
+                alert("Không thể kết nối lấy dữ liệu ghế!");
+                return;
+            }
+            const data = await response.json();
+            
+            const gridSeats = document.getElementById('grid-seats');
+            gridSeats.innerHTML = ''; 
+            
+            // Bảo hiểm: Tự động chia thành 5 cột nếu Backend trả về totalColumns rỗng hoặc bằng 0
+            const columns = data.totalColumns || 5;
+            gridSeats.style.gridTemplateColumns = `repeat(${columns}, minmax(0, 1fr))`;
+            
+            document.getElementById('lblBusType').innerText = `Sơ đồ xe: ${data.busType || 'Standard Layout (40 Seats)'}`;
+
+            // Nhận diện linh hoạt cả hai tên mảng của team
+            const allSeats = data.realtimeSeats || data.seats || [];
+
+            if (allSeats.length === 0) {
+                gridSeats.innerHTML = '<div class="col-span-full p-4 text-center text-xs text-red-500 font-bold">Chuyến xe này chưa được tạo danh sách ghế trong Database!</div>';
+            } else {
+                allSeats.forEach(seat => {
+                    const seatDiv = document.createElement('div');
+                    seatDiv.innerText = seat.seatType === 'VIP' ? `${seat.seatNumber}⭐` : seat.seatNumber;
+                    
+                    if (seat.status === 'Booked') {
+                        seatDiv.className = 'src-seat src-seat-occupied';
+                        seatDiv.title = `Ghế ${seat.seatNumber} (Đã có người đặt)`;
+                    } else {
+                        const vipClass = seat.seatType === 'VIP' ? 'border border-amber-400 shadow-sm' : '';
+                        seatDiv.className = `src-seat src-seat-available hover:scale-105 transition ${vipClass}`;
+                        seatDiv.setAttribute('data-seat', seat.seatNumber);
+                        
+                        seatDiv.addEventListener('click', function() {
+                            toggleSeatSelection(this, seat.seatNumber);
+                        });
+                    }
+                    gridSeats.appendChild(seatDiv);
+                });
+            }
+
+            // Ép xóa bỏ class 'hidden' và kích hoạt block hiển thị sơ đồ ghế lên màn hình
+            const wrapper = document.getElementById("seat-matrix-wrapper");
+            if (wrapper) {
+                wrapper.classList.remove("hidden");
+                wrapper.style.display = "block";
+            }
+        } catch (error) {
+            alert('Lỗi hệ thống khi tải ma trận lưới ghế động!');
+        }
+    }
+
+    function toggleSeatSelection(element, seatCode) {
+        const index = selectedSeats.indexOf(seatCode);
+
+        if (index > -1) {
+            element.classList.remove('src-seat-selected');
+            element.classList.add('src-seat-available');
+            selectedSeats.splice(index, 1);
+        } else {
+            element.classList.remove('src-seat-available');
+            element.classList.add('src-seat-selected');
+            selectedSeats.push(seatCode);
+        }
+
+        txtSeatNum.value = selectedSeats.join(', ');
+
+        container.innerHTML = '';
+        selectedSeats.forEach((seat) => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'seatNumbers';
+            input.value = seat;
+            container.appendChild(input);
+        });
+    }
+
+    function clearBookingData() {
+        document.getElementById("formBooking").reset();
+        document.getElementById('hidTripId').value = '';
+        txtSeatNum.value = "";
+        container.innerHTML = '';
+        selectedSeats.length = 0;
+        
+        const wrapper = document.getElementById("seat-matrix-wrapper");
+        if (wrapper) {
+            wrapper.classList.add("hidden");
+            wrapper.style.display = "none";
+        }
+    }
+
+    document.getElementById('formBooking').addEventListener('submit', function(e) {
+        const tripId = document.getElementById('hidTripId').value;
+        if (!tripId) {
+            e.preventDefault();
+            alert('Vui lòng click chọn một chuyến xe trong bảng danh sách trước!');
+            return;
+        }
+        if (selectedSeats.length === 0) {
+            e.preventDefault();
+            alert('Vui lòng tích chọn ít nhất một ghế trên sơ đồ xe!');
+        }
+    });
+</script>
