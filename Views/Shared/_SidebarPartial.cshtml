@@ -1,10 +1,4 @@
-@using System.Security.Claims
-
 @{
-    var fullName = User.Identity?.Name ?? "Unknown User";
-    var employeeCode = User.FindFirst("EmployeeCode")?.Value ?? "N/A";
-    var role = User.FindFirst(ClaimTypes.Role)?.Value ?? "Unknown";
-
     // Thêm class nền tảng để JS nhận biết và tính toán cấu trúc CSS dễ dàng hơn
     var menuItemClass = "nav-link-item flex items-center p-2 text-base text-gray-900 rounded-lg hover:bg-gray-100 group dark:text-gray-200 dark:hover:bg-gray-700 transition-all duration-150";
     var subMenuItemClass = "nav-link-item flex items-center p-2 text-base text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700 transition-all duration-150";
@@ -69,8 +63,9 @@
                                 </svg>
                             </button>
                             <ul id="dropdown-crud" class="hidden py-2 space-y-2">
-                                <li><a asp-controller="" asp-action="" class="@subMenuItemClass">Users</a></li>
-                                <li><a asp-controller="DynamicRoles" asp-action="Index" class="@subMenuItemClass">DynamicRoles</a></li>
+                                <li><a href="/Admin/Products" class="@subMenuItemClass">Products</a></li>
+                                <li><a href="/Admin/Users" class="@subMenuItemClass">Users</a></li>
+                                <li><a href="/DynamicRoles" class="@subMenuItemClass">Roles</a></li>
                                 <li><a asp-controller="Permissions" asp-action="Index" class="@subMenuItemClass">Permissions</a></li>
                             </ul>
                         </li>
@@ -146,7 +141,7 @@
                     }
 
                     @* ================= EMPLOYEE MENU ================= *@
-                    @if (User.IsInRole("Employee"))
+                    @if (User.IsInRole("Employee") || User.IsInRole("Admin"))
                     {
                         <li><a href="/Employee" class="@menuItemClass"><span class="w-6 text-center text-gray-500">🎫</span><span class="ml-3">Employee Counter</span></a></li>
                         <li><a href="/Employee/SearchTrips" class="@menuItemClass"><span class="w-6 text-center text-gray-500">🔎</span><span class="ml-3">Search Trips</span></a></li>
@@ -167,16 +162,7 @@
                 }
             </div>
         </div>
-
-        <div class="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-            <div class="text-sm font-semibold text-gray-900 dark:text-white">@fullName</div>
-            <div class="text-xs text-gray-500 dark:text-gray-400">Code: @employeeCode</div>
-            <div class="text-xs text-gray-500 dark:text-gray-400">Role: @role</div>
-            <form asp-controller="Account" asp-action="Logout" method="post" class="mt-3">
-                <button type="submit" class="w-full px-3 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors">Logout</button>
-            </form>
-        </div>
     </div>
+
     <div class="fixed inset-0 z-10 hidden bg-gray-900/50 dark:bg-gray-900/90" id="sidebarBackdrop"></div>
 </aside>
-

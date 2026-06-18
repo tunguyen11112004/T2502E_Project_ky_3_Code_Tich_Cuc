@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Bus_ticket.Controllers;
 
-[Authorize(Roles = "Employee")]
+[Authorize(Roles = "Admin,Employee")]
 public class EmployeeController : Controller
 {
     public IActionResult Index()
