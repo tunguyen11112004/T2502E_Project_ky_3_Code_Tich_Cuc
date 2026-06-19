@@ -30,6 +30,9 @@ public class User
     [BsonElement("phoneNumber")]
     [Phone]
     public string PhoneNumber { get; set; } = string.Empty;
+    
+    [BsonElement("age")]
+    public int? Age { get; set; }
 
     [BsonElement("address")]
     public string Address { get; set; } = string.Empty;

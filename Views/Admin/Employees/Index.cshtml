@@ -1,0 +1,109 @@
+@model List<Bus_ticket.Models.User>
+
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Manage Employees";
+}
+
+<div class="p-4 bg-white border border-gray-200 rounded-lg shadow-sm dark:border-gray-700 dark:bg-gray-800 sm:p-6">
+    <div class="items-center justify-between lg:flex">
+        <div class="mb-4 lg:mb-0">
+            <h1 class="text-xl font-semibold text-gray-900 sm:text-2xl dark:text-white">
+                Manage Employees
+            </h1>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                Create and manage ticket agent accounts for SRC Travel Agencies.
+            </p>
+        </div>
+
+        <a href="/Admin/Employees/Create"
+           class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800">
+            Add Employee
+        </a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="p-4 mt-4 text-sm text-green-800 rounded-lg bg-green-50 dark:bg-gray-700 dark:text-green-400" role="alert">
+            @TempData["SuccessMessage"]
+        </div>
+    }
+
+    <div class="flex flex-col mt-6">
+        <div class="overflow-x-auto rounded-lg">
+            <div class="inline-block min-w-full align-middle">
+                <div class="overflow-hidden shadow sm:rounded-lg">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
+                        <thead class="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                            <th class="p-4 text-xs font-medium tracking-wider text-left text-gray-500 uppercase dark:text-white">
+                                Employee Code
+                            </th>
+                            <th class="p-4 text-xs font-medium tracking-wider text-left text-gray-500 uppercase dark:text-white">
+                                Full Name
+                            </th>
+                            <th class="p-4 text-xs font-medium tracking-wider text-left text-gray-500 uppercase dark:text-white">
+                                Email
+                            </th>
+                            <th class="p-4 text-xs font-medium tracking-wider text-left text-gray-500 uppercase dark:text-white">
+                                Age
+                            </th>
+                            <th class="p-4 text-xs font-medium tracking-wider text-left text-gray-500 uppercase dark:text-white">
+                                Phone
+                            </th>
+                            <th class="p-4 text-xs font-medium tracking-wider text-left text-gray-500 uppercase dark:text-white">
+                                Qualifications
+                            </th>
+                            <th class="p-4 text-xs font-medium tracking-wider text-left text-gray-500 uppercase dark:text-white">
+                                Status
+                            </th>
+                        </tr>
+                        </thead>
+
+                        <tbody class="bg-white dark:bg-gray-800">
+                        @if (Model.Any())
+                        {
+                            foreach (var employee in Model)
+                            {
+                                <tr class="hover:bg-gray-100 dark:hover:bg-gray-700">
+                                    <td class="p-4 text-sm font-semibold text-gray-900 whitespace-nowrap dark:text-white">
+                                        @employee.EmployeeCode
+                                    </td>
+                                    <td class="p-4 text-sm text-gray-900 whitespace-nowrap dark:text-white">
+                                        @employee.FullName
+                                    </td>
+                                    <td class="p-4 text-sm text-gray-500 whitespace-nowrap dark:text-gray-400">
+                                        @employee.Email
+                                    </td>
+                                    <td class="p-4 text-sm text-gray-500 whitespace-nowrap dark:text-gray-400">
+                                        @(employee.Age?.ToString() ?? "N/A")
+                                    </td>
+                                    <td class="p-4 text-sm text-gray-500 whitespace-nowrap dark:text-gray-400">
+                                        @(string.IsNullOrWhiteSpace(employee.PhoneNumber) ? "N/A" : employee.PhoneNumber)
+                                    </td>
+                                    <td class="p-4 text-sm text-gray-500 whitespace-nowrap dark:text-gray-400">
+                                        @(string.IsNullOrWhiteSpace(employee.EducationLevel) ? "N/A" : employee.EducationLevel)
+                                    </td>
+                                    <td class="p-4 text-sm whitespace-nowrap">
+                                        <span class="inline-flex px-2 py-1 text-xs font-medium text-green-800 bg-green-100 rounded-full dark:bg-green-900 dark:text-green-300">
+                                            @employee.Status
+                                        </span>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="7" class="p-6 text-sm text-center text-gray-500 dark:text-gray-400">
+                                    No employees found.
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
