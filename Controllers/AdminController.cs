@@ -24,5 +24,13 @@ namespace Bus_ticket.Controllers
         {
             return View();
         }
+        public IActionResult Users()
+        {
+            return Redirect("/Admin/Employees");
+        }
+        public IActionResult Products()
+        {
+            return RedirectToAction(nameof(Booking));
+        }
     }
 }
