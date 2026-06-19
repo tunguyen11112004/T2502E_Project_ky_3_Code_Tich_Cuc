@@ -30,7 +30,7 @@ public class User
     [BsonElement("phoneNumber")]
     [Phone]
     public string PhoneNumber { get; set; } = string.Empty;
-    
+
     [BsonElement("age")]
     public int? Age { get; set; }
 
@@ -73,3 +73,4 @@ public class User
     [BsonElement("updatedBy")]
     public string UpdatedBy { get; set; } = string.Empty;
 }
+

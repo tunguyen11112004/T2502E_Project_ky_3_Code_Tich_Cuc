@@ -1,7 +1,9 @@
+using Bus_ticket.Data;
 using Bus_ticket.Models;
 using Bus_ticket.Settings;
 using Bus_ticket.ViewModels;
 using Microsoft.Extensions.Options;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using System.Security.Cryptography;
 
@@ -10,9 +12,12 @@ namespace Bus_ticket.Services;
 public class UserService
 {
     private readonly IMongoCollection<User> _users;
+    private readonly ApplicationDbContext _context;
 
-    public UserService(IOptions<MongoDbSettings> mongoDbSettings)
+    public UserService(IOptions<MongoDbSettings> mongoDbSettings, ApplicationDbContext context)
     {
+        _context = context;
+
         var settings = mongoDbSettings.Value;
 
         var mongoClient = new MongoClient(settings.ConnectionString);
@@ -88,6 +93,20 @@ public class UserService
             throw new InvalidOperationException("Email này đã được đăng ký trong hệ thống");
         }
 
+        var ticketAgentFilter = Builders<DynamicRole>.Filter.Or(
+            Builders<DynamicRole>.Filter.Regex("roleName", new BsonRegularExpression("^TicketAgent$", "i")),
+            Builders<DynamicRole>.Filter.Regex("name", new BsonRegularExpression("^TicketAgent$", "i"))
+        );
+
+        var ticketAgentRole = await _context.DynamicRoles
+            .Find(role => role.RoleName == "TicketAgent")
+            .FirstOrDefaultAsync();
+
+        if (ticketAgentRole == null)
+        {
+            throw new InvalidOperationException("Không tìm thấy vai trò TicketAgent trong hệ thống.");
+        }
+
         var employeeCode = await GenerateUniqueEmployeeCodeAsync();
 
         var employee = new User
@@ -97,10 +116,14 @@ public class UserService
             FullName = model.FullName.Trim(),
             Email = normalizedEmail,
             PhoneNumber = model.PhoneNumber?.Trim() ?? string.Empty,
+            Age = model.Age,
             EducationLevel = model.Qualifications?.Trim() ?? string.Empty,
             Username = normalizedEmail,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.Password, 10),
+
             Role = "Employee",
+            RoleId = ticketAgentRole.Id,
+
             Status = "Active",
             CreatedAt = DateTime.UtcNow,
             CreatedBy = createdBy,
@@ -113,3 +136,4 @@ public class UserService
         return employee;
     }
 }
+
