@@ -95,8 +95,47 @@
                         <input type="text" id="txtPassengerName" class="bg-gray-50 border border-gray-300 text-gray-900 text-xs rounded-lg block w-full p-2" placeholder="Họ tên khách">
                     </div>
                     <div>
-                        <label class="block mb-1 text-xs font-medium text-gray-900 dark:text-white">Tuổi</label>
-                        <input type="number" id="txtPassengerAge" class="bg-gray-50 border border-gray-300 text-gray-900 text-xs rounded-lg block w-full p-2">
+                        <label class="block mb-1 text-xs font-medium text-gray-900 dark:text-white">
+                            Nhập tuổi hành khách
+                        </label>
+
+                        <input type="number"
+                               id="txtPassengerAge"
+                               min="0"
+                               max="120"
+                               oninput="calculateTicketLive()"
+                               onchange="calculateTicketLive()"
+                               class="bg-gray-50 border border-gray-300 text-gray-900 text-xs rounded-lg block w-full p-2"
+                               placeholder="Ví dụ: 25">
+
+                        <p id="lblDiscountNote" class="mt-1 text-[11px] text-gray-500">
+                            Nhập tuổi để hệ thống tự tính ưu đãi.
+                        </p>
+                    </div>
+                    <div>
+                        <label class="block mb-1 text-xs font-medium text-gray-900 dark:text-white">
+                            Lớp xe
+                        </label>
+
+                        <select id="ddlBusClass"
+                                onchange="calculateTicketLive()"
+                                class="bg-gray-50 border border-gray-300 text-gray-900 text-xs rounded-lg block w-full p-2">
+                            <option value="Express Seat" data-price="250000">
+                                Express Seat - 250.000đ
+                            </option>
+
+                            <option value="Luxury Sleeper" data-price="500000" selected>
+                                Luxury Sleeper - 500.000đ
+                            </option>
+
+                            <option value="Limousine Sleeper" data-price="750000">
+                                Limousine Sleeper - 750.000đ
+                            </option>
+
+                            <option value="VIP Cabin" data-price="950000">
+                                VIP Cabin - 950.000đ
+                            </option>
+                        </select>
                     </div>
                     <div>
                         <label class="block mb-1 text-xs font-medium text-gray-900 dark:text-white">Tuyến đường</label>
@@ -113,7 +152,68 @@
                         <button type="button" onclick="clearBookingData()" class="bg-red-600 hover:bg-red-700 text-white text-xs rounded-lg px-3 py-2 shadow">Cancel</button>
                     </div>
                 </form>
-            </div>
+            </div> 
+            <div id="liveTicketPreview"
+     class="mt-4 bg-white rounded-xl shadow border-2 border-dashed border-blue-900 p-4 dark:bg-gray-800">
+
+    <div class="text-center border-b pb-2 mb-3">
+        <h4 class="text-base font-black text-gray-800 dark:text-white">
+            PHÔI VÉ IN - LIVE PREVIEW
+        </h4>
+        <p class="text-xs text-blue-700 font-bold">
+            Tự động cập nhật khi đổi tuổi hoặc lớp xe
+        </p>
+    </div>
+
+    <div class="space-y-1.5 text-xs text-gray-700 dark:text-gray-200">
+        <div class="flex justify-between">
+            <span>Khách hàng:</span>
+            <span id="previewPassenger" class="font-bold">-</span>
+        </div>
+
+        <div class="flex justify-between">
+            <span>Lớp xe:</span>
+            <span id="previewBusClass" class="font-bold">Luxury Sleeper</span>
+        </div>
+
+        <div class="flex justify-between">
+            <span>Tuyến đường:</span>
+            <span id="previewRouteInfo" class="font-bold">Hà Nội → Quảng Ninh</span>
+        </div>
+
+        <div class="flex justify-between">
+            <span>Ghế chọn:</span>
+            <span id="previewSeatInfo" class="bg-green-600 text-white text-xs px-1.5 py-0.5 rounded font-bold">-</span>
+        </div>
+
+        <hr class="border-dashed my-2">
+
+        <div class="flex justify-between text-gray-500">
+            <span>Giá vé gốc theo lớp xe:</span>
+            <span id="previewOriginalFare">500.000 VND</span>
+        </div>
+
+        <div class="flex justify-between text-green-600">
+            <span>Khấu trừ/giảm giá:</span>
+            <span id="previewDiscountAmount">0 VND</span>
+        </div>
+
+        <div class="flex justify-between text-gray-500">
+            <span>Tiền vé sau giảm:</span>
+            <span id="previewBaseFare">500.000 VND</span>
+        </div>
+
+        <div class="flex justify-between text-gray-500">
+            <span>Thuế GTGT (VAT 10%):</span>
+            <span id="previewVatAmount">50.000 VND</span>
+        </div>
+
+        <div class="flex justify-between pt-2 border-t font-extrabold text-sm text-gray-900 dark:text-white">
+            <span>TỔNG TIỀN:</span>
+            <span id="previewFinalAmount" class="text-red-600">550.000 VND</span>
+        </div>
+    </div>
+</div>
         </div>
 
     </div>
@@ -130,10 +230,34 @@
             <div class="flex justify-between"><span>Tuyến đường:</span> <span id="lblRouteInfo" class="font-bold">-</span></div>
             <div class="flex justify-between"><span>Ghế chọn:</span> <span id="lblSeatInfo" class="bg-green-600 text-white text-xs px-1.5 py-0.5 rounded font-bold">-</span></div>
             <hr class="border-dashed my-2">
-            <div class="flex justify-between text-gray-500"><span>Giá vé gốc (Base Fare):</span> <span>500.000 VND</span></div>
-            <div class="flex justify-between text-gray-500"><span>Thuế GTGT (VAT 10%):</span> <span>50.000 VND</span></div>
+            <div class="flex justify-between">
+                <span>Lớp xe:</span>
+                <span id="lblBusClass" class="font-bold">Luxury Sleeper</span>
+            </div>
+
+            <div class="flex justify-between text-gray-500">
+                <span>Giá vé gốc theo lớp xe:</span>
+                <span id="lblOriginalFare">500.000 VND</span>
+            </div>
+
+            <div class="flex justify-between text-green-600">
+                <span>Khấu trừ/giảm giá:</span>
+                <span id="lblDiscountAmount">0 VND</span>
+            </div>
+
+            <div class="flex justify-between text-gray-500">
+                <span>Tiền vé sau giảm:</span>
+                <span id="lblBaseFare">500.000 VND</span>
+            </div>
+
+            <div class="flex justify-between text-gray-500">
+                <span>Thuế GTGT (VAT 10%):</span>
+                <span id="lblVatAmount">50.000 VND</span>
+            </div>
+
             <div class="flex justify-between pt-2 border-t font-extrabold text-sm text-gray-900">
-                <span>TỔNG TIỀN:</span> <span class="text-red-600">550.000 VND</span>
+                <span>TỔNG TIỀN:</span>
+                <span id="lblFinalAmount" class="text-red-600">550.000 VND</span>
             </div>
         </div>
         <div class="mt-4 text-center">
@@ -143,30 +267,166 @@
 </div>
 
 <script>
+    const VAT_RATE = 0.10;
+
+    function getElement(id) {
+        return document.getElementById(id);
+    }
+
+    function getPassengerAge() {
+        const rawAge = getElement("txtPassengerAge")?.value;
+        const age = Number(rawAge);
+
+        if (rawAge === "" || Number.isNaN(age) || age < 0) {
+            return null;
+        }
+
+        return age;
+    }
+
+    function getSelectedBusClassInfo() {
+        const busClassSelect = getElement("ddlBusClass");
+        const selectedOption = busClassSelect.options[busClassSelect.selectedIndex];
+
+        return {
+            name: busClassSelect.value,
+            originalFare: Number(selectedOption.dataset.price || 0)
+        };
+    }
+
+    function formatCurrency(amount) {
+        const safeAmount = Number.isFinite(amount) ? amount : 0;
+
+        return new Intl.NumberFormat("vi-VN", {
+            style: "currency",
+            currency: "VND",
+            maximumFractionDigits: 0
+        }).format(Math.round(safeAmount)).replace("₫", "VND");
+    }
+
+    function calculateTicketLive() {
+        const age = getPassengerAge();
+        const busClassInfo = getSelectedBusClassInfo();
+        const originalFare = busClassInfo.originalFare;
+
+        let discountRate = 0;
+        let discountNote = "Không áp dụng ưu đãi theo tuổi.";
+
+        if (age === null) {
+            discountRate = 0;
+            discountNote = "Nhập tuổi hợp lệ để hệ thống tự tính ưu đãi.";
+        } else if (age < 5) {
+            discountRate = 1;
+            discountNote = "Trẻ em dưới 5 tuổi: miễn phí 100% tiền vé.";
+        } else if (age >= 5 && age <= 12) {
+            discountRate = 0.5;
+            discountNote = "Hành khách từ 5 đến 12 tuổi: giảm 50% tiền vé.";
+        } else if (age > 50) {
+            discountRate = 0.3;
+            discountNote = "Người cao tuổi trên 50 tuổi: giảm 30% tiền vé.";
+        }
+
+        const discountAmount = originalFare * discountRate;
+        const baseFareAfterDiscount = Math.max(originalFare - discountAmount, 0);
+        const vatAmount = baseFareAfterDiscount * VAT_RATE;
+        const finalAmount = baseFareAfterDiscount + vatAmount;
+
+        const passengerName = getElement("txtPassengerName")?.value?.trim() || "-";
+        const route = getElement("txtRoute")?.value || "-";
+        const seat = getElement("txtSeatNum")?.value || "-";
+
+        const renderMap = {
+            previewPassenger: passengerName,
+            previewBusClass: busClassInfo.name,
+            previewRouteInfo: route,
+            previewSeatInfo: seat,
+            previewOriginalFare: formatCurrency(originalFare),
+            previewDiscountAmount: "-" + formatCurrency(discountAmount),
+            previewBaseFare: formatCurrency(baseFareAfterDiscount),
+            previewVatAmount: formatCurrency(vatAmount),
+            previewFinalAmount: formatCurrency(finalAmount),
+
+            lblPassenger: passengerName,
+            lblBusClass: busClassInfo.name,
+            lblRouteInfo: route,
+            lblSeatInfo: seat,
+            lblOriginalFare: formatCurrency(originalFare),
+            lblDiscountAmount: "-" + formatCurrency(discountAmount),
+            lblBaseFare: formatCurrency(baseFareAfterDiscount),
+            lblVatAmount: formatCurrency(vatAmount),
+            lblFinalAmount: formatCurrency(finalAmount)
+        };
+
+        Object.entries(renderMap).forEach(([id, value]) => {
+            const element = getElement(id);
+
+            if (element) {
+                element.innerText = value;
+            }
+        });
+
+        const discountNoteElement = getElement("lblDiscountNote");
+
+        if (discountNoteElement) {
+            discountNoteElement.innerText = discountNote;
+        }
+
+        return {
+            age,
+            originalFare,
+            discountAmount,
+            baseFareAfterDiscount,
+            vatAmount,
+            finalAmount
+        };
+    }
+
     function handleMockupSearch() {
-        document.getElementById("seat-matrix-wrapper").classList.remove("hidden");
+        getElement("seat-matrix-wrapper").classList.remove("hidden");
     }
+
     function selectSeatCode(seatName) {
-        document.getElementById("txtSeatNum").value = seatName;
+        getElement("txtSeatNum").value = seatName;
+        calculateTicketLive();
     }
+
     function createNewTicketMockup() {
-        var name = document.getElementById("txtPassengerName").value;
-        var seat = document.getElementById("txtSeatNum").value;
-        if (!name || !seat) {
-            alert("Vui lòng điền tên và chọn ghế!");
+        const name = getElement("txtPassengerName").value.trim();
+        const age = getPassengerAge();
+        const seat = getElement("txtSeatNum").value;
+
+        if (!name || age === null || !seat) {
+            alert("Vui lòng điền tên, nhập tuổi hợp lệ và chọn ghế!");
             return;
         }
-        document.getElementById("lblPassenger").innerText = name;
-        document.getElementById("lblRouteInfo").innerText = document.getElementById("txtRoute").value;
-        document.getElementById("lblSeatInfo").innerText = seat;
-        document.getElementById("invoiceTicketModal").classList.remove("hidden");
+
+        calculateTicketLive();
+        getElement("invoiceTicketModal").classList.remove("hidden");
     }
+
     function closeInvoiceModal() {
-        document.getElementById("invoiceTicketModal").classList.add("hidden");
+        getElement("invoiceTicketModal").classList.add("hidden");
     }
+
     function clearBookingData() {
-        document.getElementById("formBooking").reset();
-        document.getElementById("txtSeatNum").value = "";
-        document.getElementById("seat-matrix-wrapper").classList.add("hidden");
+        getElement("formBooking").reset();
+        getElement("txtSeatNum").value = "";
+        getElement("seat-matrix-wrapper").classList.add("hidden");
+        calculateTicketLive();
     }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        ["txtPassengerName", "txtPassengerAge", "ddlBusClass"].forEach(function (id) {
+            const element = getElement(id);
+
+            if (!element) {
+                return;
+            }
+
+            element.addEventListener("input", calculateTicketLive);
+            element.addEventListener("change", calculateTicketLive);
+        });
+
+        calculateTicketLive();
+    });
 </script>
