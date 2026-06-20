@@ -36,7 +36,7 @@ public class BusRoute
     [Required]
     public string DestinationPoint { get; set; }
 
-    [BsonElement("distanceKm")] public int DistanceKm { get; set; }
+    [BsonElement("distanceKm")] public double DistanceKm { get; set; }
 
     [BsonElement("stations")] public List<Station> Stations { get; set; } = new List<Station>();
 

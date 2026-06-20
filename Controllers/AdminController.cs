@@ -1,7 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
 using Bus_ticket.Data;
-using Bus_ticket.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
@@ -20,7 +17,7 @@ namespace Bus_ticket.Controllers
             _dbContext = dbContext;
         }
 
-        // Định tuyến truy cập vào trang chủ Admin (Ví dụ: https://localhost:xxxx/Admin)
+        // Trang chủ Admin
         public IActionResult Index()
         {
             return View();

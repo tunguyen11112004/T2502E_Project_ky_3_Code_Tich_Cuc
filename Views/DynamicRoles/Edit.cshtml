@@ -5,6 +5,7 @@
     ViewData["Title"] = "Cập Nhật Vai Trò";
     var allPermissions = ViewBag.AllPermissions as List<Bus_ticket.Models.Permission> ?? new List<Bus_ticket.Models.Permission>();
 
+    // Gom nhóm quyền dựa theo tên module sau dấu chấm
     var groupedPermissions = allPermissions
         .GroupBy(p => p.Name.Contains(".") ? p.Name.Split('.')[1] : "Hệ Thống Khác")
         .ToList();
@@ -25,14 +26,15 @@
             <h3 class="text-lg font-semibold text-white">1. Thông tin Vai trò</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <label asp-for="Name" class="block mb-2 text-sm font-medium text-gray-300">Tên Vai Trò</label>
-                    <input asp-for="Name" class="w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400" required />
-                    <span asp-validation-for="Name" class="text-xs text-red-400"></span>
+                    @* ĐÃ SỬA: Đổi sang RoleName để mapping chuẩn với thuộc tính trong Model *@
+                    <label asp-for="RoleName" class="block mb-2 text-sm font-medium text-gray-300">Tên Vai Trò</label>
+                    <input asp-for="RoleName" class="w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400" required />
+                    <span asp-validation-for="RoleName" class="text-xs text-red-400"></span>
                 </div>
-                <div>
-                    <label asp-for="Description" class="block mb-2 text-sm font-medium text-gray-300">Mô Tả Chức Trách</label>
-                    <input asp-for="Description" class="w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400" required />
-                    <span asp-validation-for="Description" class="text-xs text-red-400"></span>
+                <div class="flex items-end">
+                    <p class="text-xs text-gray-400 mb-2.5">
+                        <span class="text-amber-400 font-semibold">Lưu ý:</span> Việc thay đổi tên vai trò có thể ảnh hưởng đến hiển thị phân loại của các tài khoản nhân viên hiện tại.
+                    </p>
                 </div>
             </div>
         </div>
