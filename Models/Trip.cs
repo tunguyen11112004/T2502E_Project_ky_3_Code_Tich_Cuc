@@ -5,6 +5,7 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace Bus_ticket.Models;
 
+[BsonIgnoreExtraElements]
 public class RealtimeSeat
 {
     [BsonElement("seatNumber")] public string SeatNumber { get; set; }
@@ -16,11 +17,15 @@ public class RealtimeSeat
     [BsonElement("heldByCustomerId")] public string HeldByCustomerId { get; set; }
 }
 
+[BsonIgnoreExtraElements]
 public class Trip
 {
     [BsonId]
     [BsonRepresentation(BsonType.ObjectId)]
     public string Id { get; set; }
+
+    [BsonElement("tripCode")]
+    public string? TripCode { get; set; }
 
     [BsonElement("busId")]
     [BsonRepresentation(BsonType.ObjectId)]

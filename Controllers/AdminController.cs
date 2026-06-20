@@ -1,4 +1,5 @@
 using Bus_ticket.Data;
+using Bus_ticket.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
@@ -43,12 +44,11 @@ namespace Bus_ticket.Controllers
             {
                 BusCode = GenerateBusCode(),
                 LicensePlate = licensePlate,
-                BusType = vehicleClass,
-                TotalSeats = 0,
-                TotalRows = 0,
-                TotalColumns = 0,
-                TotalFloors = 1,
-                Status = "Active"
+                BranchId = DataSeeder.BranchHanoiId,
+                BusClassId = DataSeeder.BusClassExpress45Id,
+                Status = "Active",
+                CreatedBy = User.Identity?.Name ?? "Admin",
+                UpdatedBy = User.Identity?.Name ?? "Admin"
             };
 
             await _dbContext.Buses.InsertOneAsync(bus);

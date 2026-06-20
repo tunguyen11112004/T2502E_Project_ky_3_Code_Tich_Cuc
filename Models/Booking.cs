@@ -11,6 +11,10 @@ public class PassengerDetail
 
     [BsonElement("name")] public string Name { get; set; }
 
+    [BsonElement("phoneNumber")] public string PhoneNumber { get; set; }
+
+    [BsonElement("email")] public string Email { get; set; }
+
     [BsonElement("dob")] public DateTime Dob { get; set; }
 
     [BsonElement("finalSeatPrice")] public decimal FinalSeatPrice { get; set; }
@@ -47,6 +51,10 @@ public class Booking
     [BsonElement("customerId")]
     [BsonRepresentation(BsonType.ObjectId)]
     public string CustomerId { get; set; }
+
+    [BsonElement("customerPhone")] public string CustomerPhone { get; set; }
+
+    [BsonElement("customerEmail")] public string CustomerEmail { get; set; }
 
     [BsonElement("tripId")]
     [BsonRepresentation(BsonType.ObjectId)]

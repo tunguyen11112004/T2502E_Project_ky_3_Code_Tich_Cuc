@@ -5,8 +5,6 @@ using Bus_ticket.Models;
 using Bus_ticket.Services;
 using Bus_ticket.Settings;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using MongoDB.Driver;
-using System.Linq;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -53,7 +51,6 @@ app.UseRequestLocalization(localizationOptions);
 using (var scope = app.Services.CreateScope())
 {
     var userService = scope.ServiceProvider.GetRequiredService<UserService>();
-    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
     // 1. Seed Accounts (Admin & Employee)
     var adminEmail = "admin@src.com";
@@ -95,39 +92,6 @@ using (var scope = app.Services.CreateScope())
         });
     }
 
-    // 2. Seed Buses & Trips (Đã khớp hoàn toàn thuộc tính của RealtimeSeat)
-    var busCollection = dbContext.Buses;
-    var tripCollection = dbContext.Trips;
-
-    if (await busCollection.Find(_ => true).CountDocumentsAsync() == 0)
-    {
-        var mockBus = new Bus
-        {
-            BusCode = "BUS-SRC01",
-            LicensePlate = "30F-123.45",
-            BusType = "Standard (Seat)",
-            TotalSeats = 40
-        };
-        await busCollection.InsertOneAsync(mockBus);
-
-        if (await tripCollection.Find(_ => true).CountDocumentsAsync() == 0)
-        {
-            var mockTrip = new Trip
-            {
-                BusId = mockBus.Id,
-                DepartureTime = DateTime.UtcNow.AddDays(1),
-                BaseFare = 150000,
-                Status = "Active",
-                CreatedAt = DateTime.UtcNow,
-                RealtimeSeats = Enumerable.Range(1, 40).Select(i => new RealtimeSeat
-                {
-                    SeatNumber = i < 10 ? "0" + i : i.ToString(),
-                    Status = "Available"
-                }).ToList()
-            };
-            await tripCollection.InsertOneAsync(mockTrip);
-        }
-    }
 }
 // ===============================================================
 

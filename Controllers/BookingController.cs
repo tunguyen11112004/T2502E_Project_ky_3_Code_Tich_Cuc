@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using Bus_ticket.Data;
 using Bus_ticket.Models; 
 
-namespace T2502E_Project_ky_3_Code_Tich_Cuc.Controllers
+namespace Bus_ticket.Controllers
 {
     [Authorize(Roles = "Admin")]
     public class BookingController : Controller
@@ -45,22 +45,55 @@ namespace T2502E_Project_ky_3_Code_Tich_Cuc.Controllers
             var trip = await _dbContext.Trips.Find(t => t.Id == tripId).FirstOrDefaultAsync();
             if (trip == null) return NotFound("Không tìm thấy chuyến xe.");
 
-            var bus = await _dbContext.Buses.Find(b => b.Id == trip.BusId).FirstOrDefaultAsync();
-            if (bus == null) return NotFound("Không tìm thấy thông tin xe tương ứng với chuyến này.");
+            Bus? bus = null;
+            BusClass? busClass = null;
 
+            if (!string.IsNullOrEmpty(trip.BusId))
+            {
+                bus = await _dbContext.Buses.Find(b => b.Id == trip.BusId).FirstOrDefaultAsync();
+
+                if (bus != null && !string.IsNullOrEmpty(bus.BusClassId))
+                {
+                    busClass = await _dbContext.BusClasses
+                        .Find(bc => bc.Id == bus.BusClassId)
+                        .FirstOrDefaultAsync();
+                }
+            }
+
+            var layout = busClass?.DefaultLayout ?? bus?.SeatsLayout;
             var realtimeSeatsList = trip.RealtimeSeats ?? new List<RealtimeSeat>();
+            var statusBySeat = realtimeSeatsList
+                .Where(s => !string.IsNullOrEmpty(s.SeatNumber))
+                .ToDictionary(s => s.SeatNumber, s => s.Status ?? "Available");
+
             var detailedSeats = new List<object>();
 
-            if (realtimeSeatsList.Any())
+            if (layout?.Any() == true)
             {
+                foreach (var seat in layout)
+                {
+                    detailedSeats.Add(new
+                    {
+                        seatNumber = seat.SeatNumber,
+                        row = seat.Row,
+                        column = seat.Column,
+                        floor = seat.Floor,
+                        seatType = seat.SeatType ?? "Standard",
+                        status = statusBySeat.GetValueOrDefault(seat.SeatNumber, "Available")
+                    });
+                }
+            }
+            else if (realtimeSeatsList.Any())
+            {
+                int columns = busClass?.TotalColumns > 0 ? busClass.TotalColumns : 4;
                 int index = 1;
                 foreach (var rSeat in realtimeSeatsList)
                 {
                     detailedSeats.Add(new
                     {
                         seatNumber = rSeat.SeatNumber,
-                        row = (index - 1) / 5 + 1,
-                        column = (index - 1) % 5 + 1,
+                        row = (index - 1) / columns + 1,
+                        column = (index - 1) % columns + 1,
                         floor = 1,
                         seatType = "Standard",
                         status = rSeat.Status ?? "Available"
@@ -72,12 +105,12 @@ namespace T2502E_Project_ky_3_Code_Tich_Cuc.Controllers
             {
                 for (int i = 1; i <= 40; i++)
                 {
-                    string seatName = (i < 10) ? $"A0{i}" : $"A{i}";
+                    string seatName = i < 10 ? $"A0{i}" : $"A{i}";
                     detailedSeats.Add(new
                     {
                         seatNumber = seatName,
-                        row = (i - 1) / 5 + 1,
-                        column = (i - 1) % 5 + 1,
+                        row = (i - 1) / 4 + 1,
+                        column = (i - 1) % 4 + 1,
                         floor = 1,
                         seatType = "Standard",
                         status = "Available"
@@ -85,13 +118,24 @@ namespace T2502E_Project_ky_3_Code_Tich_Cuc.Controllers
                 }
             }
 
-            return Json(new { 
-                baseFare = trip.BaseFare, 
-                busType = bus.BusType ?? "Standard Layout (40 Seats)",
-                totalFloors = 1,
-                totalColumns = 5,
+            var busTypeLabel = busClass?.ClassName
+                ?? bus?.LegacyBusType
+                ?? "Standard Layout (40 Seats)";
+
+            var totalColumns = busClass?.TotalColumns > 0
+                ? busClass.TotalColumns
+                : layout?.Any() == true
+                    ? layout.Max(s => s.Column)
+                    : 4;
+
+            return Json(new
+            {
+                baseFare = trip.BaseFare,
+                busType = busTypeLabel,
+                totalFloors = busClass?.TotalFloors ?? 1,
+                totalColumns = totalColumns,
                 realtimeSeats = detailedSeats,
-                seats = detailedSeats 
+                seats = detailedSeats
             });
         }
 
@@ -133,6 +177,10 @@ namespace T2502E_Project_ky_3_Code_Tich_Cuc.Controllers
                 }
 
                 string finalCustomerName = string.IsNullOrWhiteSpace(passengerName) ? "Khách mua tại quầy" : passengerName.Trim();
+                string finalPhone = passengerPhone?.Trim() ?? string.Empty;
+                string finalEmail = passengerEmail?.Trim().ToLower() ?? string.Empty;
+
+                var customerId = await ResolveCustomerIdAsync(finalCustomerName, passengerAge, finalPhone, finalEmail);
                 decimal pricePerSeat = trip.BaseFare;
 
                 // Tính toán giảm giá chung theo tuổi
@@ -154,6 +202,8 @@ namespace T2502E_Project_ky_3_Code_Tich_Cuc.Controllers
                         {
                             SeatNumber = seat,
                             Name = finalCustomerName,
+                            PhoneNumber = finalPhone,
+                            Email = finalEmail,
                             Dob = DateTime.UtcNow.AddYears(-passengerAge),
                             FinalSeatPrice = pricePerSeat - seatDiscount
                         }
@@ -164,7 +214,9 @@ namespace T2502E_Project_ky_3_Code_Tich_Cuc.Controllers
                     {
                         BookingCode = "BK-" + Guid.NewGuid().ToString().Substring(0, 8).ToUpper(), // Sinh mã đơn ngẫu nhiên không trùng lặp
                         TripId = trip.Id, 
-                        CustomerId = "65fe9876543210fedcba4321", 
+                        CustomerId = customerId,
+                        CustomerPhone = finalPhone,
+                        CustomerEmail = finalEmail,
                         UserId = "6a33e2acda7e37484733da51",     
                         BranchId = "65fe1234567890abcdef1234",   
                         BookingTime = DateTime.UtcNow,
@@ -208,13 +260,72 @@ namespace T2502E_Project_ky_3_Code_Tich_Cuc.Controllers
                     }
                 }
                 
-                TempData["SuccessMessage"] = $"Đặt thành công {seatNumbers.Count} đơn độc lập cho khách hàng {finalCustomerName} (Ghế: {string.Join(", ", seatNumbers)})!";
+                TempData["SuccessMessage"] = $"Đặt thành công {seatNumbers.Count} đơn độc lập cho {finalCustomerName} ({finalPhone}) — Ghế: {string.Join(", ", seatNumbers)}!";
                 return RedirectToAction("Index");
             }
             catch (Exception ex) {
                 TempData["ErrorMessage"] = "Lỗi hệ thống MongoDB: " + ex.Message;
                 return RedirectToAction("Index");
             }
+        }
+
+        private async Task<string> ResolveCustomerIdAsync(string fullName, int age, string phone, string email)
+        {
+            Customer? existing = null;
+
+            if (!string.IsNullOrEmpty(phone))
+            {
+                existing = await _dbContext.Customers
+                    .Find(c => c.PhoneNumber == phone)
+                    .FirstOrDefaultAsync();
+            }
+
+            if (existing == null && !string.IsNullOrEmpty(email))
+            {
+                existing = await _dbContext.Customers
+                    .Find(c => c.Email == email)
+                    .FirstOrDefaultAsync();
+            }
+
+            if (existing != null)
+            {
+                var updates = new List<UpdateDefinition<Customer>>();
+
+                if (!string.IsNullOrEmpty(fullName) && existing.FullName != fullName)
+                    updates.Add(Builders<Customer>.Update.Set(c => c.FullName, fullName));
+
+                if (!string.IsNullOrEmpty(email) && existing.Email != email)
+                    updates.Add(Builders<Customer>.Update.Set(c => c.Email, email));
+
+                if (!string.IsNullOrEmpty(phone) && existing.PhoneNumber != phone)
+                    updates.Add(Builders<Customer>.Update.Set(c => c.PhoneNumber, phone));
+
+                if (updates.Count > 0)
+                {
+                    updates.Add(Builders<Customer>.Update.Set(c => c.UpdatedAt, DateTime.UtcNow));
+                    updates.Add(Builders<Customer>.Update.Set(c => c.UpdatedBy, "Booking-Counter"));
+                    await _dbContext.Customers.UpdateOneAsync(
+                        c => c.Id == existing.Id,
+                        Builders<Customer>.Update.Combine(updates));
+                }
+
+                return existing.Id;
+            }
+
+            var customer = new Customer
+            {
+                CustomerCode = "KH-" + Guid.NewGuid().ToString().Substring(0, 6).ToUpper(),
+                FullName = fullName,
+                Dob = DateTime.UtcNow.AddYears(-age),
+                Gender = "Khác",
+                PhoneNumber = phone,
+                Email = email,
+                CreatedBy = "Booking-Counter",
+                UpdatedBy = "Booking-Counter"
+            };
+
+            await _dbContext.Customers.InsertOneAsync(customer);
+            return customer.Id;
         }
     }
 }
