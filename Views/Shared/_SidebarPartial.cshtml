@@ -1,5 +1,8 @@
 @{
-    // Thêm class nền tảng để JS nhận biết và tính toán cấu trúc CSS dễ dàng hơn
+    var fullName = User.Identity?.Name ?? "Unknown User";
+    var employeeCode = User.FindFirst("EmployeeCode")?.Value ?? "N/A";
+    var role = User.FindFirst(ClaimTypes.Role)?.Value ?? "Unknown";
+
     var menuItemClass = "nav-link-item flex items-center p-2 text-base text-gray-900 rounded-lg hover:bg-gray-100 group dark:text-gray-200 dark:hover:bg-gray-700 transition-all duration-150";
     var subMenuItemClass = "nav-link-item flex items-center p-2 text-base text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700 transition-all duration-150";
     var buttonMenuClass = "flex items-center w-full p-2 text-base text-gray-900 transition duration-75 rounded-lg group hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700";
@@ -63,10 +66,10 @@
                                 </svg>
                             </button>
                             <ul id="dropdown-crud" class="hidden py-2 space-y-2">
-                                <li><a href="/Admin/Products" class="@subMenuItemClass">Products</a></li>
-                                <li><a href="/Admin/Users" class="@subMenuItemClass">Users</a></li>
-                                <li><a href="/DynamicRoles" class="@subMenuItemClass">Roles</a></li>
-                                <li><a asp-controller="Permissions" asp-action="Index" class="@subMenuItemClass">Permissions</a></li>
+                                <li><a asp-controller="Booking" asp-action="Index" class="nav-link-item @subMenuItemClass">Booking</a></li>
+                                <li><a asp-controller="Admin" asp-action="Users" class="nav-link-item @subMenuItemClass">Users</a></li>
+                                <li><a asp-controller="DynamicRoles" asp-action="Index" class="nav-link-item @subMenuItemClass">DynamicRoles</a></li>
+                                <li><a asp-controller="Permissions" asp-action="Index" class="nav-link-item @subMenuItemClass">Permissions</a></li>
                             </ul>
                         </li>
 
@@ -163,6 +166,5 @@
             </div>
         </div>
     </div>
-
     <div class="fixed inset-0 z-10 hidden bg-gray-900/50 dark:bg-gray-900/90" id="sidebarBackdrop"></div>
 </aside>
