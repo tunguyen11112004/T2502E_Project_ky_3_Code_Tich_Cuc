@@ -1,15 +1,17 @@
-﻿@model List<Bus_ticket.Models.Trip>
+﻿@model Bus_ticket.ViewModels.BookingIndexViewModel
 @{
     Layout = "_AdminLayout";
     ViewData["Title"] = "Quản Lý Chuyến Xe & Đặt Vé";
-    var tripCount = Model?.Count ?? 0;
+    var tripCount = Model.Trips?.Count ?? 0;
+    var dateValue = Model.Date?.ToString("yyyy-MM-dd") ?? string.Empty;
+    var returnDateValue = Model.ReturnDate?.ToString("yyyy-MM-dd") ?? string.Empty;
 }
 
 <div class="p-6 sm:p-8 space-y-6">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
             <h1 class="text-2xl font-bold tracking-tight text-white">Danh sách Chuyến Xe & Đặt Vé</h1>
-            <p class="text-sm text-gray-400 mt-1">Quản lý chuyến xe, chọn ghế và đặt vé tại quầy cho hành khách.</p>
+            <p class="text-sm text-gray-400 mt-1">Tìm kiếm chuyến xe theo điểm đi, điểm đến và ngày — chọn ghế để đặt vé tại quầy.</p>
         </div>
         <div>
             <button type="button" onclick="clearBookingData()"
@@ -41,25 +43,110 @@
         </div>
     }
 
-    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <!-- Cột trái: danh sách chuyến -->
-        <div class="xl:col-span-2 space-y-4">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                <p class="text-sm text-gray-400">Click dòng chuyến để tải sơ đồ ghế</p>
-                <div class="w-full md:w-80">
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                            </svg>
-                        </div>
-                        <input type="text" id="txtSearchTrip"
-                               class="block w-full pl-10 pr-4 py-2 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 placeholder-gray-500"
-                               placeholder="Tìm kiếm chuyến xe..."/>
-                    </div>
+    <!-- Bộ lọc tìm kiếm (style vé xe khách) -->
+    <div class="bg-white rounded-2xl border border-gray-200 shadow-lg overflow-hidden">
+        <form method="get" asp-controller="Booking" asp-action="Index" id="tripSearchForm">
+            <div class="flex flex-wrap items-center gap-4 px-5 py-3 border-b border-gray-100 bg-gray-50/80">
+                <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+                    <input type="checkbox" name="useNewAddress" value="true"
+                           @(Model.UseNewAddress ? "checked" : "")
+                           class="w-4 h-4 text-green-600 rounded border-gray-300 focus:ring-green-500"/>
+                    <span class="text-sm font-medium text-gray-700">Địa chỉ mới</span>
+                </label>
+
+                <div class="flex items-center gap-2 ml-auto text-sm font-semibold text-blue-600">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M4 16c0 .88.39 1.67 1 2.22V20a1 1 0 001 1h1a1 1 0 001-1v-1h8v1a1 1 0 001 1h1a1 1 0 001-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z"/></svg>
+                    Xe khách
                 </div>
             </div>
+
+            <div class="flex flex-col lg:flex-row items-stretch">
+                <div class="flex flex-col sm:flex-row flex-1 divide-y sm:divide-y-0 sm:divide-x divide-gray-200">
+                    <!-- Nơi xuất phát -->
+                    <div class="flex items-start gap-3 px-5 py-4 flex-1 min-w-[140px]">
+                        <div class="mt-1 w-5 h-5 rounded-full border-2 border-blue-500 flex items-center justify-center shrink-0">
+                            <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+                        </div>
+                        <div class="flex-1">
+                            <label class="block text-xs text-gray-500 mb-0.5">Nơi xuất phát</label>
+                            <input type="text" name="from" id="txtFrom" value="@Model.From"
+                                   class="w-full text-base font-bold text-gray-900 border-0 p-0 focus:ring-0 placeholder-gray-400"
+                                   placeholder="Hà Nội"/>
+                        </div>
+                    </div>
+
+                    <!-- Swap -->
+                    <div class="hidden sm:flex items-center justify-center px-2">
+                        <button type="button" id="btnSwapRoute" title="Đảo chiều"
+                                class="w-9 h-9 rounded-full border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center text-blue-600 shadow-sm transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Nơi đến -->
+                    <div class="flex items-start gap-3 px-5 py-4 flex-1 min-w-[140px]">
+                        <svg class="w-5 h-5 text-red-500 mt-1 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
+                        </svg>
+                        <div class="flex-1">
+                            <label class="block text-xs text-gray-500 mb-0.5">Nơi đến</label>
+                            <input type="text" name="to" id="txtTo" value="@Model.To"
+                                   class="w-full text-base font-bold text-gray-900 border-0 p-0 focus:ring-0 placeholder-gray-400"
+                                   placeholder="Hải Phòng"/>
+                        </div>
+                    </div>
+
+                    <!-- Ngày đi -->
+                    <div class="flex items-start gap-3 px-5 py-4 flex-1 min-w-[160px]">
+                        <svg class="w-5 h-5 text-blue-500 mt-1 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                        <div class="flex-1">
+                            <label class="block text-xs text-gray-500 mb-0.5">Ngày đi</label>
+                            <input type="date" name="date" id="txtDate" value="@dateValue"
+                                   class="w-full text-sm font-semibold text-gray-900 border-0 p-0 focus:ring-0 bg-transparent"/>
+                            <p id="lblDateDisplay" class="text-xs text-gray-500 mt-0.5"></p>
+                        </div>
+                    </div>
+
+                    <!-- Ngày về -->
+                    <div id="returnDateSection" class="flex items-start gap-3 px-5 py-4 flex-1 min-w-[160px] @(Model.ShowReturnDate ? "" : "hidden")">
+                        <svg class="w-5 h-5 text-blue-500 mt-1 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                        <div class="flex-1">
+                            <label class="block text-xs text-gray-500 mb-0.5">Ngày về</label>
+                            <input type="date" name="returnDate" id="txtReturnDate" value="@returnDateValue"
+                                   class="w-full text-sm font-semibold text-gray-900 border-0 p-0 focus:ring-0 bg-transparent"/>
+                        </div>
+                    </div>
+
+                    <div id="addReturnBtnWrap" class="flex items-center px-5 py-4 @(Model.ShowReturnDate ? "hidden" : "")">
+                        <button type="button" id="btnAddReturnDate"
+                                class="flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700">
+                            <span class="w-6 h-6 rounded-full border-2 border-blue-500 flex items-center justify-center text-lg leading-none">+</span>
+                            Thêm ngày về
+                        </button>
+                    </div>
+                </div>
+
+                <input type="hidden" name="showReturn" id="hidShowReturn" value="@(Model.ShowReturnDate ? "true" : "false")"/>
+
+                <div class="flex items-center p-4 lg:p-0 lg:pr-4">
+                    <button type="submit"
+                            class="w-full lg:w-auto min-w-[120px] px-8 py-4 lg:py-5 text-base font-bold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-xl lg:rounded-2xl shadow-md transition-colors">
+                        Tìm kiếm
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div class="xl:col-span-2 space-y-4">
+            <p class="text-sm text-gray-400">Click dòng chuyến để tải sơ đồ ghế</p>
 
             <div class="overflow-hidden bg-[#1e1e24] border border-gray-700/50 rounded-xl shadow-xl">
                 <div class="overflow-x-auto">
@@ -67,21 +154,30 @@
                         <thead class="text-xs uppercase bg-[#141419] text-gray-400 border-b border-gray-700/60">
                         <tr>
                             <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Mã Chuyến</th>
+                            <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Tuyến</th>
                             <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Giờ Đi</th>
                             <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Giá Vé</th>
                             <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Trạng Thái</th>
                         </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-700/50" id="trip-table-body">
-                        @if (Model != null && Model.Any())
+                        @if (Model.Trips != null && Model.Trips.Any())
                         {
-                            foreach (var trip in Model)
+                            foreach (var trip in Model.Trips)
                             {
-                                var tripCode = trip.TripCode ?? "#" + trip.Id.Substring(trip.Id.Length - 6).ToUpper();
                                 <tr class="hover:bg-gray-800/30 transition-colors duration-150 cursor-pointer trip-row"
-                                    data-trip-id="@trip.Id"
-                                    onclick="loadSeatMatrix('@trip.Id')">
-                                    <td class="px-6 py-4 font-semibold text-amber-400">@tripCode</td>
+                                    data-trip-id="@trip.TripId"
+                                    onclick="loadSeatMatrix('@trip.TripId')">
+                                    <td class="px-6 py-4 font-semibold text-amber-400">
+                                        @trip.TripCode
+                                        @if (trip.IsReturnLeg)
+                                        {
+                                            <span class="ml-1 text-[10px] text-blue-400 font-normal">(Chiều về)</span>
+                                        }
+                                    </td>
+                                    <td class="px-6 py-4 text-gray-300 text-xs">
+                                        @trip.DeparturePoint → @trip.DestinationPoint
+                                    </td>
                                     <td class="px-6 py-4 text-gray-300">@trip.DepartureTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
                                     <td class="px-6 py-4 font-semibold text-white">@trip.BaseFare.ToString("N0") đ</td>
                                     <td class="px-6 py-4">
@@ -95,8 +191,8 @@
                         else
                         {
                             <tr>
-                                <td colspan="4" class="px-6 py-10 text-center text-gray-500 bg-[#1e1e24]">
-                                    Không có chuyến xe nào trong hệ thống.
+                                <td colspan="5" class="px-6 py-10 text-center text-gray-500 bg-[#1e1e24]">
+                                    Không tìm thấy chuyến xe phù hợp. Thử bỏ trống điểm đi/đến để xem tất cả chuyến.
                                 </td>
                             </tr>
                         }
@@ -112,7 +208,6 @@
             </div>
         </div>
 
-        <!-- Cột phải: sơ đồ ghế + booking form -->
         <div class="space-y-4">
             <div class="overflow-hidden bg-[#1e1e24] border border-gray-700/50 rounded-xl shadow-xl p-6">
                 <h2 class="text-sm font-semibold uppercase tracking-wider text-gray-400 border-b border-gray-700/60 pb-3 mb-4">
@@ -196,11 +291,45 @@
     const txtSeatNum = document.getElementById('txtSeatNum');
     const gridSeats = document.getElementById('grid-seats');
 
-    document.getElementById('txtSearchTrip')?.addEventListener('input', function () {
-        const keyword = this.value.toLowerCase();
-        document.querySelectorAll('#trip-table-body tr.trip-row').forEach(row => {
-            row.style.display = row.textContent.toLowerCase().includes(keyword) ? '' : 'none';
-        });
+    const dayNames = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+
+    function formatDateLabel(dateStr) {
+        if (!dateStr) return '';
+        const parts = dateStr.split('-');
+        if (parts.length !== 3) return '';
+        const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        const day = dayNames[d.getDay()];
+        return `${day}, ${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+
+    function updateDateDisplay() {
+        const lbl = document.getElementById('lblDateDisplay');
+        const val = document.getElementById('txtDate')?.value;
+        if (lbl && val) lbl.textContent = formatDateLabel(val);
+    }
+
+    document.getElementById('txtDate')?.addEventListener('change', updateDateDisplay);
+    updateDateDisplay();
+
+    document.getElementById('btnSwapRoute')?.addEventListener('click', function () {
+        const from = document.getElementById('txtFrom');
+        const to = document.getElementById('txtTo');
+        const tmp = from.value;
+        from.value = to.value;
+        to.value = tmp;
+    });
+
+    document.getElementById('btnAddReturnDate')?.addEventListener('click', function () {
+        document.getElementById('returnDateSection').classList.remove('hidden');
+        document.getElementById('addReturnBtnWrap').classList.add('hidden');
+        document.getElementById('hidShowReturn').value = 'true';
+        const dep = document.getElementById('txtDate').value;
+        const ret = document.getElementById('txtReturnDate');
+        if (!ret.value && dep) {
+            const d = new Date(dep);
+            d.setDate(d.getDate() + 1);
+            ret.value = d.toISOString().split('T')[0];
+        }
     });
 
     async function loadSeatMatrix(tripId) {

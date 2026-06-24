@@ -5,9 +5,11 @@ using MongoDB.Bson;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Bus_ticket.Data;
-using Bus_ticket.Models; 
+using Bus_ticket.Models;
+using Bus_ticket.ViewModels;
 
 namespace Bus_ticket.Controllers
 {
@@ -27,10 +29,152 @@ namespace Bus_ticket.Controllers
         // Hiển thị giao diện danh sách chuyến xe thực tế từ cơ sở dữ liệu
         // =======================================================
         [HttpGet]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(
+            string? from,
+            string? to,
+            DateTime? date,
+            DateTime? returnDate,
+            bool useNewAddress = false,
+            bool showReturn = false)
         {
-            var trips = await _dbContext.Trips.Find(_ => true).ToListAsync();
-            return View(trips);
+            var outboundTrips = await SearchTripsAsync(from, to, date);
+            var returnTrips = new List<(Trip Trip, BusRoute? Route)>();
+
+            if (showReturn || returnDate.HasValue)
+            {
+                returnTrips = await SearchTripsAsync(to, from, returnDate);
+            }
+
+            var routeIds = outboundTrips.Select(t => t.Trip.RouteId)
+                .Concat(returnTrips.Select(t => t.Trip.RouteId))
+                .Distinct()
+                .ToList();
+
+            var routeMap = await LoadRouteMapAsync(routeIds);
+
+            var viewModel = new BookingIndexViewModel
+            {
+                From = from?.Trim() ?? string.Empty,
+                To = to?.Trim() ?? string.Empty,
+                Date = date,
+                ReturnDate = returnDate,
+                UseNewAddress = useNewAddress,
+                ShowReturnDate = showReturn || returnDate.HasValue,
+                Trips = MapTripItems(outboundTrips, routeMap, false)
+                    .Concat(MapTripItems(returnTrips, routeMap, true))
+                    .OrderBy(t => t.DepartureTime)
+                    .ToList()
+            };
+
+            return View(viewModel);
+        }
+
+        private async Task<List<(Trip Trip, BusRoute? Route)>> SearchTripsAsync(
+            string? from,
+            string? to,
+            DateTime? date)
+        {
+            var hasRouteFilter = !string.IsNullOrWhiteSpace(from) || !string.IsNullOrWhiteSpace(to);
+            List<string>? routeIds = null;
+
+            if (hasRouteFilter)
+            {
+                var routeFilter = BuildRouteFilter(from, to);
+                var routes = await _dbContext.BusRoutes.Find(routeFilter).ToListAsync();
+                if (routes.Count == 0)
+                {
+                    return new List<(Trip, BusRoute?)>();
+                }
+
+                routeIds = routes.Select(r => r.Id).ToList();
+            }
+
+            var tripFilter = Builders<Trip>.Filter.In(t => t.Status, new[] { "Scheduled", "Active", "Completed" });
+
+            if (hasRouteFilter && routeIds != null)
+            {
+                tripFilter &= Builders<Trip>.Filter.In(t => t.RouteId, routeIds);
+            }
+
+            if (date.HasValue)
+            {
+                var start = date.Value.Date;
+                var end = start.AddDays(1);
+                tripFilter &= Builders<Trip>.Filter.Gte(t => t.DepartureTime, start)
+                             & Builders<Trip>.Filter.Lt(t => t.DepartureTime, end);
+            }
+
+            var trips = await _dbContext.Trips
+                .Find(tripFilter)
+                .SortBy(t => t.DepartureTime)
+                .ToListAsync();
+
+            var matchedRouteIds = trips.Select(t => t.RouteId).Distinct().ToList();
+            var routeMap = await LoadRouteMapAsync(matchedRouteIds);
+
+            return trips
+                .Select(t => (t, routeMap.GetValueOrDefault(t.RouteId)))
+                .ToList();
+        }
+
+        private static FilterDefinition<BusRoute> BuildRouteFilter(string? from, string? to)
+        {
+            var filter = Builders<BusRoute>.Filter.Empty;
+
+            if (!string.IsNullOrWhiteSpace(from))
+            {
+                filter &= Builders<BusRoute>.Filter.Regex(
+                    r => r.DeparturePoint,
+                    new BsonRegularExpression(Regex.Escape(from.Trim()), "i"));
+            }
+
+            if (!string.IsNullOrWhiteSpace(to))
+            {
+                filter &= Builders<BusRoute>.Filter.Regex(
+                    r => r.DestinationPoint,
+                    new BsonRegularExpression(Regex.Escape(to.Trim()), "i"));
+            }
+
+            return filter;
+        }
+
+        private async Task<Dictionary<string, BusRoute>> LoadRouteMapAsync(List<string> routeIds)
+        {
+            if (routeIds.Count == 0)
+            {
+                return new Dictionary<string, BusRoute>();
+            }
+
+            var routes = await _dbContext.BusRoutes
+                .Find(Builders<BusRoute>.Filter.In(r => r.Id, routeIds))
+                .ToListAsync();
+
+            return routes.ToDictionary(r => r.Id, r => r);
+        }
+
+        private static List<BookingTripItemViewModel> MapTripItems(
+            List<(Trip Trip, BusRoute? Route)> trips,
+            Dictionary<string, BusRoute> routeMap,
+            bool isReturnLeg)
+        {
+            return trips.Select(item =>
+            {
+                var route = item.Route ?? routeMap.GetValueOrDefault(item.Trip.RouteId);
+                var tripCode = item.Trip.TripCode
+                    ?? "#" + item.Trip.Id.Substring(item.Trip.Id.Length - 6).ToUpper();
+
+                return new BookingTripItemViewModel
+                {
+                    TripId = item.Trip.Id,
+                    TripCode = tripCode,
+                    DeparturePoint = route?.DeparturePoint ?? "—",
+                    DestinationPoint = route?.DestinationPoint ?? "—",
+                    DepartureTime = item.Trip.DepartureTime,
+                    BaseFare = item.Trip.BaseFare,
+                    Status = item.Trip.Status,
+                    IsReturnLeg = isReturnLeg
+                };
+            }).ToList();
         }
 
         // =======================================================
