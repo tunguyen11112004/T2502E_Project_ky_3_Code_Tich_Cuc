@@ -89,7 +89,7 @@ namespace Bus_ticket.Controllers
                     ModelState.AddModelError("", "Quyền này với phương thức tương ứng đã tồn tại trong hệ thống.");
                     return View(permission);
                 }
-
+                TempData["SuccessMessage"] = "Thêm quyền mới thành công.";
                 // Lưu trực tiếp vào MongoDB
                 await _context.Permissions.InsertOneAsync(permission);
                 return RedirectToAction(nameof(Index));
@@ -143,7 +143,7 @@ namespace Bus_ticket.Controllers
                     .Set(p => p.Description, permission.Description)
                     .Set(p => p.Link, permission.Link)
                     .Set(p => p.Method, permission.Method);
-
+                TempData["SuccessMessage"] = "Sửa quyền thành công.";
                 await _context.Permissions.UpdateOneAsync(p => p.Id == id, update);
                 return RedirectToAction(nameof(Index));
             }
@@ -164,7 +164,7 @@ namespace Bus_ticket.Controllers
                 TempData["ErrorMessage"] = "Không thể xóa! Quyền này hiện đang được gán cho một Vai trò trong hệ thống.";
                 return RedirectToAction(nameof(Index));
             }
-
+            TempData["SuccessMessage"] = "Xóa quyền thành công.";
             await _context.Permissions.DeleteOneAsync(p => p.Id == id);
             return RedirectToAction(nameof(Index));
         }
