@@ -1,115 +1,127 @@
 @{
-    Layout = "_Layout"; // Kế thừa khung Client có Header và Footer
-    ViewData["Title"] = "Chính Sách & Điều Khoản Sử Dụng";
+    Layout = "_Layout";
+    ViewData["Title"] = "Chính Sách & Điều Khoản - ";
 }
 
 <div class="container mx-auto px-4 py-10 max-w-4xl">
-    
     <div class="text-center mb-10">
-        <h1 class="text-3xl font-extrabold text-titleColor mb-3">Chính Sách & Điều Khoản Sử Dụng</h1>
-        <p class="text-gray-500">Vui lòng đọc kỹ các quy định về việc đặt, đổi và hủy vé dưới đây trước khi sử dụng dịch vụ.</p>
+        <h1 class="text-3xl font-extrabold text-titleColor mb-3"
+            data-vi="Chính Sách & Điều Khoản Sử Dụng"
+            data-en="Terms of Service & Policies">
+            Chính Sách & Điều Khoản Sử Dụng
+        </h1>
+        <p class="text-gray-500"
+           data-vi="Quý khách hàng vui lòng đọc kỹ các quy định về việc đặt, đổi và hủy vé dưới đây trước khi sử dụng dịch vụ."
+           data-en="Please carefully read the regulations on ticket booking, exchange, and cancellation below before using our services.">
+            Quý khách hàng vui lòng đọc kỹ các quy định về việc đặt, đổi và hủy vé dưới đây trước khi sử dụng dịch vụ.
+        </p>
         <div class="w-24 h-1 bg-ternaryColor mx-auto mt-4 rounded-full"></div>
     </div>
-
     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
         <h2 class="text-xl font-bold text-titleColor mb-4 flex items-center gap-2 border-b pb-3">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-ternaryColor" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            Chính Sách Hủy Vé & Mức Phạt Hoàn Tiền
+            <span data-vi="Chính Sách Hủy Vé & Mức Phạt Hoàn Tiền" data-en="Ticket Cancellation & Refund Policy">Chính Sách Hủy Vé & Mức Phạt Hoàn Tiền</span>
         </h2>
         <p class="text-gray-600 mb-6 leading-relaxed">
-            Nhằm đảm bảo quyền lợi cho cả hành khách và nhà xe, quy định hoàn tiền khi khách hàng có nhu cầu hủy chuyến được áp dụng chi tiết theo <span class="font-semibold text-titleColor">3 mức mốc thời gian</span> cụ thể dưới đây:
+            <span data-vi="Nhằm đảm bảo quyền lợi cho cả hành khách và nhà xe, quy định hoàn tiền khi khách hàng có nhu cầu hủy chuyến được áp dụng chi tiết theo" 
+                  data-en="To ensure the rights of both passengers and the operator, refund regulations for trip cancellations are applied detailedly based on">
+                Nhằm đảm bảo quyền lợi cho cả hành khách và nhà xe, quy định hoàn tiền khi khách hàng có nhu cầu hủy chuyến được áp dụng chi tiết theo
+            </span>
+            <span class="font-semibold text-titleColor" data-vi="3 mốc thời gian" data-en="3 specific milestones">3 mốc thời gian</span>
+            <span data-vi="cụ thể dưới đây:" data-en="as shown below:">cụ thể dưới đây:</span>
         </p>
-
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            
             <div class="card bg-green-50/60 border border-green-200 p-5 rounded-xl transition-all hover:shadow-md">
                 <div class="flex items-center justify-between mb-3">
-                    <span class="badge badge-success text-white px-2.5 py-1 text-xs font-bold">Mức 1</span>
+                    <span class="badge badge-success text-white px-2.5 py-1 text-xs font-bold" data-vi="Mức 1" data-en="Tier 1">Mức 1</span>
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                 </div>
-                <h3 class="text-sm font-bold text-gray-500 uppercase">Trước chuyến đi</h3>
-                <p class="text-xl font-extrabold text-gray-900 my-1">≥ 2 Ngày</p>
+                <h3 class="text-sm font-bold text-gray-400 uppercase" data-vi="Trước chuyến đi" data-en="Before Departure">Trước chuyến đi</h3>
+                <p class="text-xl font-extrabold text-gray-900 my-1" data-vi="≥ 2 Ngày" data-en="≥ 2 Days">≥ 2 Ngày</p>
                 <div class="divider my-1"></div>
-                <p class="text-sm text-green-700 font-bold">Hoàn tiền 100%</p>
-                <p class="text-xs text-gray-400 mt-1">Không mất phí hủy vé.</p>
+                <p class="text-sm text-green-700 font-bold" data-vi="Hoàn tiền 100%" data-en="100% Refund">Hoàn tiền 100%</p>
+                <p class="text-xs text-gray-400 mt-1" data-vi="Không mất phí hủy vé." data-en="No cancellation fee.">Không mất phí hủy vé.</p>
             </div>
-
             <div class="card bg-amber-50/60 border border-amber-200 p-5 rounded-xl transition-all hover:shadow-md">
                 <div class="flex items-center justify-between mb-3">
-                    <span class="badge badge-warning text-white px-2.5 py-1 text-xs font-bold">Mức 2</span>
+                    <span class="badge badge-warning text-white px-2.5 py-1 text-xs font-bold" data-vi="Mức 2" data-en="Tier 2">Mức 2</span>
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 </div>
-                <h3 class="text-sm font-bold text-gray-500 uppercase">Trước chuyến đi</h3>
-                <p class="text-xl font-extrabold text-gray-900 my-1">1 Ngày</p>
+                <h3 class="text-sm font-bold text-gray-400 uppercase" data-vi="Trước chuyến đi" data-en="Before Departure">Trước chuyến đi</h3>
+                <p class="text-xl font-extrabold text-gray-900 my-1" data-vi="1 Ngày" data-en="1 Day">1 Ngày</p>
                 <div class="divider my-1"></div>
-                <p class="text-sm text-amber-700 font-bold">Khấu trừ 15%</p>
-                <p class="text-xs text-gray-400 mt-1">Hành khách nhận lại 85% giá vé.</p>
+                <p class="text-sm text-amber-700 font-bold" data-vi="Khấu trừ 15%" data-en="15% Deduction">Khấu trừ 15%</p>
+                <p class="text-xs text-gray-400 mt-1" data-vi="Hành khách nhận lại 85% giá vé." data-en="Passengers receive 85% of the fare.">Hành khách nhận lại 85% giá vé.</p>
             </div>
-
             <div class="card bg-red-50/60 border border-red-200 p-5 rounded-xl transition-all hover:shadow-md">
                 <div class="flex items-center justify-between mb-3">
-                    <span class="badge badge-error text-white px-2.5 py-1 text-xs font-bold">Mức 3</span>
+                    <span class="badge badge-error text-white px-2.5 py-1 text-xs font-bold" data-vi="Mức 3" data-en="Tier 3">Mức 3</span>
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                 </div>
-                <h3 class="text-sm font-bold text-gray-500 uppercase">Hủy vé muộn</h3>
-                <p class="text-xl font-extrabold text-gray-900 my-1">Trong Ngày đi</p>
+                <h3 class="text-sm font-bold text-gray-400 uppercase" data-vi="Hủy vé muộn" data-en="Late Cancellation">Hủy vé muộn</h3>
+                <p class="text-xl font-extrabold text-gray-900 my-1" data-vi="Trong Ngày đi" data-en="On Departure Day">Trong Ngày đi</p>
                 <div class="divider my-1"></div>
-                <p class="text-sm text-red-700 font-bold">Khấu trừ 30%</p>
-                <p class="text-xs text-gray-400 mt-1">Hành khách nhận lại 70% giá vé.</p>
+                <p class="text-sm text-red-700 font-bold" data-vi="Khấu trừ 30%" data-en="30% Deduction">Khấu trừ 30%</p>
+                <p class="text-xs text-gray-400 mt-1" data-vi="Hành khách nhận lại 70% giá vé." data-en="Passengers receive 70% of the fare.">Hành khách nhận lại 70% giá vé.</p>
             </div>
-
         </div>
-
         <div class="overflow-x-auto border border-gray-100 rounded-lg">
             <table class="table w-full text-sm">
                 <thead>
                     <tr class="bg-gray-50 text-gray-700 font-bold">
-                        <th class="p-3">Thời gian yêu cầu hủy</th>
-                        <th class="p-3">Tỷ lệ khấu trừ</th>
-                        <th class="p-3 text-right">Số tiền hoàn lại nhận được</th>
+                        <th class="p-3" data-vi="Thời gian yêu cầu hủy" data-en="Cancellation Request Time">Thời gian yêu cầu hủy</th>
+                        <th class="p-3" data-vi="Tỷ lệ khấu trừ" data-en="Deduction Rate">Tỷ lệ khấu trừ</th>
+                        <th class="p-3 text-right" data-vi="Số tiền hoàn lại nhận được" data-en="Refund Amount Received">Số tiền hoàn lại nhận được</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100 text-gray-600">
                     <tr>
-                        <td class="p-3 font-medium">Từ 48 giờ trở lên trước giờ khởi hành</td>
-                        <td class="p-3 text-green-600 font-semibold">0% (Miễn phí)</td>
-                        <td class="p-3 text-right font-bold text-gray-800">100% Giá trị vé</td>
+                        <td class="p-3 font-medium" data-vi="Từ 48 giờ trở lên trước giờ khởi hành" data-en="48 hours or more before departure time">Từ 48 giờ trở lên trước giờ khởi hành</td>
+                        <td class="p-3 text-green-600 font-semibold" data-vi="0% (Miễn phí)" data-en="0% (Free)">0% (Miễn phí)</td>
+                        <td class="p-3 text-right font-bold text-gray-800" data-vi="100% Giá trị vé" data-en="100% Ticket value">100% Giá trị vé</td>
                     </tr>
                     <tr>
-                        <td class="p-3 font-medium">Từ 24 giờ đến dưới 48 giờ trước giờ khởi hành</td>
-                        <td class="p-3 text-amber-600 font-semibold">15% Phí phạt</td>
-                        <td class="p-3 text-right font-bold text-gray-800">85% Giá trị vé</td>
+                        <td class="p-3 font-medium" data-vi="Từ 24 giờ đến dưới 48 giờ trước giờ khởi hành" data-en="From 24 hours to under 48 hours before departure time">Từ 24 giờ đến dưới 48 giờ trước giờ khởi hành</td>
+                        <td class="p-3 text-amber-600 font-semibold" data-vi="15% Phí phạt" data-en="15% Penalty fee">15% Phí phạt</td>
+                        <td class="p-3 text-right font-bold text-gray-800" data-vi="85% Giá trị vé" data-en="85% Ticket value">85% Giá trị vé</td>
                     </tr>
                     <tr>
-                        <td class="p-3 font-medium">Trong vòng 24 giờ trước giờ xe chạy</td>
-                        <td class="p-3 text-red-600 font-semibold">30% Phí phạt</td>
-                        <td class="p-3 text-right font-bold text-gray-800">70% Giá trị vé</td>
+                        <td class="p-3 font-medium" data-vi="Trong vòng 24 giờ trước giờ xe chạy" data-en="Within 24 hours before departure time">Trong vòng 24 giờ trước giờ xe chạy</td>
+                        <td class="p-3 text-red-600 font-semibold" data-vi="30% Phí phạt" data-en="30% Penalty fee">30% Phí phạt</td>
+                        <td class="p-3 text-right font-bold text-gray-800" data-vi="70% Giá trị vé" data-en="70% Ticket value">70% Giá trị vé</td>
                     </tr>
                 </tbody>
             </table>
         </div>
     </div>
-
     <div class="collapse collapse-plus bg-white border border-gray-100 shadow-xs mb-3 rounded-xl">
         <input type="radio" name="my-accordion-3" checked="checked" /> 
-        <div class="collapse-title text-base font-bold text-titleColor">
+        <div class="collapse-title text-base font-bold text-titleColor" 
+             data-vi="1. Quy định về việc lỡ chuyến xe" 
+             data-en="1. Regulations on No-Show / Missing the Bus">
             1. Quy định về việc lỡ chuyến xe
         </div>
         <div class="collapse-content text-sm text-gray-500 leading-relaxed">
-            <p>Nếu xe đã khởi hành mà hành khách không có mặt tại điểm đón đúng giờ, vé đó sẽ tự động bị hủy và không áp dụng bất kỳ chính sách hoàn tiền hay đổi chuyến nào.</p>
+            <p data-vi="Nếu xe đã khởi hành mà hành khách không có mặt tại điểm đón đúng giờ, vé đó sẽ tự động bị hủy và không áp dụng bất kỳ chính sách hoàn tiền hay đổi chuyến nào." 
+               data-en="If the bus has departed and the passenger is not present at the pickup point on time, the ticket will be automatically canceled, and no refund or exchange policies will apply.">
+                Nếu xe đã khởi hành mà hành khách không có mặt tại điểm đón đúng giờ, vé đó sẽ tự động bị hủy và không áp dụng bất kỳ chính sách hoàn tiền hay đổi chuyến nào.
+            </p>
         </div>
     </div>
-    
     <div class="collapse collapse-plus bg-white border border-gray-100 shadow-xs rounded-xl">
         <input type="radio" name="my-accordion-3" /> 
-        <div class="collapse-title text-base font-bold text-titleColor">
+        <div class="collapse-title text-base font-bold text-titleColor" 
+             data-vi="2. Quy trình nhận lại tiền hoàn" 
+             data-en="2. Refund Process & Timeline">
             2. Quy trình nhận lại tiền hoàn
         </div>
         <div class="collapse-content text-sm text-gray-500 leading-relaxed">
-            <p>Tiền hoàn trả sẽ được hệ thống chuyển tự động về đúng tài khoản ngân hàng hoặc ví điện tử mà bạn đã sử dụng để thanh toán trước đó trong vòng từ 3 - 5 ngày làm việc.</p>
+            <p data-vi="Tiền hoàn trả sẽ được hệ thống chuyển tự động về đúng tài khoản ngân hàng hoặc ví điện tử mà bạn đã sử dụng để thanh toán trước đó trong vòng từ 3 - 5 ngày làm việc." 
+               data-en="The refunded amount will be automatically transferred back to the exact bank account or e-wallet used for the initial payment within 3 to 5 working days.">
+                Tiền hoàn trả sẽ được hệ thống chuyển tự động về đúng tài khoản ngân hàng hoặc ví điện tử mà bạn đã sử dụng để thanh toán trước đó trong vòng từ 3 - 5 ngày làm việc.
+            </p>
         </div>
     </div>
-
 </div>
