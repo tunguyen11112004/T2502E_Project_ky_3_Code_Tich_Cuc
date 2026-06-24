@@ -64,6 +64,7 @@
                 home: "Trang Chủ",
                 about: "Giới Thiệu",
                 pricing: "Bảng Giá Xe",
+                news: "Tin Tức",
                 contact: "Liên Hệ",
                 policy: "Chính Sách"
             },
@@ -71,6 +72,7 @@
                 home: "Home",
                 about: "About",
                 pricing: "Pricing",
+                news: "News",
                 contact: "Contact",
                 policy: "Policy"
             }
@@ -81,12 +83,14 @@
             if(document.getElementById('nav-home')) document.getElementById('nav-home').innerText = menu.home;
             if(document.getElementById('nav-about')) document.getElementById('nav-about').innerText = menu.about;
             if(document.getElementById('nav-pricing')) document.getElementById('nav-pricing').innerText = menu.pricing;
+            if(document.getElementById('nav-news')) document.getElementById('nav-news').innerText = menu.news;
             if(document.getElementById('nav-contact')) document.getElementById('nav-contact').innerText = menu.contact;
             if(document.getElementById('nav-policy')) document.getElementById('nav-policy').innerText = menu.policy;
             
             updateTextByClass('mobile-nav-home', menu.home);
             updateTextByClass('mobile-nav-about', menu.about);
             updateTextByClass('mobile-nav-pricing', menu.pricing);
+            updateTextByClass('mobile-nav-news', menu.news);
             updateTextByClass('mobile-nav-contact', menu.contact);
             updateTextByClass('mobile-nav-policy', menu.policy);
         }

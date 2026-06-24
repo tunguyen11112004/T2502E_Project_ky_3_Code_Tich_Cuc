@@ -235,14 +235,14 @@
                 <h3 class="text-lg font-extrabold text-blue-900 uppercase tracking-tight">
                     <i class="far fa-newspaper mr-1.5"></i> <span data-vi="Tin tức nhà xe" data-en="Company News">Tin tức nhà xe</span>
                 </h3>
-                <a href="#" class="text-xs font-semibold text-blue-600 hover:underline" data-vi="Xem tất cả" data-en="View all">Xem tất cả <i class="fas fa-angle-right"></i></a>
+                <a asp-controller="News" asp-action="Index" class="text-xs font-semibold text-blue-600 hover:underline" data-vi="Xem tất cả" data-en="View all">Xem tất cả <i class="fas fa-angle-right"></i></a>
             </div>
             <div class="space-y-4">
                 <div class="flex space-x-4 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
                     <img src="https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=150" class="w-24 h-20 object-cover rounded-md flex-shrink-0" alt="News 1">
                     <div class="space-y-1">
                         <h4 class="font-bold text-sm text-slate-900 line-clamp-2 hover:text-blue-600 transition-colors">
-                            <a href="#" data-vi="SRC Vietnam X Be : Đi xe sang nhận ưu đãi vàng hấp dẫn" data-en="SRC Vietnam X Be: Ride luxury, receive amazing gold rewards">SRC Vietnam X Be : Đi xe sang nhận ưu đãi vàng hấp dẫn</a>
+                            <a asp-controller="News" asp-action="Details" asp-route-id="src-vietnam-x-be-uu-dai-vang" data-vi="SRC Vietnam X Be : Đi xe sang nhận ưu đãi vàng hấp dẫn" data-en="SRC Vietnam X Be: Ride luxury, receive amazing gold rewards">SRC Vietnam X Be : Đi xe sang nhận ưu đãi vàng hấp dẫn</a>
                         </h4>
                         <p class="text-xs text-slate-500 line-clamp-2" data-vi="Chương trình ưu đãi phối hợp cùng ví điện tử giảm giá vé cực sốc..." data-en="A promotional program in collaboration with e-wallets offers massive ticket discounts...">Chương trình ưu đãi phối hợp cùng ví điện tử giảm giá vé cực sốc...</p>
                     </div>
@@ -251,7 +251,7 @@
                     <img src="https://images.unsplash.com/photo-1501183007986-d0d080b147f9?auto=format&fit=crop&q=80&w=150" class="w-24 h-20 object-cover rounded-md flex-shrink-0" alt="News 2">
                     <div class="space-y-1">
                         <h4 class="font-bold text-sm text-slate-900 line-clamp-2 hover:text-blue-600 transition-colors">
-                            <a href="#" data-vi="Thông báo lịch vận tải hành khách dịp nghỉ lễ lớn Giỗ tổ Hùng Vương" data-en="Announcement of passenger transport schedule for Hung Kings Commemoration Day holiday">Thông báo lịch vận tải hành khách dịp nghỉ lễ lớn Giỗ tổ Hùng Vương</a>
+                            <a asp-controller="News" asp-action="Details" asp-route-id="lich-van-tai-nghi-le-gio-to-hung-vuong" data-vi="Thông báo lịch vận tải hành khách dịp nghỉ lễ lớn Giỗ tổ Hùng Vương" data-en="Announcement of passenger transport schedule for Hung Kings Commemoration Day holiday">Thông báo lịch vận tải hành khách dịp nghỉ lễ lớn Giỗ tổ Hùng Vương</a>
                         </h4>
                         <p class="text-xs text-slate-500 line-clamp-2" data-vi="Nhằm đáp ứng nhu cầu đi lại tăng mạnh của hành khách trong kỳ nghỉ lễ..." data-en="In order to meet the heavily increasing travel demands of passengers during the holiday period...">Nhằm đáp ứng nhu cầu đi lại tăng mạnh của hành khách trong kỳ nghỉ lễ...</p>
                     </div>
@@ -264,7 +264,7 @@
                 <h3 class="text-lg font-extrabold text-blue-900 uppercase tracking-tight">
                     <i class="fas fa-user-tie mr-1.5"></i> <span data-vi="Tin tuyển dụng" data-en="Recruitment Careers">Tin tuyển dụng</span>
                 </h3>
-                <a href="#" class="text-xs font-semibold text-blue-600 hover:underline" data-vi="Xem tất cả" data-en="View all">Xem tất cả <i class="fas fa-angle-right"></i></a>
+                <a asp-controller="News" asp-action="Details" asp-route-id="tuyen-dung-lai-xe-toan-quoc" class="text-xs font-semibold text-blue-600 hover:underline" data-vi="Xem chi tiết" data-en="View details">Xem chi tiết <i class="fas fa-angle-right"></i></a>
             </div>
             
             <div class="bg-gradient-to-br from-blue-800 to-indigo-900 text-white rounded-xl p-6 shadow-md relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6">
@@ -287,6 +287,9 @@
                         <i class="fas fa-phone-alt text-red-600 mr-1 animate-bounce"></i> 090.606.1999
                     </div>
                     <p class="text-[10px] text-slate-300" data-vi="hoặc gửi CV về: tuyendung@src.vn" data-en="or send CV to: tuyendung@src.vn">hoặc gửi CV về: tuyendung@src.vn</p>
+                    <a asp-controller="News" asp-action="Details" asp-route-id="tuyen-dung-lai-xe-toan-quoc" class="inline-flex items-center justify-center bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold px-3 py-2 rounded-lg shadow transition-colors">
+                        Xem tin tuyển dụng <i class="fas fa-angle-right ml-1"></i>
+                    </a>
                 </div>
                 <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-white/5 rounded-full pointer-events-none"></div>
             </div>

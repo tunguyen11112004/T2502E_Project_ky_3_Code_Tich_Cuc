@@ -1,0 +1,85 @@
+@model NewsArticle
+@{
+    ViewData["Title"] = Model.Title + " - ";
+    var relatedArticles = ViewBag.RelatedArticles as IEnumerable<NewsArticle> ?? Enumerable.Empty<NewsArticle>();
+}
+
+<section class="bg-white border-b border-slate-200">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
+        <div class="mb-6 flex flex-wrap items-center gap-3 text-sm">
+            <a asp-controller="News" asp-action="Index" class="font-bold text-blue-700 hover:text-blue-900 inline-flex items-center gap-2">
+                <i class="fas fa-arrow-left"></i> Tất cả tin tức
+            </a>
+            <span class="text-slate-300">/</span>
+            <span class="text-slate-500">@Model.Category</span>
+        </div>
+
+        <div class="space-y-5">
+            <span class="inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-orange-600 bg-orange-50 border border-orange-100 px-3 py-1.5 rounded-full">
+                <i class="far fa-newspaper"></i> @Model.Category
+            </span>
+            <h1 class="text-3xl sm:text-5xl font-black text-blue-950 tracking-tight leading-tight">@Model.Title</h1>
+            <p class="text-base sm:text-lg text-slate-600 leading-relaxed">@Model.Summary</p>
+
+            <div class="flex flex-wrap items-center gap-4 text-sm text-slate-500 pt-1">
+                <span><i class="far fa-calendar-alt mr-1.5 text-blue-600"></i>@Model.PublishedAt.ToString("dd/MM/yyyy")</span>
+                <span><i class="far fa-user mr-1.5 text-blue-600"></i>@Model.Author</span>
+                <span><i class="far fa-clock mr-1.5 text-blue-600"></i>@Model.ReadingMinutes phút đọc</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="bg-slate-50 py-10 sm:py-14">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <img src="@Model.ImageUrl" alt="@Model.Title" class="w-full h-[260px] sm:h-[420px] object-cover rounded-3xl shadow-lg border border-white" />
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 mt-10">
+            <article class="lg:col-span-8 bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8">
+                <div class="prose max-w-none">
+                    @foreach (var paragraph in Model.Paragraphs)
+                    {
+                        <p class="text-slate-700 leading-8 text-[15px] sm:text-base mb-5">@paragraph</p>
+                    }
+                </div>
+
+                <div class="mt-8 pt-6 border-t border-slate-100 flex flex-wrap gap-3">
+                    <a asp-controller="Home" asp-action="Contact" class="btn bg-blue-700 hover:bg-blue-800 text-white border-none rounded-xl font-bold">
+                        <i class="fas fa-phone-alt mr-1"></i> Liên hệ đặt vé
+                    </a>
+                    <a asp-controller="News" asp-action="Index" class="btn bg-slate-100 hover:bg-slate-200 text-slate-800 border-none rounded-xl font-bold">
+                        Xem thêm tin khác
+                    </a>
+                </div>
+            </article>
+
+            <aside class="lg:col-span-4 space-y-6">
+                <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-5">
+                    <h2 class="text-base font-extrabold text-blue-900 uppercase mb-4">Điểm chính</h2>
+                    <ul class="space-y-3">
+                        @foreach (var highlight in Model.Highlights)
+                        {
+                            <li class="flex gap-3 text-sm text-slate-700 leading-relaxed">
+                                <span class="w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center flex-shrink-0 mt-0.5"><i class="fas fa-check text-xs"></i></span>
+                                <span>@highlight</span>
+                            </li>
+                        }
+                    </ul>
+                </div>
+
+                <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-5">
+                    <h2 class="text-base font-extrabold text-blue-900 uppercase mb-4">Tin liên quan</h2>
+                    <div class="space-y-4">
+                        @foreach (var item in relatedArticles)
+                        {
+                            <a asp-controller="News" asp-action="Details" asp-route-id="@item.Slug" class="flex gap-3 group">
+                                <img src="@item.ImageUrl" alt="@item.Title" class="w-20 h-16 object-cover rounded-xl flex-shrink-0" />
+                                <span class="text-sm font-bold text-slate-800 group-hover:text-blue-700 leading-snug line-clamp-3">@item.Title</span>
+                            </a>
+                        }
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </div>
+</section>
