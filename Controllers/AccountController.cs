@@ -49,16 +49,15 @@ public class AccountController : Controller
             ModelState.AddModelError("", "Invalid email or password.");
             return View(model);
         }
-
         var claims = new List<Claim>
-        {
-            new Claim(ClaimTypes.NameIdentifier, user.Id ?? string.Empty),
-            new Claim(ClaimTypes.Name, user.FullName),
-            new Claim(ClaimTypes.Email, user.Email),
-            new Claim(ClaimTypes.Role, user.Role),
-            new Claim("EmployeeCode", user.EmployeeCode)
-        };
-
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.Id ?? string.Empty),
+                new Claim(ClaimTypes.Name, user.FullName ?? string.Empty),
+                new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
+                new Claim(ClaimTypes.Role, user.Role ?? string.Empty),
+                new Claim("EmployeeCode", user.EmployeeCode ?? string.Empty),
+                new Claim("RoleId", user.RoleId ?? string.Empty)
+            };
         var identity = new ClaimsIdentity(
             claims,
             CookieAuthenticationDefaults.AuthenticationScheme

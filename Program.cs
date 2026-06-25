@@ -21,6 +21,7 @@ builder.Services.Configure<MongoDbSettings>(
 // Services
 builder.Services.AddSingleton<ApplicationDbContext>();
 builder.Services.AddSingleton<UserService>();
+builder.Services.AddScoped<SidebarPermissionService>();
 
 // Cookie Authentication
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -113,12 +114,8 @@ app.UseStaticFiles();
 app.UseRouting();
 
 app.UseAuthentication();
+app.UseMiddleware<PermissionMiddleware>();
 app.UseAuthorization();
-
-app.UseWhen(context => context.Request.Path.StartsWithSegments("/api"), apiApp =>
-{
-    apiApp.UseMiddleware<PermissionMiddleware>();
-});
 
 app.MapControllerRoute(
     name: "default",

@@ -11,7 +11,7 @@ using Bus_ticket.Models;
 
 namespace Bus_ticket.Controllers
 {
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Employee")]
     public class BookingController : Controller
     {
         private readonly ApplicationDbContext _dbContext; 
