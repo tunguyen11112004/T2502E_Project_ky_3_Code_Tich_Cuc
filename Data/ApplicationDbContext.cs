@@ -28,5 +28,6 @@ namespace Bus_ticket.Data
         public IMongoCollection<Trip> Trips => _database.GetCollection<Trip>("trips");
         public IMongoCollection<Booking> Bookings => _database.GetCollection<Booking>("bookings");
         public IMongoCollection<SystemConfig> SystemConfigs => _database.GetCollection<SystemConfig>("systemconfigs");
+        public IMongoCollection<PriceConfig> PriceConfigs => _database.GetCollection<PriceConfig>("priceconfigs");
     }
 }
