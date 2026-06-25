@@ -67,6 +67,8 @@
                             </button>
                             <ul id="dropdown-crud" class="hidden py-2 space-y-2">
                                 <li><a asp-controller="Booking" asp-action="Index" class="nav-link-item @subMenuItemClass">Booking</a></li>
+                                <li><a href="/Admin/PriceConfig" class="nav-link-item @subMenuItemClass">Pricing</a></li>
+                                
                                 <li><a asp-controller="Admin" asp-action="Users" class="nav-link-item @subMenuItemClass">Users</a></li>
                                 <li><a asp-controller="DynamicRoles" asp-action="Index" class="nav-link-item @subMenuItemClass">DynamicRoles</a></li>
                                 <li><a asp-controller="Permissions" asp-action="Index" class="nav-link-item @subMenuItemClass">Permissions</a></li>
@@ -138,7 +140,7 @@
                                 <li><a href="/Admin/Employees" class="@subMenuItemClass">Manage Employees</a></li>
                                 <li><a href="/Admin/Buses" class="@subMenuItemClass">Manage Buses</a></li>
                                 <li><a href="/Admin/Routes" class="@subMenuItemClass">Manage Routes</a></li>
-                                <li><a href="/Admin/Prices" class="@subMenuItemClass">Manage Price List</a></li>
+                                <li><a href="/Admin/PriceConfig" class="@subMenuItemClass">Manage Price List</a></li>
                             </ul>
                         </li>
                     }
@@ -149,7 +151,7 @@
                         <li><a href="/Employee" class="@menuItemClass"><span class="w-6 text-center text-gray-500">🎫</span><span class="ml-3">Employee Counter</span></a></li>
                         <li><a href="/Employee/SearchTrips" class="@menuItemClass"><span class="w-6 text-center text-gray-500">🔎</span><span class="ml-3">Search Trips</span></a></li>
                         <li><a href="/Employee/BookTicket" class="@menuItemClass"><span class="w-6 text-center text-gray-500">🧾</span><span class="ml-3">Book Ticket</span></a></li>
-                        <li><a href="/Employee/PriceList" class="@menuItemClass"><span class="w-6 text-center text-gray-500">💰</span><span class="ml-3">Price List</span></a></li>
+                        <li><a href="/Admin/PriceConfig" class="@menuItemClass"><span class="w-6 text-center text-gray-500">💰</span><span class="ml-3">Price List</span></a></li>
                         <li><a href="/Employee/Policy" class="@menuItemClass"><span class="w-6 text-center text-gray-500">📌</span><span class="ml-3">Policy</span></a></li>
                     }
                 </ul>
