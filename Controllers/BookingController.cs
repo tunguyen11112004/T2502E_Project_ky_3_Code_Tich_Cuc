@@ -24,18 +24,26 @@ namespace Bus_ticket.Controllers
 
         // =======================================================
         // GET: /Booking
-        // Hiển thị giao diện danh sách chuyến xe thực tế từ cơ sở dữ liệu
+        // MÓC DỮ LIỆU REALTIME: Lấy cả Chuyến đi và thông tin Xe từ MongoDB Compass
         // =======================================================
         [HttpGet]
         public async Task<IActionResult> Index()
         {
+            // 1. Lấy danh sách chuyến xe từ bảng "trips"
             var trips = await _dbContext.Trips.Find(_ => true).ToListAsync();
+
+            // 2. Lấy danh sách xe từ bảng "buses" dưới MongoDB Compass để map thông tin mã xe
+            var buses = await _dbContext.Buses.Find(_ => true).ToListAsync();
+
+            // 3. Đẩy danh sách xe vào ViewBag để file View Index.cshtml tra cứu hiển thị
+            ViewBag.BusList = buses;
+
             return View(trips);
         }
 
         // =======================================================
         // GET: /Booking/GetSeats?tripId=xxx
-        // API kết hợp Trip và Bus để Frontend vẽ sơ đồ
+        // API kết hợp Trip và Bus để Frontend vẽ sơ đồ ma trận ghế
         // =======================================================
         [HttpGet]
         public async Task<IActionResult> GetSeats(string tripId)
@@ -141,11 +149,11 @@ namespace Bus_ticket.Controllers
 
         // =======================================================
         // POST: /Booking/BookTicket
-        // ĐÃ SỬA: Tách đơn hàng độc lập - Mỗi ghế được chọn sinh ra 1 Document riêng biệt
+        // Tiếp nhận đơn hàng - Tự động liên kết CustomerId từ MongoDB
         // =======================================================
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> BookTicket(string tripId, List<string> seatNumbers, string passengerName, int passengerAge, string passengerPhone, string passengerEmail)
+        public async Task<IActionResult> BookTicket(string tripId, List<string> seatNumbers, string passengerName, int passengerAge, string passengerPhone, string passengerEmail, string pickUpPoint, string dropOffPoint)
         {
             if (seatNumbers == null || seatNumbers.Count == 0 || string.IsNullOrEmpty(tripId))
             {
@@ -164,7 +172,7 @@ namespace Bus_ticket.Controllers
 
                 var realtimeSeatsList = trip.RealtimeSeats ?? new List<RealtimeSeat>();
 
-                // 1. Kiểm tra trùng toàn bộ danh sách ghế xem có ghế nào đã bị đặt trước đó chưa
+                // Kiểm tra trùng toàn bộ danh sách ghế xem có ghế nào đã bị đặt trước đó chưa
                 var unavailableSeats = realtimeSeatsList
                     .Where(s => seatNumbers.Contains(s.SeatNumber) && s.Status != "Available")
                     .Select(s => s.SeatNumber)
@@ -183,7 +191,6 @@ namespace Bus_ticket.Controllers
                 var customerId = await ResolveCustomerIdAsync(finalCustomerName, passengerAge, finalPhone, finalEmail);
                 decimal pricePerSeat = trip.BaseFare;
 
-                // Tính toán giảm giá chung theo tuổi
                 decimal seatDiscount = 0m;
                 if (passengerAge < 12 || passengerAge > 60)
                 {
@@ -192,10 +199,9 @@ namespace Bus_ticket.Controllers
                 decimal singleSeatTax = (pricePerSeat - seatDiscount) * 0.1m;
                 decimal singleSeatFinalAmount = pricePerSeat - seatDiscount + singleSeatTax;
 
-                // 2. VÒNG LẶP CHÍ MẠNG: Duyệt qua từng ghế để sinh đơn hàng độc lập
+                // VÒNG LẶP CHÍ MẠNG: Duyệt qua từng ghế để sinh đơn hàng độc lập
                 foreach (var seat in seatNumbers)
                 {
-                    // Tạo mảng hành khách con chỉ chứa đúng 1 ghế này
                     var singlePassengerList = new List<PassengerDetail>
                     {
                         new PassengerDetail
@@ -209,10 +215,9 @@ namespace Bus_ticket.Controllers
                         }
                     };
 
-                    // Khởi tạo một document Booking riêng biệt cho từng ghế
                     var newBooking = new Booking
                     {
-                        BookingCode = "BK-" + Guid.NewGuid().ToString().Substring(0, 8).ToUpper(), // Sinh mã đơn ngẫu nhiên không trùng lặp
+                        BookingCode = "BK-" + Guid.NewGuid().ToString().Substring(0, 8).ToUpper(),
                         TripId = trip.Id, 
                         CustomerId = customerId,
                         CustomerPhone = finalPhone,
@@ -238,10 +243,10 @@ namespace Bus_ticket.Controllers
                         UpdatedAt = DateTime.UtcNow
                     };
 
-                    // 3. Tiến hành lưu trực tiếp document này vào MongoDB
+                    // Lưu trực tiếp document này vào MongoDB
                     await _dbContext.Bookings.InsertOneAsync(newBooking);
 
-                    // 4. Cập nhật trạng thái ghế trong bảng Trips tương ứng
+                    // Cập nhật trạng thái ghế trong bảng Trips tương ứng
                     var checkSeatExist = realtimeSeatsList.FirstOrDefault(s => s.SeatNumber == seat);
                     if (checkSeatExist == null)
                     {
