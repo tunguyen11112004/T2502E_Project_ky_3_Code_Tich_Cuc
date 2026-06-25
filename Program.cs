@@ -21,6 +21,7 @@ builder.Services.Configure<MongoDbSettings>(
 // Services
 builder.Services.AddSingleton<ApplicationDbContext>();
 builder.Services.AddSingleton<UserService>();
+builder.Services.AddSingleton<BranchService>();
 
 // Cookie Authentication
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
