@@ -97,7 +97,7 @@
                                 @(item.LicensePlates.Any() ? string.Join(", ", item.LicensePlates) : "—")
                             </td>
                             <td class="px-6 py-4">
-                                @if (item.Status == "Active")
+                                @if (string.Equals(item.Status, "Active", StringComparison.OrdinalIgnoreCase))
                                 {
                                     <span class="inline-flex items-center px-2.5 py-0.5 text-xs font-semibold rounded-md border bg-emerald-500/10 text-emerald-400 border-emerald-500/20">Hoạt động</span>
                                 }

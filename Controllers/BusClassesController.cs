@@ -67,7 +67,7 @@ public class BusClassesController : Controller
             TotalRows = c.TotalRows,
             TotalColumns = c.TotalColumns,
             TotalSeats = c.TotalSeats,
-            Status = c.Status,
+            Status = string.IsNullOrWhiteSpace(c.Status) ? "Active" : c.Status,
             LicensePlates = busMap.GetValueOrDefault(c.Id, new List<string>())
         }).ToList();
 
@@ -92,6 +92,7 @@ public class BusClassesController : Controller
         ModelState.Remove(nameof(model.Id));
         ModelState.Remove(nameof(model.ImageUrl));
         ModelState.Remove(nameof(model.ImagePublicId));
+        ModelState.Remove(nameof(model.ImageFile));
         ModelState.Remove(nameof(model.LinkedBuses));
 
         if (!ModelState.IsValid)
@@ -155,7 +156,7 @@ public class BusClassesController : Controller
 
             if (!string.IsNullOrWhiteSpace(model.LicensePlate))
             {
-                await CreateBusForClassAsync(busClass.Id, model.LicensePlate.Trim());
+                await CreateBusForClassAsync(busClass.Id, model.LicensePlate.Trim(), model.Status);
             }
 
             TempData["SuccessMessage"] = "Thêm hạng xe thành công.";
@@ -187,7 +188,7 @@ public class BusClassesController : Controller
             TotalRows = busClass.TotalRows,
             TotalColumns = busClass.TotalColumns,
             TotalFloors = busClass.TotalFloors,
-            Status = busClass.Status,
+            Status = string.IsNullOrWhiteSpace(busClass.Status) ? "Active" : busClass.Status,
             ImageUrl = busClass.ImageUrl,
             ImagePublicId = busClass.ImagePublicId,
             LinkedBuses = linkedBuses.Select(b => new BusSummaryViewModel
@@ -209,12 +210,18 @@ public class BusClassesController : Controller
 
         ModelState.Remove(nameof(model.LinkedBuses));
         ModelState.Remove(nameof(model.LicensePlate));
+        ModelState.Remove(nameof(model.ImageFile));
+        ModelState.Remove(nameof(model.ImageUrl));
+        ModelState.Remove(nameof(model.ImagePublicId));
 
         if (!ModelState.IsValid)
         {
             model.LinkedBuses = await LoadLinkedBusesAsync(id);
             return View(model);
         }
+
+        var normalizedStatus = model.Status == "Inactive" ? "Inactive" : "Active";
+        model.Status = normalizedStatus;
 
         var existing = await _context.BusClasses.Find(bc => bc.Id == id).FirstOrDefaultAsync();
         if (existing == null) return NotFound();
@@ -244,11 +251,19 @@ public class BusClassesController : Controller
                 .Set(bc => bc.TotalFloors, model.TotalFloors)
                 .Set(bc => bc.DefaultLayout, layout)
                 .Set(bc => bc.TotalSeats, layout.Count)
-                .Set(bc => bc.Status, model.Status)
+                .Set(bc => bc.Status, normalizedStatus)
                 .Set(bc => bc.UpdatedAt, DateTime.UtcNow)
                 .Set(bc => bc.UpdatedBy, User.Identity?.Name ?? "Admin");
 
             await _context.BusClasses.UpdateOneAsync(bc => bc.Id == id, update);
+
+            var busStatus = normalizedStatus == "Inactive" ? "Inactive" : "Active";
+            await _context.Buses.UpdateManyAsync(
+                b => b.BusClassId == id,
+                Builders<Bus>.Update
+                    .Set(b => b.Status, busStatus)
+                    .Set(b => b.UpdatedAt, DateTime.UtcNow)
+                    .Set(b => b.UpdatedBy, User.Identity?.Name ?? "Admin"));
 
             TempData["SuccessMessage"] = "Cập nhật hạng xe thành công.";
             return RedirectToAction(nameof(Index));
@@ -279,7 +294,7 @@ public class BusClassesController : Controller
             return RedirectToAction(nameof(Edit), new { id = busClassId });
         }
 
-        await CreateBusForClassAsync(busClassId, plate);
+        await CreateBusForClassAsync(busClassId, plate, await GetBusClassStatusAsync(busClassId));
         TempData["SuccessMessage"] = "Thêm xe thành công.";
         return RedirectToAction(nameof(Edit), new { id = busClassId });
     }
@@ -335,15 +350,28 @@ public class BusClassesController : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    private async Task CreateBusForClassAsync(string busClassId, string licensePlate)
+    private async Task<string> GetBusClassStatusAsync(string busClassId)
     {
+        var busClass = await _context.BusClasses.Find(bc => bc.Id == busClassId).FirstOrDefaultAsync();
+        if (busClass == null || string.IsNullOrWhiteSpace(busClass.Status))
+        {
+            return "Active";
+        }
+
+        return busClass.Status == "Inactive" ? "Inactive" : "Active";
+    }
+
+    private async Task CreateBusForClassAsync(string busClassId, string licensePlate, string? classStatus = null)
+    {
+        var busStatus = classStatus == "Inactive" ? "Inactive" : "Active";
+
         var bus = new Bus
         {
             BusCode = "BUS-" + Guid.NewGuid().ToString("N").Substring(0, 6).ToUpper(),
             LicensePlate = licensePlate,
             BusClassId = busClassId,
             BranchId = DataSeeder.BranchHanoiId,
-            Status = "Active",
+            Status = busStatus,
             CreatedAt = DateTime.UtcNow,
             CreatedBy = User.Identity?.Name ?? "Admin",
             UpdatedAt = DateTime.UtcNow,

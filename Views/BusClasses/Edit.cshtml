@@ -19,12 +19,12 @@
         <div class="p-4 text-sm text-red-400 rounded-lg bg-gray-800 border border-red-800">@TempData["ErrorMessage"]</div>
     }
 
-    <form asp-action="Edit" method="post" enctype="multipart/form-data" class="space-y-6">
+    <form asp-action="Edit" asp-route-id="@Model.Id" method="post" enctype="multipart/form-data" class="space-y-6">
         @Html.AntiForgeryToken()
         <input type="hidden" asp-for="Id"/>
         <input type="hidden" asp-for="ImageUrl"/>
         <input type="hidden" asp-for="ImagePublicId"/>
-        <div asp-validation-summary="ModelOnly" class="text-sm text-red-400"></div>
+        <div asp-validation-summary="All" class="text-sm text-red-400"></div>
 
         <div class="p-6 bg-[#1e1e24] border border-gray-700/50 rounded-xl space-y-4 shadow-md">
             <h3 class="text-lg font-semibold text-white">Thông tin hạng xe</h3>
@@ -60,6 +60,7 @@
                         <option value="Active">Hoạt động</option>
                         <option value="Inactive">Ngưng hoạt động</option>
                     </select>
+                    <p class="text-xs text-gray-500 mt-1">Chọn trạng thái rồi bấm <strong class="text-amber-400">Cập nhật</strong> để lưu. Xe trong hạng sẽ đồng bộ theo.</p>
                 </div>
                 <div class="md:col-span-2">
                     <label asp-for="ImageFile" class="block mb-2 text-sm font-medium text-gray-300">Ảnh xe (để trống nếu không thay)</label>
@@ -93,7 +94,7 @@
                 {
                     <li class="flex items-center justify-between p-3 bg-[#141419] rounded-lg border border-gray-700/50">
                         <span class="font-semibold text-amber-400">@bus.LicensePlate</span>
-                        <span class="text-xs text-gray-400">@bus.Status</span>
+                        <span class="text-xs @(bus.Status == "Active" ? "text-emerald-400" : "text-gray-400")">@(bus.Status == "Active" ? "Hoạt động" : "Ngưng hoạt động")</span>
                         <form asp-action="DeleteBus" method="post" class="inline" onsubmit="return confirm('Xóa xe này?');">
                             @Html.AntiForgeryToken()
                             <input type="hidden" name="busClassId" value="@Model.Id"/>
