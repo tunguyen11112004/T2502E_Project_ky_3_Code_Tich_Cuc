@@ -2,16 +2,21 @@ using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Bus_ticket.Models;
 using Microsoft.AspNetCore.Localization;
+using MongoDB.Driver;
+using Bus_ticket.Models;
+using Bus_ticket.Data;
 
 namespace Bus_ticket.Controllers;
 
 public class HomeController : Controller
 {
     private readonly ILogger<HomeController> _logger;
+    private readonly ApplicationDbContext _dbContext;
 
-    public HomeController(ILogger<HomeController> logger)
+    public HomeController(ILogger<HomeController> logger, ApplicationDbContext dbContext)
     {
         _logger = logger;
+        _dbContext = dbContext;
     }
     
     public IActionResult SetLanguage(string culture, string returnUrl)
@@ -48,7 +53,32 @@ public class HomeController : Controller
     {
         return View();
     }
-
+    
+    public IActionResult News() 
+    {
+        var newsList = _dbContext.News.Find(_ => true).ToList()
+            .OrderByDescending(n => n.CreatedDate)
+            .ToList();
+        return View(newsList);
+    }
+    public IActionResult NewsDetail(string id)
+    {
+        if (string.IsNullOrEmpty(id)) 
+        {
+            return NotFound();
+        }
+        var article = _dbContext.News.Find(n => n.Id == id).FirstOrDefault();
+    
+        if (article == null) 
+        {
+            return NotFound();
+        }
+        return View(article);
+    }
+    public IActionResult Recruitment() 
+    {
+        return View();
+    }
     public IActionResult Policy()
     {
         return View();

@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using MongoDB.Driver;
 using Bus_ticket.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace Bus_ticket.Data
 {
@@ -28,5 +29,6 @@ namespace Bus_ticket.Data
         public IMongoCollection<Trip> Trips => _database.GetCollection<Trip>("trips");
         public IMongoCollection<Booking> Bookings => _database.GetCollection<Booking>("bookings");
         public IMongoCollection<SystemConfig> SystemConfigs => _database.GetCollection<SystemConfig>("systemconfigs");
+        public IMongoCollection<News> News => _database.GetCollection<News>("news");
     }
 }
