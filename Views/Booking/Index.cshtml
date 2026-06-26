@@ -42,7 +42,6 @@
     }
 
     <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <!-- Cột trái: danh sách chuyến -->
         <div class="xl:col-span-2 space-y-4">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                 <p class="text-sm text-gray-400">Click dòng chuyến để tải sơ đồ ghế</p>
@@ -66,8 +65,10 @@
                     <table class="w-full text-sm text-left text-gray-300 whitespace-nowrap">
                         <thead class="text-xs uppercase bg-[#141419] text-gray-400 border-b border-gray-700/60">
                         <tr>
-                            <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Mã Chuyến</th>
+                            <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Thông Tin Xe</th>
                             <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Giờ Đi</th>
+                            <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Điểm Đón</th>
+                            <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Điểm Dừng</th>
                             <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Giá Vé</th>
                             <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Trạng Thái</th>
                         </tr>
@@ -77,12 +78,40 @@
                         {
                             foreach (var trip in Model)
                             {
-                                var tripCode = trip.TripCode ?? "#" + trip.Id.Substring(trip.Id.Length - 6).ToUpper();
+                                // MÓC REALTIME DỮ LIỆU BẢNG XE QUA VIEWBUG
+                                var busList = ViewBag.BusList as List<Bus_ticket.Models.Bus>;
+                                var matchedBus = busList?.FirstOrDefault(b => b.Id == trip.BusId);
+                                
+                                string realBusCode = matchedBus?.BusCode ?? "BUS-SRC01";
+                                string realBusType = matchedBus?.LegacyBusType ?? "Standard (Seat)";
+
+                                // Tự động chọn ảnh mạng chất lượng cao dựa theo phân loại xe thật
+                                string busImgUrl = "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=120&auto=format&fit=crop&q=60"; 
+
+                                if (realBusType.Contains("Sleeper") || realBusType.Contains("Luxury") || realBusType.Contains("Giường"))
+                                {
+                                    busImgUrl = "https://images.unsplash.com/photo-1570125909232-eb263c188f7e?w=120&auto=format&fit=crop&q=60";
+                                }
+                                
                                 <tr class="hover:bg-gray-800/30 transition-colors duration-150 cursor-pointer trip-row"
                                     data-trip-id="@trip.Id"
                                     onclick="loadSeatMatrix('@trip.Id')">
-                                    <td class="px-6 py-4 font-semibold text-amber-400">@tripCode</td>
+                                    
+                                    <td class="px-6 py-4 font-semibold text-amber-400">
+                                        <div class="flex items-center space-x-3">
+                                            <img class="w-14 h-9 object-cover rounded border border-gray-700 shadow bg-gray-900" 
+                                                 src="@busImgUrl" alt="@realBusType">
+                                            <div>
+                                                <div class="text-sm font-bold text-amber-400">@realBusCode</div>
+                                                <div class="text-[10px] text-gray-400 font-normal mt-0.5">@realBusType</div>
+                                            </div>
+                                        </div>
+                                    </td>
                                     <td class="px-6 py-4 text-gray-300">@trip.DepartureTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                                    
+                                    <td class="px-6 py-4 text-gray-400">Văn Phòng Đón</td>
+                                    <td class="px-6 py-4 text-gray-400">Bến Xe Đến</td>
+                                    
                                     <td class="px-6 py-4 font-semibold text-white">@trip.BaseFare.ToString("N0") đ</td>
                                     <td class="px-6 py-4">
                                         <span class="inline-flex items-center px-2.5 py-0.5 text-xs font-semibold rounded-md border bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
@@ -95,7 +124,7 @@
                         else
                         {
                             <tr>
-                                <td colspan="4" class="px-6 py-10 text-center text-gray-500 bg-[#1e1e24]">
+                                <td colspan="6" class="px-6 py-10 text-center text-gray-500 bg-[#1e1e24]">
                                     Không có chuyến xe nào trong hệ thống.
                                 </td>
                             </tr>
@@ -112,7 +141,6 @@
             </div>
         </div>
 
-        <!-- Cột phải: sơ đồ ghế + booking form -->
         <div class="space-y-4">
             <div class="overflow-hidden bg-[#1e1e24] border border-gray-700/50 rounded-xl shadow-xl p-6">
                 <h2 class="text-sm font-semibold uppercase tracking-wider text-gray-400 border-b border-gray-700/60 pb-3 mb-4">
@@ -136,6 +164,27 @@
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="tripId" id="hidTripId" />
                     <div id="hidden-seats-container"></div>
+
+                    <div class="mb-4 grid grid-cols-2 gap-3 bg-[#141419] p-3 rounded-lg border border-gray-700/50">
+                        <div>
+                            <label class="block mb-1 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Điểm đón khách</label>
+                            <select name="pickUpPoint" id="ddlPickUpPoint" class="bg-gray-900 border border-gray-700 text-white text-xs rounded-lg block w-full p-2 focus:ring-2 focus:ring-amber-400 focus:border-amber-400" required>
+                                <option value="">-- Chọn điểm đón --</option>
+                                <option value="Văn phòng Hà Nội">Văn phòng Hà Nội</option>
+                                <option value="Bến xe Mỹ Đình">Bến xe Mỹ Đình</option>
+                                <option value="Ngã tư Nội Bài">Ngã tư Nội Bài</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block mb-1 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Điểm trả khách</label>
+                            <select name="dropOffPoint" id="ddlDropOffPoint" class="bg-gray-900 border border-gray-700 text-white text-xs rounded-lg block w-full p-2 focus:ring-2 focus:ring-amber-400 focus:border-amber-400" required>
+                                <option value="">-- Chọn điểm trả --</option>
+                                <option value="Văn phòng trung tâm">Văn phòng trung tâm</option>
+                                <option value="Bến xe thành phố">Bến xe thành phố</option>
+                                <option value="Trả dọc đường Quốc Lộ">Trả dọc đường Quốc Lộ</option>
+                            </select>
+                        </div>
+                    </div>
 
                     <h3 class="text-sm font-semibold text-white">Thông tin đặt vé</h3>
 
