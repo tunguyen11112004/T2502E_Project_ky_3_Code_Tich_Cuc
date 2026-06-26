@@ -29,39 +29,15 @@ namespace Bus_ticket.Controllers
         // Hiển thị giao diện danh sách chuyến xe thực tế từ cơ sở dữ liệu
         // =======================================================
         [HttpGet]
-        public async Task<IActionResult> Index(
-            string? from,
-            string? to,
-            DateTime? date,
-            DateTime? returnDate,
-            bool useNewAddress = false,
-            bool showReturn = false)
+        public async Task<IActionResult> Index()
         {
-            var outboundTrips = await SearchTripsAsync(from, to, date);
-            var returnTrips = new List<(Trip Trip, BusRoute? Route)>();
-
-            if (showReturn || returnDate.HasValue)
-            {
-                returnTrips = await SearchTripsAsync(to, from, returnDate);
-            }
-
-            var routeIds = outboundTrips.Select(t => t.Trip.RouteId)
-                .Concat(returnTrips.Select(t => t.Trip.RouteId))
-                .Distinct()
-                .ToList();
-
+            var trips = await SearchTripsAsync(null, null, null);
+            var routeIds = trips.Select(t => t.Trip.RouteId).Distinct().ToList();
             var routeMap = await LoadRouteMapAsync(routeIds);
 
             var viewModel = new BookingIndexViewModel
             {
-                From = from?.Trim() ?? string.Empty,
-                To = to?.Trim() ?? string.Empty,
-                Date = date,
-                ReturnDate = returnDate,
-                UseNewAddress = useNewAddress,
-                ShowReturnDate = showReturn || returnDate.HasValue,
-                Trips = MapTripItems(outboundTrips, routeMap, false)
-                    .Concat(MapTripItems(returnTrips, routeMap, true))
+                Trips = MapTripItems(trips, routeMap, false)
                     .OrderBy(t => t.DepartureTime)
                     .ToList()
             };
