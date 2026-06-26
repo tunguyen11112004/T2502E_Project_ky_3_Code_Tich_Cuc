@@ -1,82 +1,99 @@
 using System.Net;
 using System.Security.Cryptography;
 using System.Text;
+
 namespace Bus_ticket.Helpers;
 
 public class VnPayLibrary
 {
-    private SortedList<string, string> _requestData = new SortedList<string, string>(new VnPayCompare());
+    private readonly SortedList<string, string> _requestData = new(new VnPayCompare());
 
     public void AddRequestData(string key, string value)
     {
-        if (!string.IsNullOrEmpty(value)) _requestData.Add(key, value);
+        if (!string.IsNullOrWhiteSpace(key) && !string.IsNullOrEmpty(value))
+        {
+            _requestData[key] = value;
+        }
     }
 
-    public string CreateRequestUrl(string baseUrl, string vnp_HashSecret)
+    public string CreateRequestUrl(string baseUrl, string vnpHashSecret)
     {
-        // 1. Tạo chuỗi băm (RAW): Không UrlEncode
-        StringBuilder data = new StringBuilder();
-        foreach (var key in _requestData.Keys)
-        {
-            data.Append(key + "=" + _requestData[key] + "&");
-        }
-        string queryStringRaw = data.ToString().TrimEnd('&');
-    
-        // 2. Băm HMACSHA512
-        string sign = HmacSHA512(vnp_HashSecret, queryStringRaw);
-    
-        // 3. Tạo URL chuyển hướng: Dùng UrlEncode
-        StringBuilder urlData = new StringBuilder();
-        foreach (var key in _requestData.Keys)
-        {
-            urlData.Append(WebUtility.UrlEncode(key) + "=" + WebUtility.UrlEncode(_requestData[key]) + "&");
-        }
-    
-        // Nối chuỗi an toàn: fullUrl = baseUrl + ? + [các tham số đã encode] + vnp_SecureHash=...
-        string fullUrl = baseUrl + "?" + urlData.ToString() + "vnp_SecureHash=" + sign;
-    
-        return fullUrl;
+        var requestData = BuildQueryString(_requestData);
+        var secureHash = HmacSHA512(vnpHashSecret.Trim(), requestData);
+
+        return $"{baseUrl}?{requestData}&vnp_SecureHash={secureHash}";
     }
 
-    public bool ValidateSignature(SortedList<string, string> inputData, string vnp_HashSecret)
+    public bool ValidateSignature(SortedList<string, string> inputData, string vnpHashSecret)
     {
-        // Lấy hash gửi về
-        var vnp_SecureHash = inputData["vnp_SecureHash"];
-    
-        // Tạo danh sách mới để băm (đảm bảo đúng thứ tự A-Z)
-        StringBuilder data = new StringBuilder();
-        var sortedKeys = inputData.Keys.OrderBy(k => k, StringComparer.Ordinal);
-    
-        foreach (var key in sortedKeys)
+        if (!inputData.TryGetValue("vnp_SecureHash", out var receivedHash))
         {
-            // VNPAY không bao gồm SecureHash trong chuỗi băm
-            if (key != "vnp_SecureHash" && !string.IsNullOrEmpty(inputData[key]))
+            return false;
+        }
+
+        var dataToSign = new SortedList<string, string>(new VnPayCompare());
+
+        foreach (var item in inputData)
+        {
+            if (item.Key.Equals("vnp_SecureHash", StringComparison.OrdinalIgnoreCase)
+                || item.Key.Equals("vnp_SecureHashType", StringComparison.OrdinalIgnoreCase))
             {
-                // QUAN TRỌNG: Chuỗi băm gửi về PHẢI là chuỗi thô (raw) 
-                // Nếu VNPAY gửi về có mã hóa, bạn phải xử lý dấu cách thành '+'
-                data.Append(key + "=" + inputData[key] + "&");
+                continue;
+            }
+
+            if (!string.IsNullOrEmpty(item.Value))
+            {
+                dataToSign[item.Key] = item.Value;
             }
         }
-    
-        string queryString = data.ToString().TrimEnd('&');
-        string sign = HmacSHA512(vnp_HashSecret, queryString);
-    
-        // So sánh chữ ký
-        return vnp_SecureHash.Equals(sign, StringComparison.OrdinalIgnoreCase);
+
+        var signData = BuildQueryString(dataToSign);
+        var calculatedHash = HmacSHA512(vnpHashSecret.Trim(), signData);
+
+        return receivedHash.Equals(calculatedHash, StringComparison.OrdinalIgnoreCase);
     }
-    
-    private string HmacSHA512(string key, string inputData)
+
+    private static string BuildQueryString(SortedList<string, string> data)
     {
-        // Sử dụng khởi tạo trực tiếp, không qua .Create()
-        using (var hmac = new HMACSHA512(Encoding.UTF8.GetBytes(key)))
+        var query = new StringBuilder();
+
+        foreach (var item in data)
         {
-            byte[] hashBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(inputData));
-            return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+            if (string.IsNullOrEmpty(item.Value))
+            {
+                continue;
+            }
+
+            query.Append(WebUtility.UrlEncode(item.Key));
+            query.Append('=');
+            query.Append(WebUtility.UrlEncode(item.Value));
+            query.Append('&');
         }
+
+        if (query.Length > 0)
+        {
+            query.Length--;
+        }
+
+        return query.ToString();
+    }
+
+    private static string HmacSHA512(string key, string inputData)
+    {
+        var keyBytes = Encoding.UTF8.GetBytes(key);
+        var inputBytes = Encoding.UTF8.GetBytes(inputData);
+
+        using var hmac = new HMACSHA512(keyBytes);
+        var hashBytes = hmac.ComputeHash(inputBytes);
+
+        return BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
     }
 }
 
 public class VnPayCompare : IComparer<string>
 {
-    public int Compare(string x, string y) => string.Compare(x, y, StringComparison.OrdinalIgnoreCase);
+    public int Compare(string? x, string? y)
+    {
+        return string.Compare(x, y, StringComparison.Ordinal);
+    }
 }

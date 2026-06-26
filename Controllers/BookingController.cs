@@ -1,20 +1,17 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Bus_ticket.Data;
+using Bus_ticket.Helpers;
+using Bus_ticket.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using MongoDB.Driver;
-using MongoDB.Bson;
+using MongoDB.Driver.Linq;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using MongoDB.Driver;
-using MongoDB.Driver.Linq;
-using Bus_ticket.Data;
-using Bus_ticket.Helpers;
-using Bus_ticket.Models;
-using MongoDB.Bson.IO;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using JsonConvert = Newtonsoft.Json.JsonConvert;
 
 namespace Bus_ticket.Controllers
@@ -30,7 +27,6 @@ namespace Bus_ticket.Controllers
             _dbContext = dbContext;
             _config = config;
         }
-
 
         // GET: /Booking
         [HttpGet]
@@ -78,7 +74,10 @@ namespace Bus_ticket.Controllers
         [HttpGet]
         public async Task<IActionResult> GetManifest(string tripId)
         {
-            if (string.IsNullOrEmpty(tripId)) return BadRequest("Mã chuyến không hợp lệ.");
+            if (string.IsNullOrEmpty(tripId))
+            {
+                return BadRequest("Mã chuyến không hợp lệ.");
+            }
 
             var bookings = await _dbContext.Bookings
                 .Find(b => b.TripId == tripId && b.BookingStatus == "Completed")
@@ -97,12 +96,13 @@ namespace Bus_ticket.Controllers
             return Json(passengerList);
         }
 
-        // GET: /Booking/Create (ĐÃ SỬA: Xóa bỏ thẻ [HttpGet] trùng lặp gây lỗi 404 ở đây)
+        // GET: /Booking/Create
         [HttpGet]
         public async Task<IActionResult> Create()
         {
             var trips = await _dbContext.Trips.Find(_ => true).ToListAsync();
             var buses = await _dbContext.Buses.Find(_ => true).ToListAsync();
+
             ViewBag.BusList = buses;
 
             return View(trips);
@@ -164,14 +164,23 @@ namespace Bus_ticket.Controllers
                            r.DestinationPoint.ToLower().Contains(destKey))
                 .FirstOrDefaultAsync();
 
-            if (matchedRoute == null) return Json(new List<object>());
+            if (matchedRoute == null)
+            {
+                return Json(new List<object>());
+            }
 
-            if (!DateTime.TryParse(date, out DateTime parsedDate)) return BadRequest("Định dạng ngày không hợp lệ.");
+            if (!DateTime.TryParse(date, out DateTime parsedDate))
+            {
+                return BadRequest("Định dạng ngày không hợp lệ.");
+            }
+
             var startOfDay = parsedDate.Date.ToUniversalTime();
             var endOfDay = parsedDate.Date.AddDays(1).AddTicks(-1).ToUniversalTime();
 
             var trips = await _dbContext.Trips
-                .Find(t => t.RouteId == matchedRoute.Id && t.DepartureTime >= startOfDay && t.DepartureTime <= endOfDay)
+                .Find(t => t.RouteId == matchedRoute.Id
+                           && t.DepartureTime >= startOfDay
+                           && t.DepartureTime <= endOfDay)
                 .ToListAsync();
 
             var buses = await _dbContext.Buses.Find(_ => true).ToListAsync();
@@ -188,7 +197,6 @@ namespace Bus_ticket.Controllers
                     .Where(b => b.TripId == t.Id)
                     .Sum(b => b.Passengers?.Count ?? 0);
 
-                // Đồng bộ 45 chỗ thay vì cứng 40 chỗ để khớp hoàn toàn với Ma trận sơ đồ ghế
                 int totalSeats = 45;
                 int availableSeats = totalSeats - bookedSeatsCount;
 
@@ -210,43 +218,86 @@ namespace Bus_ticket.Controllers
         [HttpGet]
         public async Task<IActionResult> GetTripSeatMap(string tripId)
         {
-            if (string.IsNullOrEmpty(tripId)) return BadRequest("Mã không hợp lệ.");
+            if (string.IsNullOrEmpty(tripId))
+            {
+                return BadRequest("Mã không hợp lệ.");
+            }
 
-            // 1. Lấy Trip
-            var trip = await _dbContext.Trips.Find(t => t.Id == tripId).FirstOrDefaultAsync();
-            if (trip == null) return NotFound("Không tìm thấy chuyến xe.");
+            await ReleaseExpiredHoldsAsync(tripId);
 
-            // 2. Lấy Bus (Xe) từ Trip (Giả sử Trip có thuộc tính BusId)
-            var bus = await _dbContext.Buses.Find(b => b.Id == trip.BusId).FirstOrDefaultAsync();
-            if (bus == null) return NotFound("Không tìm thấy thông tin xe.");
+            var trip = await _dbContext.Trips
+                .Find(t => t.Id == tripId)
+                .FirstOrDefaultAsync();
 
-            // 3. Lấy BusClass (Cấu hình) từ Bus (Giả sử Bus có thuộc tính BusClassId)
-            var busClass = await _dbContext.BusClasses.Find(bc => bc.Id == bus.BusClassId).FirstOrDefaultAsync();
-            if (busClass == null) return NotFound("Không tìm thấy cấu hình loại xe.");
+            if (trip == null)
+            {
+                return NotFound("Không tìm thấy chuyến xe.");
+            }
 
-            // 4. Lấy danh sách ghế đã đặt
+            var bus = await _dbContext.Buses
+                .Find(b => b.Id == trip.BusId)
+                .FirstOrDefaultAsync();
+
+            if (bus == null)
+            {
+                return NotFound("Không tìm thấy thông tin xe.");
+            }
+
+            var busClass = await _dbContext.BusClasses
+                .Find(bc => bc.Id == bus.BusClassId)
+                .FirstOrDefaultAsync();
+
+            if (busClass == null)
+            {
+                return NotFound("Không tìm thấy cấu hình loại xe.");
+            }
+
             var activeBookings = await _dbContext.Bookings
                 .Find(b => b.TripId == tripId && b.BookingStatus == "Completed")
                 .ToListAsync();
 
-            var bookedSeats = activeBookings
+            var bookedSeatsFromBookings = activeBookings
                 .SelectMany(b => b.Passengers ?? new List<PassengerDetail>())
                 .Select(p => p.SeatNumber.Trim().ToUpper())
-                .ToHashSet();
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-            // 5. Tạo sơ đồ từ thông tin của busClass
+            var now = DateTime.UtcNow;
+            var realtimeSeats = trip.RealtimeSeats ?? new List<RealtimeSeat>();
+
             var seatsList = new List<object>();
+
             for (int i = 1; i <= busClass.TotalSeats; i++)
             {
-                string seatName = $"A{i:D2}";
+                var seatName = $"A{i:D2}";
+
+                var isBookedByTrip = realtimeSeats.Any(s =>
+                    s.SeatNumber != null
+                    && s.SeatNumber.Trim().Equals(seatName, StringComparison.OrdinalIgnoreCase)
+                    && s.Status == "Booked"
+                );
+
+                var activeHold = realtimeSeats.FirstOrDefault(s =>
+                    s.SeatNumber != null
+                    && s.SeatNumber.Trim().Equals(seatName, StringComparison.OrdinalIgnoreCase)
+                    && s.Status == "Holding"
+                    && s.HeldUntil.HasValue
+                    && s.HeldUntil.Value > now
+                );
+
+                var isBooked = bookedSeatsFromBookings.Contains(seatName) || isBookedByTrip;
+                var isHolding = !isBooked && activeHold != null;
+
                 seatsList.Add(new
                 {
                     seatNumber = seatName,
-                    isBooked = bookedSeats.Contains(seatName)
+                    status = isBooked ? "Booked" : isHolding ? "Holding" : "Available",
+                    isBooked,
+                    isHolding,
+                    isLocked = isBooked || isHolding,
+                    heldUntil = activeHold?.HeldUntil
                 });
             }
 
-            // 6. Trả về đúng cấu hình số cột từ busClass
             return Json(new
             {
                 cols = busClass.TotalColumns,
@@ -256,60 +307,174 @@ namespace Bus_ticket.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> BookTicket(string tripId, List<string> seatNumbers, string passengerName,
-            DateTime dob, string passengerPhone, string passengerEmail,
-            string paymentMethod) // Thêm tham số paymentMethod
+        public async Task<IActionResult> BookTicket(
+            string tripId,
+            List<string> seatNumbers,
+            string passengerName,
+            DateTime dob,
+            string passengerPhone,
+            string passengerEmail,
+            string paymentMethod)
         {
             if (seatNumbers == null || !seatNumbers.Any() || string.IsNullOrEmpty(tripId))
             {
                 return Json(new { success = false, message = "Dữ liệu không hợp lệ!" });
             }
+            var blockedCustomer = await _dbContext.Customers
+                .Find(c => c.PhoneNumber == passengerPhone && c.IsBlocked)
+                .FirstOrDefaultAsync();
+
+            if (blockedCustomer != null)
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = "Số điện thoại này đã bị khóa do quá 3 lần đặt vé nhưng không thanh toán. Vui lòng liên hệ quầy vé để được hỗ trợ."
+                });
+            }
 
             try
             {
-                var trip = await _dbContext.Trips.Find(t => t.Id == tripId).FirstOrDefaultAsync();
-                if (trip == null) return Json(new { success = false, message = "Chuyến không tồn tại." });
+                seatNumbers = NormalizeSeatNumbers(seatNumbers);
 
-                var config = await _dbContext.SystemConfigs.Find(s => s.Id == "global_system_configuration")
+                if (!seatNumbers.Any())
+                {
+                    return Json(new { success = false, message = "Vui lòng chọn ghế hợp lệ." });
+                }
+
+                var trip = await _dbContext.Trips
+                    .Find(t => t.Id == tripId)
                     .FirstOrDefaultAsync();
+
+                if (trip == null)
+                {
+                    return Json(new { success = false, message = "Chuyến không tồn tại." });
+                }
+
+                var config = await _dbContext.SystemConfigs
+                    .Find(s => s.Id == "global_system_configuration")
+                    .FirstOrDefaultAsync();
+
                 int age = DateTime.UtcNow.Year - dob.Year;
-                if (dob.Date > DateTime.UtcNow.AddYears(-age)) age--;
+                if (dob.Date > DateTime.UtcNow.AddYears(-age))
+                {
+                    age--;
+                }
+
                 decimal discountPercentage = config?.AgeDiscountRules
                     .FirstOrDefault(r => age >= r.MinAge && age <= r.MaxAge)?.DiscountPercentage ?? 0;
 
                 decimal basePrice = trip.BaseFare;
                 decimal discountPerSeat = basePrice * (discountPercentage / 100m);
                 decimal finalPerSeat = basePrice - discountPerSeat;
-                var bookingCode = "BK-" + Guid.NewGuid().ToString().Substring(0, 8).ToUpper();
                 decimal totalFinal = finalPerSeat * seatNumbers.Count;
-                // XỬ LÝ THANH TOÁN
+
+                var bookingCode = "BK-" + Guid.NewGuid().ToString("N")[..8].ToUpper();
+
                 if (paymentMethod == "VNPAY")
                 {
-                    // 1. Lưu tạm dữ liệu vào Session để sau khi thanh toán xong mới dùng
-                    var pendingData = new
-                        { tripId, seatNumbers, passengerName, dob, passengerPhone, passengerEmail, finalPerSeat };
-                    HttpContext.Session.SetString("PendingBooking", JsonConvert.SerializeObject(pendingData));
-                    long amount = (long)(totalFinal * 100);
-                    // 2. Tạo link VNPay
-                    var vnpay = new VnPayLibrary();
-                    SortedList<string, string> vnpayData = new SortedList<string, string>(new VnPayCompare());
-                    vnpay.AddRequestData("vnp_Amount", amount.ToString());
-                    vnpay.AddRequestData("vnp_Command", "pay");
-                    vnpay.AddRequestData("vnp_CreateDate", DateTime.Now.ToString("yyyyMMddHHmmss"));
-                    vnpay.AddRequestData("vnp_CurrCode", "VND");
-                    vnpay.AddRequestData("vnp_IpAddr", "127.0.0.1");
-                    vnpay.AddRequestData("vnp_Locale", "vn");
-                    vnpay.AddRequestData("vnp_OrderInfo", "ThanhToanVeXe" + new string(bookingCode.Where(char.IsLetterOrDigit).ToArray()));
-                    vnpay.AddRequestData("vnp_ReturnUrl", _config["VnPay:ReturnUrl"]);
-                    vnpay.AddRequestData("vnp_TmnCode", _config["VnPay:TmnCode"]);
-                    vnpay.AddRequestData("vnp_TxnRef", new string(bookingCode.Where(char.IsLetterOrDigit).ToArray()));
-                    vnpay.AddRequestData("vnp_Version", "2.1.0");
+                    var cleanBookingCode = new string(bookingCode.Where(char.IsLetterOrDigit).ToArray());
 
-                    string paymentUrl = vnpay.CreateRequestUrl(_config["VnPay:BaseUrl"], _config["VnPay:HashSecret"].Trim());
-                    return Json(new { success = true, isRedirect = true, paymentUrl = paymentUrl });
+                    var holdResult = await TryHoldSeatsAsync(tripId, seatNumbers, cleanBookingCode);
+
+                    if (!holdResult.Success)
+                    {
+                        return Json(new
+                        {
+                            success = false,
+                            message = holdResult.Message
+                        });
+                    }
+
+                    var pendingData = new PendingBookingDTO
+                    {
+                        tripId = tripId,
+                        seatNumbers = seatNumbers,
+                        passengerName = passengerName,
+                        dob = dob,
+                        passengerPhone = passengerPhone,
+                        passengerEmail = passengerEmail,
+                        finalPerSeat = finalPerSeat,
+                        finalAmount = totalFinal
+                    };
+
+                    HttpContext.Session.SetString("PendingBooking", JsonConvert.SerializeObject(pendingData));
+
+                    var amount = ((long)(totalFinal * 100m)).ToString();
+
+                    var vnpBaseUrl = _config["VnPay:BaseUrl"]?.Trim();
+                    var vnpReturnUrl = _config["VnPay:ReturnUrl"]?.Trim();
+                    var vnpTmnCode = _config["VnPay:TmnCode"]?.Trim();
+                    var vnpHashSecret = _config["VnPay:HashSecret"]?.Trim();
+
+                    if (string.IsNullOrWhiteSpace(vnpBaseUrl)
+                        || string.IsNullOrWhiteSpace(vnpReturnUrl)
+                        || string.IsNullOrWhiteSpace(vnpTmnCode)
+                        || string.IsNullOrWhiteSpace(vnpHashSecret))
+                    {
+                        await ReleaseSeatsByHoldCodeAsync(tripId, cleanBookingCode);
+
+                        return Json(new
+                        {
+                            success = false,
+                            message = "Thiếu cấu hình VNPAY trong appsettings.json."
+                        });
+                    }
+
+                    var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+
+                    if (ipAddress == "::1")
+                    {
+                        ipAddress = "127.0.0.1";
+                    }
+
+                    var now = DateTime.Now;
+                    var expireDate = now.AddMinutes(3);
+
+                    var vnpay = new VnPayLibrary();
+
+                    vnpay.AddRequestData("vnp_Version", "2.1.0");
+                    vnpay.AddRequestData("vnp_Command", "pay");
+                    vnpay.AddRequestData("vnp_TmnCode", vnpTmnCode);
+                    vnpay.AddRequestData("vnp_Amount", amount);
+                    vnpay.AddRequestData("vnp_CreateDate", now.ToString("yyyyMMddHHmmss"));
+                    vnpay.AddRequestData("vnp_CurrCode", "VND");
+                    vnpay.AddRequestData("vnp_IpAddr", ipAddress ?? "127.0.0.1");
+                    vnpay.AddRequestData("vnp_Locale", "vn");
+                    vnpay.AddRequestData("vnp_OrderInfo", $"Thanh toan ve xe {cleanBookingCode}");
+                    vnpay.AddRequestData("vnp_OrderType", "other");
+                    vnpay.AddRequestData("vnp_ReturnUrl", vnpReturnUrl);
+                    vnpay.AddRequestData("vnp_TxnRef", cleanBookingCode);
+                    vnpay.AddRequestData("vnp_ExpireDate", expireDate.ToString("yyyyMMddHHmmss"));
+
+                    var paymentUrl = vnpay.CreateRequestUrl(vnpBaseUrl, vnpHashSecret);
+                    // Cộng 1 lần đặt VNPAY nhưng chưa thanh toán thành công
+                    await IncreaseUnpaidCountAsync(
+                        passengerName,
+                        dob,
+                        passengerPhone,
+                        passengerEmail
+                    );
+
+                    return Json(new
+                    {
+                        success = true,
+                        isRedirect = true,
+                        paymentUrl
+                    });
                 }
 
-                // MẶC ĐỊNH LÀ CASH (Logic cũ của bạn)
+                var cashHoldResult = await TryHoldSeatsAsync(tripId, seatNumbers, bookingCode);
+
+                if (!cashHoldResult.Success)
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = cashHoldResult.Message
+                    });
+                }
+
                 var newBooking = new Booking
                 {
                     BookingCode = bookingCode,
@@ -320,8 +485,9 @@ namespace Bus_ticket.Controllers
                     UserId = User.Identity?.IsAuthenticated == true
                         ? User.FindFirstValue(ClaimTypes.NameIdentifier)
                         : "GUEST",
-                    BranchId =
-                        (await _dbContext.Users.Find(u => u.Username == User.Identity.Name).FirstOrDefaultAsync())
+                    BranchId = (await _dbContext.Users
+                            .Find(u => u.Username == User.Identity.Name)
+                            .FirstOrDefaultAsync())
                         ?.BranchId,
                     BookingTime = DateTime.UtcNow,
                     TotalPrice = basePrice * seatNumbers.Count,
@@ -330,61 +496,121 @@ namespace Bus_ticket.Controllers
                     BookingStatus = "Completed",
                     PaymentStatus = "Paid",
                     Passengers = seatNumbers.Select(s => new PassengerDetail
-                        { SeatNumber = s, Name = passengerName, Dob = dob, FinalSeatPrice = finalPerSeat }).ToList(),
-                    Payment = new PaymentInfo { PaymentMethod = "Cash", AmountPaid = totalFinal },
-                    CreatedAt = DateTime.UtcNow
+                    {
+                        SeatNumber = s,
+                        Name = passengerName,
+                        Dob = dob,
+                        FinalSeatPrice = finalPerSeat
+                    }).ToList(),
+                    Payment = new PaymentInfo
+                    {
+                        PaymentMethod = "Cash",
+                        AmountPaid = totalFinal,
+                        TransactionCode = "CASH-" + Guid.NewGuid().ToString("N")[..6].ToUpper()
+                    },
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = User.Identity?.Name ?? "Booking-Counter"
                 };
 
                 await _dbContext.Bookings.InsertOneAsync(newBooking);
-                foreach (var seat in seatNumbers)
-                {
-                    await _dbContext.Trips.UpdateOneAsync(t => t.Id == tripId,
-                        Builders<Trip>.Update.Push(t => t.RealtimeSeats,
-                            new RealtimeSeat { SeatNumber = seat, Status = "Booked" }));
-                }
+                
+                await ResetUnpaidCountAsync(passengerPhone);
+                
+                await MarkHeldSeatsAsBookedAsync(tripId, seatNumbers, bookingCode);
 
                 TempData["NewBookingCode"] = newBooking.BookingCode;
-                return Json(new { success = true, redirectUrl = Url.Action("Index", "Booking") });
+                return Json(new
+                {
+                    success = true,
+                    redirectUrl = Url.Action("Index", "Booking")
+                });
             }
             catch (Exception ex)
             {
                 return Json(new { success = false, message = "Lỗi: " + ex.Message });
             }
         }
+
+        [HttpGet]
         [AllowAnonymous]
-        public async Task<IActionResult> ConfirmPayment(IQueryCollection collections)
+        public async Task<IActionResult> ConfirmPayment()
         {
-            var vnpay = new VnPayLibrary();
+            var collections = Request.Query;
+
             var vnpayData = new SortedList<string, string>(new VnPayCompare());
+
             foreach (var key in collections.Keys)
             {
-                if (key != "vnp_SecureHash")
-                    vnpayData.Add(key, collections[key]);
+                var value = collections[key].ToString();
+
+                if (!string.IsNullOrWhiteSpace(key) && !string.IsNullOrWhiteSpace(value))
+                {
+                    vnpayData.Add(key, value);
+                }
             }
 
-            vnpayData.Add("vnp_SecureHash", collections["vnp_SecureHash"]);
+            var hashSecret = _config["VnPay:HashSecret"]?.Trim();
 
-            if (vnpay.ValidateSignature(vnpayData, _config["VnPay:HashSecret"]) &&
-                collections["vnp_ResponseCode"] == "00")
+            if (string.IsNullOrWhiteSpace(hashSecret))
+            {
+                return Content("Thiếu cấu hình VNPAY HashSecret.");
+            }
+
+            var vnpay = new VnPayLibrary();
+            var isValidSignature = vnpay.ValidateSignature(vnpayData, hashSecret);
+            var responseCode = collections["vnp_ResponseCode"].ToString();
+            var holdCode = collections["vnp_TxnRef"].ToString();
+
+            if (isValidSignature && responseCode == "00")
             {
                 var pendingJson = HttpContext.Session.GetString("PendingBooking");
-                if (string.IsNullOrEmpty(pendingJson)) return Content("Phiên thanh toán đã hết hạn!");
 
-                // Sửa 1: Đã dùng DTO thì không cần dynamic
+                if (string.IsNullOrEmpty(pendingJson))
+                {
+                    return Content("Phiên thanh toán đã hết hạn!");
+                }
+
                 var data = JsonConvert.DeserializeObject<PendingBookingDTO>(pendingJson);
 
-                
-                var seatNumbers = data.seatNumbers;
+                if (data == null || data.seatNumbers == null || !data.seatNumbers.Any())
+                {
+                    return Content("Dữ liệu đặt vé không hợp lệ!");
+                }
+
+                var seatNumbers = NormalizeSeatNumbers(data.seatNumbers);
                 var finalPerSeat = data.finalPerSeat;
+                var finalAmount = finalPerSeat * seatNumbers.Count;
+
+                var isStillHolding = await HasValidHoldAsync(
+                    data.tripId,
+                    seatNumbers,
+                    holdCode
+                );
+
+                if (!isStillHolding)
+                {
+                    return Content("Ghế giữ chỗ đã hết hạn hoặc đã được người khác đặt. Vui lòng liên hệ quầy vé để xử lý hoàn tiền.");
+                }
 
                 var newBooking = new Booking
                 {
-                    BookingCode = collections["vnp_TxnRef"],
+                    BookingCode = holdCode,
                     TripId = data.tripId,
+                    CustomerId = await ResolveCustomerIdAsync(
+                        data.passengerName,
+                        data.dob,
+                        data.passengerPhone,
+                        data.passengerEmail
+                    ),
                     CustomerPhone = data.passengerPhone,
                     CustomerEmail = data.passengerEmail,
+                    UserId = User.Identity?.IsAuthenticated == true
+                        ? User.FindFirstValue(ClaimTypes.NameIdentifier)
+                        : "VNPAY",
                     BookingTime = DateTime.UtcNow,
-                    FinalAmount = finalPerSeat * seatNumbers.Count,
+                    TotalPrice = finalAmount,
+                    DiscountAmount = 0,
+                    FinalAmount = finalAmount,
                     BookingStatus = "Completed",
                     PaymentStatus = "Paid",
                     Passengers = seatNumbers.Select(s => new PassengerDetail
@@ -395,119 +621,95 @@ namespace Bus_ticket.Controllers
                         FinalSeatPrice = finalPerSeat
                     }).ToList(),
                     Payment = new PaymentInfo
-                        { PaymentMethod = "VnPay", AmountPaid = finalPerSeat * seatNumbers.Count },
-                    CreatedAt = DateTime.UtcNow
+                    {
+                        PaymentMethod = "VnPay",
+                        AmountPaid = finalAmount,
+                        TransactionCode = collections["vnp_TransactionNo"].ToString()
+                    },
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = "VNPAY"
                 };
 
                 await _dbContext.Bookings.InsertOneAsync(newBooking);
+                
+                await ResetUnpaidCountAsync(data.passengerPhone);
 
-                // Sửa 3: Truy cập data.tripId trực tiếp, không ép kiểu
-                foreach (var seat in seatNumbers)
-                {
-                    await _dbContext.Trips.UpdateOneAsync(
-                        t => t.Id == data.tripId,
-                        Builders<Trip>.Update.Push(t => t.RealtimeSeats, new RealtimeSeat
-                        {
-                            SeatNumber = seat,
-                            Status = "Booked"
-                        })
-                    );
-                }
+                await MarkHeldSeatsAsBookedAsync(data.tripId, seatNumbers, holdCode);
+
+                HttpContext.Session.Remove("PendingBooking");
 
                 TempData["NewBookingCode"] = newBooking.BookingCode;
+
                 return RedirectToAction("Index", "Booking");
             }
 
-            return Content("Thanh toán thất bại!");
+            if (!string.IsNullOrWhiteSpace(holdCode))
+            {
+                var pendingJson = HttpContext.Session.GetString("PendingBooking");
+
+                if (!string.IsNullOrEmpty(pendingJson))
+                {
+                    var data = JsonConvert.DeserializeObject<PendingBookingDTO>(pendingJson);
+
+                    if (data != null)
+                    {
+                        await ReleaseSeatsByHoldCodeAsync(data.tripId, holdCode);
+                    }
+                }
+
+                HttpContext.Session.Remove("PendingBooking");
+            }
+
+            return Content($"Thanh toán thất bại! ResponseCode: {responseCode}");
         }
 
         public class PendingBookingDTO
         {
-            public string tripId { get; set; }
-            public List<string> seatNumbers { get; set; }
-            public string passengerName { get; set; }
+            public string tripId { get; set; } = string.Empty;
+            public List<string> seatNumbers { get; set; } = new();
+            public string passengerName { get; set; } = string.Empty;
             public DateTime dob { get; set; }
-            public string passengerPhone { get; set; }
-            public string passengerEmail { get; set; }
+            public string passengerPhone { get; set; } = string.Empty;
+            public string passengerEmail { get; set; } = string.Empty;
             public decimal finalPerSeat { get; set; }
             public decimal finalAmount { get; set; }
         }
 
-        private Booking CreateBookingInstance(string bookingCode, Trip trip, List<string> seatNumbers,
-            string passengerName, DateTime dob, string passengerPhone, string passengerEmail,
-            string paymentMethod, string paymentStatus, decimal finalPerSeat, decimal totalFinal)
-        {
-            // Lấy UserId và BranchId tương tự logic gốc
-            var userId = User.Identity?.IsAuthenticated == true
-                ? User.FindFirstValue(ClaimTypes.NameIdentifier)
-                : "GUEST";
-            // Nếu bạn muốn lấy BranchId giống hệt logic cũ:
-            // var branchId = _dbContext.Users.Find(u => u.Username == User.Identity.Name).FirstOrDefault()?.BranchId;
-
-            return new Booking
-            {
-                BookingCode = bookingCode,
-                TripId = trip.Id,
-                // Giữ lại logic ResolveCustomerIdAsync nếu cần
-                CustomerId =
-                    "GUEST_USER", // Bạn có thể thay bằng hàm: ResolveCustomerIdAsync(passengerName, dob, passengerPhone, passengerEmail).GetAwaiter().GetResult()
-                CustomerPhone = passengerPhone,
-                CustomerEmail = passengerEmail,
-                UserId = userId,
-                BookingTime = DateTime.UtcNow,
-                TotalPrice = trip.BaseFare * seatNumbers.Count,
-                DiscountAmount = (trip.BaseFare - finalPerSeat) * seatNumbers.Count,
-                FinalAmount = totalFinal,
-                BookingStatus = "Completed",
-                PaymentStatus = paymentStatus,
-                Passengers = seatNumbers.Select(s => new PassengerDetail
-                {
-                    SeatNumber = s,
-                    Name = passengerName,
-                    Dob = dob,
-                    FinalSeatPrice = finalPerSeat
-                }).ToList(),
-                Payment = new PaymentInfo { PaymentMethod = paymentMethod, AmountPaid = totalFinal },
-                CreatedAt = DateTime.UtcNow
-            };
-        }
-
-        private async Task SaveBookingToDb(Booking booking, string tripId, List<string> seatNumbers)
-        {
-            // Lưu booking
-            await _dbContext.Bookings.InsertOneAsync(booking);
-
-            // Cập nhật RealtimeSeats cho Trip
-            foreach (var seat in seatNumbers)
-            {
-                var update = Builders<Trip>.Update.Push(t => t.RealtimeSeats, new RealtimeSeat
-                {
-                    SeatNumber = seat,
-                    Status = "Booked"
-                });
-                await _dbContext.Trips.UpdateOneAsync(t => t.Id == tripId, update);
-            }
-        }
-
         public async Task<IActionResult> GetBookingDetails(string code)
         {
-            var booking = await _dbContext.Bookings.Find(b => b.BookingCode == code).FirstOrDefaultAsync();
-            if (booking == null) return Json(new { success = false });
+            var booking = await _dbContext.Bookings
+                .Find(b => b.BookingCode == code)
+                .FirstOrDefaultAsync();
 
-            var trip = await _dbContext.Trips.Find(t => t.Id == booking.TripId).FirstOrDefaultAsync();
-            var bus = await _dbContext.Buses.Find(b => b.Id == trip.BusId).FirstOrDefaultAsync();
+            if (booking == null)
+            {
+                return Json(new { success = false });
+            }
+
+            var trip = await _dbContext.Trips
+                .Find(t => t.Id == booking.TripId)
+                .FirstOrDefaultAsync();
+
+            if (trip == null)
+            {
+                return Json(new { success = false });
+            }
+
+            var bus = await _dbContext.Buses
+                .Find(b => b.Id == trip.BusId)
+                .FirstOrDefaultAsync();
 
             return Json(new
             {
                 success = true,
-                bookingCode = booking.BookingCode, // Mã vé
+                bookingCode = booking.BookingCode,
                 busInfo = bus != null
                     ? $"{bus.BusCode} - {bus.LicensePlate}"
-                    : "Xe không xác định", // Đầy đủ BusCode và Biển số
-                departureTime = trip.DepartureTime.ToString("HH:mm dd/MM/yyyy"), // Giờ khởi hành
-                passengerName = booking.Passengers.FirstOrDefault()?.Name, // Tên khách
-                seats = string.Join(", ", booking.Passengers.Select(p => p.SeatNumber)), // Danh sách ghế
-                finalTotal = booking.FinalAmount.ToString("N0") + " đ" // Tổng tiền
+                    : "Xe không xác định",
+                departureTime = trip.DepartureTime.ToString("HH:mm dd/MM/yyyy"),
+                passengerName = booking.Passengers.FirstOrDefault()?.Name,
+                seats = string.Join(", ", booking.Passengers.Select(p => p.SeatNumber)),
+                finalTotal = booking.FinalAmount.ToString("N0") + " đ"
             });
         }
 
@@ -515,7 +717,6 @@ namespace Bus_ticket.Controllers
         {
             Customer? existing = null;
 
-            // Tìm theo số điện thoại trước, sau đó tới email
             if (!string.IsNullOrEmpty(phone))
             {
                 existing = await _dbContext.Customers
@@ -530,23 +731,29 @@ namespace Bus_ticket.Controllers
                     .FirstOrDefaultAsync();
             }
 
-            // Nếu đã tồn tại, kiểm tra xem có cần cập nhật thông tin không
             if (existing != null)
             {
                 var updates = new List<UpdateDefinition<Customer>>();
 
                 if (!string.IsNullOrEmpty(fullName) && existing.FullName != fullName)
+                {
                     updates.Add(Builders<Customer>.Update.Set(c => c.FullName, fullName));
+                }
 
                 if (!string.IsNullOrEmpty(email) && existing.Email != email)
+                {
                     updates.Add(Builders<Customer>.Update.Set(c => c.Email, email));
+                }
 
                 if (!string.IsNullOrEmpty(phone) && existing.PhoneNumber != phone)
+                {
                     updates.Add(Builders<Customer>.Update.Set(c => c.PhoneNumber, phone));
+                }
 
-                // Cập nhật ngày sinh nếu khác
                 if (existing.Dob != dob)
+                {
                     updates.Add(Builders<Customer>.Update.Set(c => c.Dob, dob));
+                }
 
                 if (updates.Count > 0)
                 {
@@ -561,12 +768,11 @@ namespace Bus_ticket.Controllers
                 return existing.Id;
             }
 
-            // Nếu chưa tồn tại, tạo mới
             var customer = new Customer
             {
-                CustomerCode = "KH-" + Guid.NewGuid().ToString().Substring(0, 6).ToUpper(),
+                CustomerCode = "KH-" + Guid.NewGuid().ToString("N")[..6].ToUpper(),
                 FullName = fullName,
-                Dob = dob, // Lưu ngày sinh thật
+                Dob = dob,
                 Gender = "Khác",
                 PhoneNumber = phone,
                 Email = email,
@@ -577,6 +783,7 @@ namespace Bus_ticket.Controllers
             };
 
             await _dbContext.Customers.InsertOneAsync(customer);
+
             return customer.Id;
         }
 
@@ -585,7 +792,11 @@ namespace Bus_ticket.Controllers
         {
             var customer = await _dbContext.Customers.AsQueryable()
                 .FirstOrDefaultAsync(c => c.PhoneNumber == phone);
-            if (customer == null) return NotFound();
+
+            if (customer == null)
+            {
+                return NotFound();
+            }
 
             return Json(new
             {
@@ -600,9 +811,278 @@ namespace Bus_ticket.Controllers
         {
             var config = await _dbContext.SystemConfigs.AsQueryable()
                 .FirstOrDefaultAsync(c => c.Id == "global_system_configuration");
-            if (config == null) return Ok(new { rules = new List<AgeDiscountRule>() });
+
+            if (config == null)
+            {
+                return Ok(new { rules = new List<AgeDiscountRule>() });
+            }
 
             return Ok(new { rules = config.AgeDiscountRules });
         }
+        private async Task IncreaseUnpaidCountAsync(string fullName, DateTime dob, string phone, string email)
+{
+    if (string.IsNullOrWhiteSpace(phone))
+    {
+        return;
+    }
+
+    var customer = await _dbContext.Customers
+        .Find(c => c.PhoneNumber == phone)
+        .FirstOrDefaultAsync();
+
+    if (customer == null)
+    {
+        customer = new Customer
+        {
+            CustomerCode = "KH-" + Guid.NewGuid().ToString("N").Substring(0, 6).ToUpper(),
+            FullName = fullName,
+            Dob = dob,
+            Gender = "Khác",
+            PhoneNumber = phone,
+            Email = email,
+            ConsecutiveUnpaidCount = 1,
+            IsBlocked = false,
+            CreatedAt = DateTime.UtcNow,
+            CreatedBy = "Booking-Counter",
+            UpdatedAt = DateTime.UtcNow,
+            UpdatedBy = "Booking-Counter"
+        };
+
+        await _dbContext.Customers.InsertOneAsync(customer);
+        return;
+    }
+
+    var newCount = customer.ConsecutiveUnpaidCount + 1;
+    var shouldBlock = newCount >= 3;
+
+    var updates = new List<UpdateDefinition<Customer>>
+    {
+        Builders<Customer>.Update.Set(c => c.ConsecutiveUnpaidCount, newCount),
+        Builders<Customer>.Update.Set(c => c.UpdatedAt, DateTime.UtcNow),
+        Builders<Customer>.Update.Set(c => c.UpdatedBy, "Booking-Counter")
+    };
+
+    if (!string.IsNullOrWhiteSpace(fullName))
+    {
+        updates.Add(Builders<Customer>.Update.Set(c => c.FullName, fullName));
+    }
+
+    if (!string.IsNullOrWhiteSpace(email))
+    {
+        updates.Add(Builders<Customer>.Update.Set(c => c.Email, email));
+    }
+
+    if (dob != default)
+    {
+        updates.Add(Builders<Customer>.Update.Set(c => c.Dob, dob));
+    }
+
+    if (shouldBlock)
+    {
+        updates.Add(Builders<Customer>.Update.Set(c => c.IsBlocked, true));
+        updates.Add(Builders<Customer>.Update.Set(c => c.BlockReason, "Quá 3 lần đặt vé nhưng không thanh toán."));
+        updates.Add(Builders<Customer>.Update.Set(c => c.BlockedAt, DateTime.UtcNow));
+    }
+
+    await _dbContext.Customers.UpdateOneAsync(
+        c => c.Id == customer.Id,
+        Builders<Customer>.Update.Combine(updates)
+    );
+}
+        private async Task ResetUnpaidCountAsync(string phone)
+        {
+            if (string.IsNullOrWhiteSpace(phone))
+            {
+                return;
+            }
+
+            await _dbContext.Customers.UpdateOneAsync(
+                c => c.PhoneNumber == phone,
+                Builders<Customer>.Update.Combine(
+                    Builders<Customer>.Update.Set(c => c.ConsecutiveUnpaidCount, 0),
+                    Builders<Customer>.Update.Set(c => c.IsBlocked, false),
+                    Builders<Customer>.Update.Set(c => c.BlockReason, null),
+                    Builders<Customer>.Update.Set(c => c.BlockedAt, null),
+                    Builders<Customer>.Update.Set(c => c.UpdatedAt, DateTime.UtcNow),
+                    Builders<Customer>.Update.Set(c => c.UpdatedBy, "Payment-Success")
+                )
+            );
+        }
+
+        private static List<string> NormalizeSeatNumbers(IEnumerable<string> seatNumbers)
+        {
+            return seatNumbers
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Select(s => s.Trim().ToUpper())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        private async Task ReleaseExpiredHoldsAsync(string tripId)
+        {
+            var now = DateTime.UtcNow;
+
+            var expiredHoldFilter = Builders<RealtimeSeat>.Filter.And(
+                Builders<RealtimeSeat>.Filter.Eq(s => s.Status, "Holding"),
+                Builders<RealtimeSeat>.Filter.Lte(s => s.HeldUntil, now)
+            );
+
+            var update = Builders<Trip>.Update.PullFilter(
+                t => t.RealtimeSeats,
+                expiredHoldFilter
+            );
+
+            await _dbContext.Trips.UpdateOneAsync(
+                t => t.Id == tripId,
+                update
+            );
+        }
+
+        private async Task ReleaseSeatsByHoldCodeAsync(string tripId, string holdCode)
+        {
+            var holdFilter = Builders<RealtimeSeat>.Filter.And(
+                Builders<RealtimeSeat>.Filter.Eq(s => s.Status, "Holding"),
+                Builders<RealtimeSeat>.Filter.Eq(s => s.HeldByCustomerId, holdCode)
+            );
+
+            var update = Builders<Trip>.Update.PullFilter(
+                t => t.RealtimeSeats,
+                holdFilter
+            );
+
+            await _dbContext.Trips.UpdateOneAsync(
+                t => t.Id == tripId,
+                update
+            );
+        }
+
+        private async Task<(bool Success, string Message)> TryHoldSeatsAsync(
+            string tripId,
+            List<string> seatNumbers,
+            string holdCode)
+        {
+            await ReleaseExpiredHoldsAsync(tripId);
+
+            var normalizedSeats = NormalizeSeatNumbers(seatNumbers);
+            var now = DateTime.UtcNow;
+            var heldUntil = now.AddMinutes(3);
+
+            var activeBookings = await _dbContext.Bookings
+                .Find(b => b.TripId == tripId && b.BookingStatus == "Completed")
+                .ToListAsync();
+
+            var bookedSeats = activeBookings
+                .SelectMany(b => b.Passengers ?? new List<PassengerDetail>())
+                .Select(p => p.SeatNumber.Trim().ToUpper())
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var alreadyBookedSeat = normalizedSeats.FirstOrDefault(bookedSeats.Contains);
+
+            if (!string.IsNullOrWhiteSpace(alreadyBookedSeat))
+            {
+                return (false, $"Ghế {alreadyBookedSeat} đã được đặt.");
+            }
+
+            foreach (var seat in normalizedSeats)
+            {
+                var activeSeatFilter = Builders<RealtimeSeat>.Filter.And(
+                    Builders<RealtimeSeat>.Filter.Eq(s => s.SeatNumber, seat),
+                    Builders<RealtimeSeat>.Filter.Or(
+                        Builders<RealtimeSeat>.Filter.Eq(s => s.Status, "Booked"),
+                        Builders<RealtimeSeat>.Filter.And(
+                            Builders<RealtimeSeat>.Filter.Eq(s => s.Status, "Holding"),
+                            Builders<RealtimeSeat>.Filter.Gt(s => s.HeldUntil, now)
+                        )
+                    )
+                );
+
+                var tripFilter = Builders<Trip>.Filter.And(
+                    Builders<Trip>.Filter.Eq(t => t.Id, tripId),
+                    Builders<Trip>.Filter.Not(
+                        Builders<Trip>.Filter.ElemMatch(t => t.RealtimeSeats, activeSeatFilter)
+                    )
+                );
+
+                var update = Builders<Trip>.Update.Push(
+                    t => t.RealtimeSeats,
+                    new RealtimeSeat
+                    {
+                        SeatNumber = seat,
+                        Status = "Holding",
+                        HeldUntil = heldUntil,
+                        HeldByCustomerId = holdCode
+                    }
+                );
+
+                var result = await _dbContext.Trips.UpdateOneAsync(tripFilter, update);
+
+                if (result.ModifiedCount != 1)
+                {
+                    await ReleaseSeatsByHoldCodeAsync(tripId, holdCode);
+
+                    return (false, $"Ghế {seat} đang được người khác giữ hoặc đã đặt.");
+                }
+            }
+
+            return (true, "Giữ chỗ thành công.");
+        }
+
+        private async Task<bool> HasValidHoldAsync(string tripId, List<string> seatNumbers, string holdCode)
+        {
+            await ReleaseExpiredHoldsAsync(tripId);
+
+            var trip = await _dbContext.Trips
+                .Find(t => t.Id == tripId)
+                .FirstOrDefaultAsync();
+
+            if (trip == null)
+            {
+                return false;
+            }
+
+            var now = DateTime.UtcNow;
+            var realtimeSeats = trip.RealtimeSeats ?? new List<RealtimeSeat>();
+            var normalizedSeats = NormalizeSeatNumbers(seatNumbers);
+
+            return normalizedSeats.All(seat =>
+                realtimeSeats.Any(s =>
+                    s.SeatNumber != null
+                    && s.SeatNumber.Trim().Equals(seat, StringComparison.OrdinalIgnoreCase)
+                    && s.Status == "Holding"
+                    && s.HeldByCustomerId == holdCode
+                    && s.HeldUntil.HasValue
+                    && s.HeldUntil.Value > now
+                )
+            );
+        }
+
+        private async Task MarkHeldSeatsAsBookedAsync(string tripId, List<string> seatNumbers, string holdCode)
+        {
+            var normalizedSeats = NormalizeSeatNumbers(seatNumbers);
+
+            var pullFilter = Builders<RealtimeSeat>.Filter.And(
+                Builders<RealtimeSeat>.Filter.Eq(s => s.HeldByCustomerId, holdCode),
+                Builders<RealtimeSeat>.Filter.In(s => s.SeatNumber, normalizedSeats)
+            );
+
+            await _dbContext.Trips.UpdateOneAsync(
+                t => t.Id == tripId,
+                Builders<Trip>.Update.PullFilter(t => t.RealtimeSeats, pullFilter)
+            );
+
+            var bookedSeats = normalizedSeats.Select(seat => new RealtimeSeat
+            {
+                SeatNumber = seat,
+                Status = "Booked",
+                HeldUntil = null,
+                HeldByCustomerId = holdCode
+            }).ToList();
+
+            await _dbContext.Trips.UpdateOneAsync(
+                t => t.Id == tripId,
+                Builders<Trip>.Update.PushEach(t => t.RealtimeSeats, bookedSeats)
+            );
+        }
     }
 }
+

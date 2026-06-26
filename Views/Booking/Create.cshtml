@@ -208,16 +208,6 @@
     let currentTripBaseFare = 0;
     let ageDiscountRules = [];
 
-    let timeLeft = 300; // 5 phút
-    const timerInterval = setInterval(() => {
-        timeLeft--;
-        if (timeLeft <= 0) {
-            clearInterval(timerInterval);
-            alert("Đơn hàng đã hết hạn thanh toán!");
-            location.reload(); // Hoặc chuyển hướng về trang chủ
-        }
-    }, 1000);
-
     const container = document.getElementById('hidden-seats-container');
     const txtSeatNum = document.getElementById('txtSeatNum');
     const gridSeats = document.getElementById('grid-seats');
@@ -537,51 +527,77 @@
     }
 
     // MAP CHUẨN XÁC VÀO THE GRID SEATS CỦA FILE HTML
-    async function loadSeatMatrix(tripId) {
-        if (!gridSeats) return;
-        gridSeats.innerHTML = '<p class="text-xs text-amber-400">🔄 Đang tải sơ đồ...</p>';
+async function loadSeatMatrix(tripId) {
+    if (!gridSeats) return;
 
-        try {
-            const response = await fetch('@Url.Action("GetTripSeatMap", "Booking")?tripId=' + tripId);
-            if (!response.ok) throw new Error('Không thể kết nối server');
+    gridSeats.innerHTML = '<p class="text-xs text-amber-400"> Đang tải sơ đồ...</p>';
 
-            const result = await response.json();
-            const data = result.data || result;
+    try {
+        const response = await fetch('@Url.Action("GetTripSeatMap", "Booking")?tripId=' + encodeURIComponent(tripId));
 
-            gridSeats.innerHTML = '';
-
-            // Reset lại danh sách ghế đã chọn khi chuyển chuyến
-            selectedSeats = [];
-            if (txtSeatNum) txtSeatNum.value = '';
-
-            const totalCols = data.cols || 4;
-            gridSeats.style.display = 'grid';
-            gridSeats.style.gridTemplateColumns = `repeat(${totalCols}, minmax(40px, 1fr))`;
-            gridSeats.style.gap = '8px';
-
-            // Render ghế
-            data.seats.forEach(function (seat) {
-                const btn = document.createElement('button');
-                btn.type = "button"; // Quan trọng: tránh form tự submit khi click vào button
-                btn.className = `h-8 w-10 text-[10px] font-bold rounded border flex items-center justify-center transition-all ${
-                    seat.isBooked
-                        ? "bg-gray-800 border-gray-700 text-gray-500 cursor-not-allowed"
-                        : "bg-[#1f2937] border-gray-600 text-gray-300 hover:border-amber-400 cursor-pointer"
-                }`;
-                btn.innerText = seat.seatNumber;
-                btn.disabled = seat.isBooked;
-
-                // Xử lý sự kiện chọn nhiều ghế
-                btn.onclick = () => toggleSeat(btn, seat.seatNumber, seat.isBooked);
-
-                gridSeats.appendChild(btn);
-            });
-        } catch (err) {
-            console.error(err);
-            gridSeats.innerHTML = '<p class="text-xs text-rose-400">Lỗi tải dữ liệu.</p>';
+        if (!response.ok) {
+            throw new Error('Không thể kết nối server');
         }
-    }
 
+        const result = await response.json();
+        const data = result.data || result;
+
+        gridSeats.innerHTML = '';
+
+        // Reset lại danh sách ghế đã chọn khi chuyển chuyến
+        selectedSeats = [];
+        if (txtSeatNum) {
+            txtSeatNum.innerText = 'Chưa chọn';
+        }
+        if (container) {
+            container.innerHTML = '';
+        }
+
+        const totalCols = data.cols || 4;
+
+        gridSeats.style.display = 'grid';
+        gridSeats.style.gridTemplateColumns = `repeat(${totalCols}, minmax(40px, 1fr))`;
+        gridSeats.style.gap = '8px';
+
+        // Render ghế
+        data.seats.forEach(function (seat) {
+            const btn = document.createElement('button');
+            btn.type = "button"; // Tránh form tự submit khi click vào button
+
+            const isLocked = seat.isLocked || seat.isBooked || seat.isHolding;
+
+            btn.className = `h-8 w-10 text-[10px] font-bold rounded border flex items-center justify-center transition-all ${
+        isLocked
+            ? "bg-gray-800 border-gray-700 text-gray-500 cursor-not-allowed"
+            : "bg-[#1f2937] border-gray-600 text-gray-300 hover:border-amber-400 cursor-pointer"
+    }`;
+
+            btn.innerText = seat.isHolding ? `${seat.seatNumber}⏳` : seat.seatNumber;
+            btn.disabled = isLocked;
+
+            if (seat.isBooked) {
+                btn.title = "Ghế đã được đặt";
+            } else if (seat.isHolding) {
+                btn.title = "Ghế đang được giữ chỗ";
+            } else {
+                btn.title = "Ghế còn trống";
+            }
+
+            btn.onclick = function () {
+                if (isLocked) {
+                    return;
+                }
+
+                toggleSeat(btn, seat.seatNumber, isLocked);
+            };
+
+            gridSeats.appendChild(btn);
+        });
+    } catch (err) {
+        console.error(err);
+        gridSeats.innerHTML = '<p class="text-xs text-rose-400">Lỗi tải dữ liệu.</p>';
+    }
+}
     function clearBookingData() {
         const form = document.getElementById('formBooking');
         if (form) form.reset();
@@ -632,7 +648,50 @@
 
                 if (result.success) {
                     if (result.paymentUrl) {
-                        window.location.href = result.paymentUrl;
+                        const paymentWindow = window.open(
+                            result.paymentUrl,
+                            "VNPAYPayment",
+                            "width=1100,height=800,left=100,top=50"
+                        );
+
+                        let paymentTimeLeft = 180; // 3 phút
+
+                        const paymentTimer = setInterval(function () {
+                            paymentTimeLeft--;
+
+                            // Nếu user thanh toán xong, cửa sổ VNPAY có thể tự đóng hoặc redirect xong
+                            if (paymentWindow && paymentWindow.closed) {
+                                clearInterval(paymentTimer);
+                                return;
+                            }
+
+                            if (paymentTimeLeft <= 0) {
+                                clearInterval(paymentTimer);
+
+                                if (paymentWindow && !paymentWindow.closed) {
+                                    paymentWindow.close();
+                                }
+
+                                alert("Quá thời gian thanh toán 3 phút. Ghế giữ chỗ đã được mở lại.");
+
+                                selectedSeats = [];
+
+                                if (txtSeatNum) {
+                                    txtSeatNum.innerText = "Chưa chọn";
+                                }
+
+                                if (container) {
+                                    container.innerHTML = "";
+                                }
+
+                                const tripId = document.getElementById('hidTripId')?.value;
+
+                                if (tripId) {
+                                    loadSeatMatrix(tripId);
+                                }
+                            }
+                        }, 1000);
+
                     } else if (result.redirectUrl) {
                         window.location.href = result.redirectUrl;
                     }
