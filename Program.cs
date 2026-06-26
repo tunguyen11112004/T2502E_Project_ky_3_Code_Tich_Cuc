@@ -34,6 +34,13 @@ builder.Services.AddAuthorization();
 
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(30);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
+
 builder.Services.AddControllersWithViews()
     .AddViewLocalization(Microsoft.AspNetCore.Mvc.Razor.LanguageViewLocationExpanderFormat.Suffix);
 
@@ -47,53 +54,6 @@ var localizationOptions = new RequestLocalizationOptions()
 
 app.UseRequestLocalization(localizationOptions);
 
-// ==================== SEED DATA INITIALIZER ====================
-using (var scope = app.Services.CreateScope())
-{
-    var userService = scope.ServiceProvider.GetRequiredService<UserService>();
-
-    // 1. Seed Accounts (Admin & Employee)
-    var adminEmail = "admin@src.com";
-    var employeeEmail = "employee@src.com";
-
-    var existingAdmin = await userService.GetByEmailAsync(adminEmail);
-    if (existingAdmin == null)
-    {
-        await userService.CreateAsync(new User
-        {
-            UserCode = "ADM001",
-            EmployeeCode = "000001",
-            FullName = "System Admin",
-            Email = adminEmail,
-            Username = "admin",
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin@123"),
-            Role = "Admin",
-            Status = "Active",
-            CreatedAt = DateTime.UtcNow,
-            CreatedBy = "System"
-        });
-    }
-
-    var existingEmployee = await userService.GetByEmailAsync(employeeEmail);
-    if (existingEmployee == null)
-    {
-        await userService.CreateAsync(new User
-        {
-            UserCode = "EMP001",
-            EmployeeCode = "123456",
-            FullName = "Ticket Agent",
-            Email = employeeEmail,
-            Username = "employee01",
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword("Employee@123"),
-            Role = "Employee",
-            Status = "Active",
-            CreatedAt = DateTime.UtcNow,
-            CreatedBy = "System"
-        });
-    }
-
-}
-// ===============================================================
 
 using (var scope = app.Services.CreateScope())
 {
@@ -111,6 +71,8 @@ if (!app.Environment.IsDevelopment())
 app.UseStaticFiles();
 
 app.UseRouting();
+
+app.UseSession();
 
 app.UseAuthentication();
 app.UseAuthorization();
