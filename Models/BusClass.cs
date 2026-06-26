@@ -18,10 +18,10 @@ public class SeatTemplate
     public int Column { get; set; }
 
     [BsonElement("floor")] 
-    public int Floor { get; set; } // 1: Tầng dưới, 2: Tầng trên
+    public int Floor { get; set; }
 
     [BsonElement("seatType")] 
-    public string SeatType { get; set; } = "Standard"; // Standard / VIP / Sleeper
+    public string SeatType { get; set; } = "Standard";
 }
 
 public class BusClass
@@ -32,11 +32,17 @@ public class BusClass
 
     [BsonElement("className")] 
     [Required] 
-    public string ClassName { get; set; } // Ví dụ: Luxury Limousine 22, Express Seat 45
+    public string ClassName { get; set; }
 
     [BsonElement("busType")] 
     [Required]
-    public string BusType { get; set; } // Express_Seat, Luxury_Sleeper, Limousine_Sleeper
+    public string BusType { get; set; }
+
+    [BsonElement("imageUrl")]
+    public string ImageUrl { get; set; } // Đường dẫn URL của ảnh
+
+    [BsonElement("imagePublicId")]
+    public string ImagePublicId { get; set; } // ID dùng để xóa/sửa ảnh trên Cloudinary
 
     [BsonElement("totalSeats")] 
     public int TotalSeats { get; set; }
@@ -53,6 +59,8 @@ public class BusClass
     [BsonElement("defaultLayout")] 
     public List<SeatTemplate> DefaultLayout { get; set; } = new List<SeatTemplate>();
 
+    [BsonElement("status")] public string Status { get; set; } = "Active";
+    
     [BsonElement("createdAt")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

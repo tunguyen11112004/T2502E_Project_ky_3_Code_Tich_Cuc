@@ -4,6 +4,7 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace Bus_ticket.Models;
 
+[BsonIgnoreExtraElements]
 public class User
 {
     [BsonId]
