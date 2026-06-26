@@ -41,7 +41,11 @@ public class HomeController : Controller
 
     public IActionResult Index()
     {
-        return View();
+        var topNews = _dbContext.News.Find(_ => true)
+            .SortByDescending(n => n.CreatedDate)
+            .Limit(2)
+            .ToList();
+        return View(topNews);
     }
     
     public IActionResult About() 

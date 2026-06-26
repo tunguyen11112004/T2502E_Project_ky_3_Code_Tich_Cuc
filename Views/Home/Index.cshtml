@@ -1,4 +1,6 @@
-﻿<section class="relative bg-slate-900 overflow-hidden">
+﻿@model IEnumerable<Bus_ticket.Models.News>
+
+<section class="relative bg-slate-900 overflow-hidden">
     <img src="https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=1600" 
          alt="SRC Limousine Banner" 
          class="w-full h-[350px] sm:h-[450px] lg:h-[520px] object-cover opacity-60 -scale-x-100">    
@@ -229,7 +231,7 @@
 
 <section id="news" class="bg-slate-100/60 py-16 border-t border-slate-200">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-10">
-        <div class="lg:col-span-5 space-y-6">
+        <div class="lg:col-span-7 space-y-6">
             <div class="flex justify-between items-center border-b border-slate-300 pb-3">
                 <h3 class="text-lg font-extrabold text-blue-900 uppercase tracking-tight">
                     <i class="far fa-newspaper mr-1.5"></i> <span data-vi="Tin tức nhà xe" data-en="Company News">Tin tức nhà xe</span>
@@ -238,29 +240,42 @@
                     Xem tất cả <i class="fas fa-angle-right"></i>
                 </a>
             </div>
+            
             <div class="space-y-4">
-                <div class="flex space-x-4 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
-                    <img src="https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=150" class="w-24 h-20 object-cover rounded-md flex-shrink-0" alt="News 1">
-                    <div class="space-y-1">
-                        <h4 class="font-bold text-sm text-slate-900 line-clamp-2 hover:text-blue-600 transition-colors">
-                            <a href="#" data-vi="SRC Vietnam X Be : Đi xe sang nhận ưu đãi vàng hấp dẫn" data-en="SRC Vietnam X Be: Ride luxury, receive amazing gold rewards">SRC Vietnam X Be : Đi xe sang nhận ưu đãi vàng hấp dẫn</a>
-                        </h4>
-                        <p class="text-xs text-slate-500 line-clamp-2" data-vi="Chương trình ưu đãi phối hợp cùng ví điện tử giảm giá vé cực sốc..." data-en="A promotional program in collaboration with e-wallets offers massive ticket discounts...">Chương trình ưu đãi phối hợp cùng ví điện tử giảm giá vé cực sốc...</p>
+                @if (Model != null && Model.Any())
+                {
+                    @foreach (var item in Model.Take(2))
+                    {
+                        <div class="flex space-x-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                            <img src="@item.ThumbnailUrl" 
+                                 class="w-28 h-24 object-cover rounded-lg flex-shrink-0 border border-slate-100" 
+                                 alt="@item.Title">
+                            <div class="space-y-1.5 flex-1 min-w-0">
+                                <h4 class="font-bold text-sm sm:text-base text-slate-900 line-clamp-2 hover:text-blue-600 transition-colors">
+                                    <a asp-controller="Home" asp-action="NewsDetail" asp-route-id="@item.Id">@item.Title</a>
+                                </h4>
+                                <p class="text-xs text-slate-500 line-clamp-2 leading-relaxed">@item.Description</p>
+                                <div class="text-[10px] text-slate-400 flex items-center gap-2 pt-0.5">
+                                    <span class="bg-slate-100 px-1.5 py-0.5 rounded font-medium text-slate-500">@item.SourceSite</span>
+                                    <span>•</span>
+                                    <span>@item.CreatedDate.ToString("dd/MM/yyyy")</span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="text-center py-6 text-slate-400 text-sm italic bg-white rounded-xl border border-dashed border-slate-300"
+                         data-vi="Hệ thống đang đồng bộ tin tức mới, vui lòng quay lại sau!"
+                         data-en="The system is synchronizing new updates, please check back later!">
+                        Hệ thống đang đồng bộ tin tức mới, vui lòng quay lại sau!
                     </div>
-                </div>
-                <div class="flex space-x-4 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
-                    <img src="https://images.unsplash.com/photo-1501183007986-d0d080b147f9?auto=format&fit=crop&q=80&w=150" class="w-24 h-20 object-cover rounded-md flex-shrink-0" alt="News 2">
-                    <div class="space-y-1">
-                        <h4 class="font-bold text-sm text-slate-900 line-clamp-2 hover:text-blue-600 transition-colors">
-                            <a href="#" data-vi="Thông báo lịch vận tải hành khách dịp nghỉ lễ lớn Giỗ tổ Hùng Vương" data-en="Announcement of passenger transport schedule for Hung Kings Commemoration Day holiday">Thông báo lịch vận tải hành khách dịp nghỉ lễ lớn Giỗ tổ Hùng Vương</a>
-                        </h4>
-                        <p class="text-xs text-slate-500 line-clamp-2" data-vi="Nhằm đáp ứng nhu cầu đi lại tăng mạnh của hành khách trong kỳ nghỉ lễ..." data-en="In order to meet the heavily increasing travel demands of passengers during the holiday period...">Nhằm đáp ứng nhu cầu đi lại tăng mạnh của hành khách trong kỳ nghỉ lễ...</p>
-                    </div>
-                </div>
+                }
             </div>
         </div>
         
-        <div class="lg:col-span-7 space-y-6">
+        <div class="lg:col-span-5 space-y-6">
             <div class="flex justify-between items-center border-b border-slate-300 pb-3">
                 <h3 class="text-lg font-extrabold text-blue-900 uppercase tracking-tight">
                     <i class="fas fa-user-tie mr-1.5"></i> <span data-vi="Tin tuyển dụng" data-en="Recruitment Careers">Tin tuyển dụng</span>
@@ -269,29 +284,30 @@
                     Xem tất cả <i class="fas fa-angle-right"></i>
                 </a>
             </div>
-            <div class="bg-gradient-to-br from-blue-800 to-indigo-900 text-white rounded-xl p-6 shadow-md relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6">
-                <div class="space-y-3 z-10 text-center md:text-left">
-                    <span class="bg-red-600 text-xs font-bold px-2.5 py-1 rounded">HOT RECRUITMENT</span>
-                    <h4 class="text-xl sm:text-2xl font-black tracking-tight leading-tight"
+            
+            <div class="bg-gradient-to-br from-blue-800 to-indigo-900 text-white rounded-xl p-6 shadow-md relative overflow-hidden flex flex-col justify-between gap-5 min-h-[224px]">
+                <div class="space-y-2.5 z-10 text-center md:text-left">
+                    <span class="bg-red-600 text-[10px] font-bold px-2 py-0.5 rounded">HOT RECRUITMENT</span>
+                    <h4 class="text-lg sm:text-xl font-black tracking-tight leading-tight"
                         data-vi="TUYỂN LÁI XE <br><span class='text-orange-400'>Toàn Quốc</span>"
                         data-en="DRIVERS WANTED <br><span class='text-orange-400'>Nationwide</span>">TUYỂN LÁI XE <br><span class="text-orange-400">Toàn Quốc</span></h4>
+                    <div class="text-xs font-semibold"
+                         data-vi="THU NHẬP LÊN ĐẾN: <span class='text-yellow-400 text-base font-black'>22 TR / THÁNG</span>"
+                         data-en="INCOME UP TO: <span class='text-yellow-400 text-base font-black'>22M / MONTH</span>">THU NHẬP LÊN ĐẾN: <span class="text-yellow-400 text-base font-black">22 TR / THÁNG</span></div>
                     
-                    <div class="text-sm font-semibold"
-                         data-vi="THU NHẬP LÊN ĐẾN: <span class='text-yellow-400 text-xl font-black'>22 TRIỆU / THÁNG</span>"
-                         data-en="INCOME UP TO: <span class='text-yellow-400 text-xl font-black'>22M VND / MONTH</span>">THU NHẬP LÊN ĐẾN: <span class="text-yellow-400 text-xl font-black">22 TRIỆU / THÁNG</span></div>
-                    
-                    <p class="text-xs text-slate-300 max-w-sm"
+                    <p class="text-[11px] text-slate-300 max-w-sm leading-relaxed"
                        data-vi="Yêu cầu bằng hạng D, có kinh nghiệm lái xe, cam kết đóng bảo hiểm đầy đủ."
                        data-en="Requires class D driver license, proven driving experience, full insurance packages committed.">Yêu cầu bằng hạng D, có kinh nghiệm lái xe, cam kết đóng bảo hiểm đầy đủ.</p>
                 </div>
-                <div class="z-10 flex-shrink-0 text-center space-y-2">
-                    <div class="bg-white text-blue-900 font-extrabold px-4 py-3 rounded-xl text-xs sm:text-sm shadow-lg">
+                <div class="z-10 flex-shrink-0 text-center md:text-left space-y-1.5 pt-2 border-t border-white/10">
+                    <div class="bg-white text-blue-900 font-extrabold px-3 py-2 rounded-lg text-xs shadow-lg inline-block">
                         <i class="fas fa-phone-alt text-red-600 mr-1 animate-bounce"></i> 090.606.1999
                     </div>
-                    <p class="text-[10px] text-slate-300" data-vi="hoặc gửi CV về: tuyendung@src.vn" data-en="or send CV to: tuyendung@src.vn">hoặc gửi CV về: tuyendung@src.vn</p>
+                    <p class="text-[10px] text-slate-300 block" data-vi="hoặc gửi CV về: tuyendung@src.vn" data-en="or send CV to: tuyendung@src.vn">hoặc gửi CV về: tuyendung@src.vn</p>
                 </div>
-                <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-white/5 rounded-full pointer-events-none"></div>
+                <div class="absolute -right-10 -bottom-10 w-32 h-32 bg-white/5 rounded-full pointer-events-none"></div>
             </div>
         </div>
+
     </div>
 </section>
