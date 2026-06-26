@@ -229,13 +229,14 @@
 
 <section id="news" class="bg-slate-100/60 py-16 border-t border-slate-200">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-10">
-        
         <div class="lg:col-span-5 space-y-6">
             <div class="flex justify-between items-center border-b border-slate-300 pb-3">
                 <h3 class="text-lg font-extrabold text-blue-900 uppercase tracking-tight">
                     <i class="far fa-newspaper mr-1.5"></i> <span data-vi="Tin tức nhà xe" data-en="Company News">Tin tức nhà xe</span>
                 </h3>
-                <a href="#" class="text-xs font-semibold text-blue-600 hover:underline" data-vi="Xem tất cả" data-en="View all">Xem tất cả <i class="fas fa-angle-right"></i></a>
+                <a asp-controller="Home" asp-action="News" class="text-xs font-semibold text-blue-600 hover:underline" data-vi="Xem tất cả" data-en="View all">
+                    Xem tất cả <i class="fas fa-angle-right"></i>
+                </a>
             </div>
             <div class="space-y-4">
                 <div class="flex space-x-4 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
@@ -258,15 +259,16 @@
                 </div>
             </div>
         </div>
-
+        
         <div class="lg:col-span-7 space-y-6">
             <div class="flex justify-between items-center border-b border-slate-300 pb-3">
                 <h3 class="text-lg font-extrabold text-blue-900 uppercase tracking-tight">
                     <i class="fas fa-user-tie mr-1.5"></i> <span data-vi="Tin tuyển dụng" data-en="Recruitment Careers">Tin tuyển dụng</span>
                 </h3>
-                <a href="#" class="text-xs font-semibold text-blue-600 hover:underline" data-vi="Xem tất cả" data-en="View all">Xem tất cả <i class="fas fa-angle-right"></i></a>
+                <a asp-controller="Home" asp-action="Recruitment" class="text-xs font-semibold text-blue-600 hover:underline" data-vi="Xem tất cả" data-en="View all">
+                    Xem tất cả <i class="fas fa-angle-right"></i>
+                </a>
             </div>
-            
             <div class="bg-gradient-to-br from-blue-800 to-indigo-900 text-white rounded-xl p-6 shadow-md relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6">
                 <div class="space-y-3 z-10 text-center md:text-left">
                     <span class="bg-red-600 text-xs font-bold px-2.5 py-1 rounded">HOT RECRUITMENT</span>
@@ -291,6 +293,5 @@
                 <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-white/5 rounded-full pointer-events-none"></div>
             </div>
         </div>
-
     </div>
 </section>
