@@ -30,130 +30,134 @@ namespace Bus_ticket.Controllers
         [HttpPost]
         public async Task<IActionResult> CrawlNews()
         {
-            // 1. TẠO HTTPCLIENT CÓ CẤU HÌNH USER-AGENT ĐỂ VƯỢT TƯỜNG LỬA CHẶN BOT
+            // 1. Tạo HttpClient cấu hình danh tính Trình duyệt thật để bypass tường lửa Cloudflare/WAF của nhà xe
             using var httpClient = new HttpClient();
             httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
             httpClient.DefaultRequestHeaders.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
             httpClient.DefaultRequestHeaders.Add("Accept-Language", "vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7");
 
-            // Khởi tạo service cào (Nếu hàm khởi tạo NewsScraperService cho phép nhận HttpClient, hãy truyền nó vào. 
-            // Nếu không, ta vẫn dùng các hàm cấu hình trên diện rộng của hệ thống).
-            var scraper = new NewsScraperService();
-            
             string categoryUrl = "https://sonhailimousine.com/tin-tuc/";
-            
-            // Sử dụng một XPath bao quát, an toàn hơn để bốc trọn mọi liên kết bài viết từ Sơn Hải
-            string listXpath = "//a[contains(@href, '/tin-tuc/')] | //h3[contains(@class,'post-title')]/a | //h2[contains(@class,'entry-title')]/a"; 
-            
-            Console.WriteLine("=== BẮT ĐẦU QUÉT TIN TỨC TỪ SƠN HẢI LIMOUSINE ===");
-            System.Diagnostics.Debug.WriteLine("=== BẮT ĐẦU QUÉT TIN TỨC TỪ SƠN HẢI LIMOUSINE ===");
+            var articleUrls = new List<string>();
 
-            List<string> articleUrls = new List<string>();
+            Console.WriteLine("=== BẮT ĐẦU TẢI TRANG DANH MỤC SƠN HẢI TỪ CONTROLLER ===");
+
             try
             {
-                // Gọi hàm lấy danh sách link
-                articleUrls = await scraper.GetListUrlsAsync(categoryUrl, listXpath);
+                // Tải trực tiếp HTML của trang danh mục bằng HttpClient đã có đặc quyền trình duyệt
+                string htmlContent = await httpClient.GetStringAsync(categoryUrl);
+
+                // Dùng HtmlAgilityPack để phân tích mã nguồn HTML vừa lấy về
+                var doc = new HtmlAgilityPack.HtmlDocument();
+                doc.LoadHtml(htmlContent);
+
+                // BỘ XPATH KHỚP CHUẨN 100% VỚI ĐỐI TƯỢNG THỰC TẾ: div class="newsnb_gr_title" > a
+                var aNodes = doc.DocumentNode.SelectNodes("//div[contains(@class,'newsnb_gr_title')]/a");
+
+                if (aNodes != null)
+                {
+                    foreach (var node in aNodes)
+                    {
+                        string href = node.GetAttributeValue("href", "");
+                        if (!string.IsNullOrEmpty(href))
+                        {
+                            articleUrls.Add(href);
+                        }
+                    }
+                }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[ERROR] Lỗi khi kết nối đến trang Sơn Hải: {ex.Message}");
-            }
-
-            // In số lượng link thô cào được ra màn hình Terminal/Console để dễ kiểm soát
-            string debugCountMessage = $"[DEBUG] Số lượng link tìm thấy trên Sơn Hải: {articleUrls?.Count ?? 0}";
-            Console.WriteLine(debugCountMessage);
-            System.Diagnostics.Debug.WriteLine(debugCountMessage);
-
-            if (articleUrls == null || articleUrls.Count == 0)
-            {
-                TempData["InfoMessage"] = "Không tìm thấy link bài viết nào. Hãy kiểm tra lại tab Terminal, trang gốc có thể đã nâng cấp tường lửa bảo mật.";
+                Console.WriteLine($"[ERROR] Không thể kết nối hoặc tải trang Sơn Hải: {ex.Message}");
+                TempData["InfoMessage"] = $"Kiểm tra lại kết nối hoặc dịch vụ mạng: {ex.Message}";
                 return RedirectToAction("ManageNews");
             }
 
-            // Làm sạch và lọc các URL hợp lệ thuộc trang sonhailimousine, loại bỏ các trang con lặp và thẻ neo '#'
+            if (articleUrls.Count == 0)
+            {
+                TempData["InfoMessage"] = "Không tìm thấy link bài viết nào. Hãy kiểm tra lại cấu trúc HTML trang gốc hoặc tab Terminal.";
+                return RedirectToAction("ManageNews");
+            }
+
+            // 2. Làm sạch danh sách URL (Chuyển link tương đối sang tuyệt đối, loại bỏ hoàn toàn link phân trang /page/...)
             var cleanUrls = articleUrls
-                .Where(url => !string.IsNullOrEmpty(url) && !url.Contains("#") && !url.EndsWith("/tin-tuc/") && !url.Contains("/page/"))
-                .Select(url => url.StartsWith("http") ? url : $"https://sonhailimousine.com{url}")
+                .Where(url => !string.IsNullOrEmpty(url))
+                .Select(url => url.StartsWith("http") ? url : $"https://sonhailimousine.com/{url.TrimStart('/')}")
+                .Where(url => !url.Contains("/page/") 
+                           && !url.Contains("#")
+                           && url.TrimEnd('/') != "https://sonhailimousine.com/tin-tuc"
+                           && url.TrimEnd('/') != "https://sonhailimousine.com")
                 .Distinct()
                 .ToList();
 
-            Console.WriteLine($"[DEBUG] Số lượng link sau khi lọc trùng lặp: {cleanUrls.Count}");
+            Console.WriteLine($"[DEBUG] Tìm thấy {cleanUrls.Count} link chi tiết bài viết thực thụ sau khi lọc rác.");
 
             if (cleanUrls.Count == 0)
             {
-                TempData["InfoMessage"] = "Hệ thống quét được liên kết tổng thể, nhưng không lọc được bài viết tin tức nào mới.";
+                TempData["InfoMessage"] = "Hệ thống tìm thấy liên kết chung nhưng không lọc được bài viết cụ thể nào mới.";
                 return RedirectToAction("ManageNews");
             }
 
+            // 3. Tiến hành cào dữ liệu chi tiết của từng bài viết đưa vào MongoDB
             int count = 0;
-            var newsCollection = _dbContext.News;
+            var newsCollection = _dbContext.News; // Tham chiếu trực tiếp tới Collection MongoDB của bạn
+            var scraper = new NewsScraperService();
 
-            // Tiến hành cào thử nghiệm 5 bài viết mới nhất
+            // Cào thử nghiệm tối đa 5 bài viết chi tiết mới nhất trên trang
             foreach (var url in cleanUrls.Take(5))
             {
-                Console.WriteLine($"[DEBUG] Đang xử lý bóc tách bài viết: {url}");
-                
-                // Kiểm tra trùng lặp bản ghi trên MongoDB bằng OriginalUrl
+                // Kiểm tra trùng lặp trên MongoDB bằng OriginalUrl để tránh ghi đè dữ liệu cũ
                 var isExist = newsCollection.Find(n => n.OriginalUrl == url).Any();
-                if (isExist) 
-                {
-                    Console.WriteLine("--> [Bỏ qua] Bài viết này đã tồn tại trong MongoDB.");
-                    continue; 
-                }
+                if (isExist) continue;
 
-                // Tối ưu lại toàn bộ XPath chi tiết khớp chuẩn bố cục cấu trúc HTML của Sơn Hải Limousine
+                // Triển khai bóc tách chi tiết sâu trong bài viết đơn lẻ dựa theo cấu trúc layout thực tế của Sơn Hải
                 var news = await scraper.ScrapePostDetailAsync(
                     postUrl: url,
-                    titleXpath: "//h1[contains(@class,'post-title')] | //h1[contains(@class,'entry-title')] | //h1", 
-                    descXpath: "//div[contains(@class,'post-excerpt')] | //p[contains(@class,'description')] | //div[contains(@class,'entry-content')]/p[1]",
-                    contentXpath: "//div[contains(@class,'entry-content')] | //div[contains(@class,'post-content')] | //article", 
-                    thumbXpath: "//div[contains(@class,'entry-content')]//img | //div[contains(@class,'post-content')]//img"
+                    titleXpath: "//h1[contains(@class,'post-title')] | //h1[contains(@class,'entry-title')] | //h1 | //div[contains(@class,'title-main')]", 
+                    descXpath: "//div[contains(@class,'post-excerpt')] | //div[contains(@class,'entry-content')]/p[1] | //div[contains(@class,'content-main')]/p[1]",
+                    contentXpath: "//div[contains(@class,'entry-content')] | //div[contains(@class,'post-content')] | //div[contains(@class,'content-main')]", 
+                    thumbXpath: "//div[contains(@class,'entry-content')]//img | //div[contains(@class,'content-main')]//img"
                 );
 
-                if (news != null && !string.IsNullOrEmpty(news.Title))
+                // Loại bỏ trường hợp tiêu đề bị rỗng hoặc bốc nhầm chữ "Tin tức" chung chung
+                if (news != null && !string.IsNullOrEmpty(news.Title) && !news.Title.Contains("Tin tức"))
                 {
-                    news.SourceSite = "Sơn Hải Limousine"; // Cập nhật tên nguồn nhà xe
-                    
-                    // Chuẩn hóa đường dẫn ảnh Thumbnail nếu là link tương đối
+                    news.SourceSite = "Sơn Hải Limousine";
+                    news.CreatedDate = DateTime.Now;
+                    news.OriginalUrl = url;
+
+                    // Chuẩn hóa đường dẫn ảnh Thumbnail nếu là link cục bộ
                     if (!string.IsNullOrEmpty(news.ThumbnailUrl) && !news.ThumbnailUrl.StartsWith("http"))
                     {
-                        news.ThumbnailUrl = $"https://sonhailimousine.com{news.ThumbnailUrl}";
+                        news.ThumbnailUrl = $"https://sonhailimousine.com/{news.ThumbnailUrl.TrimStart('/')}";
                     }
-                    
-                    // Nếu không lấy được ảnh thumbnail, gán một ảnh mặc định để giao diện không bị trống
-                    if (string.IsNullOrEmpty(news.ThumbnailUrl))
+                    else if (string.IsNullOrEmpty(news.ThumbnailUrl))
                     {
+                        // Ảnh dự phòng nếu bài gốc không tìm thấy ảnh đại diện
                         news.ThumbnailUrl = "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?q=80&w=600&auto=format&fit=crop";
                     }
 
-                    // Chèn thêm dấu ấn chân trang dẫn về nguồn bài viết gốc công khai
+                    // Chèn thông tin bản quyền và link gốc công khai dưới cuối nội dung
                     news.Content += $"<p class='text-right text-xs italic mt-6 text-gray-400'>Theo {news.SourceSite} / Nguồn gốc: <a class='text-blue-500 hover:underline' href='{url}' target='_blank' rel='nofollow'>Xem bài viết gốc</a></p>";
-                    
-                    // Thêm dữ liệu vào MongoDB theo chế độ Async
+
+                    // LƯU TRỰC TIẾP MONGODB: Thực thi chèn bản ghi mới không đồng bộ
                     await newsCollection.InsertOneAsync(news);
                     count++;
-                    
-                    Console.WriteLine($"--> [Thành công] Đã lưu bài vào MongoDB: {news.Title}");
-                }
-                else 
-                {
-                    Console.WriteLine("--> [Thất bại] Nội dung hoặc tiêu đề bài viết từ trang này trả về bị trống.");
                 }
             }
 
             if (count > 0)
             {
-                TempData["SuccessMessage"] = $"Đồng bộ thành công! Hệ thống đã cập nhật thêm {count} bài viết mới từ Sơn Hải Limousine vào MongoDB.";
+                TempData["SuccessMessage"] = $"Đồng bộ thành công! Hệ thống đã cập nhật thêm {count} bài viết chi tiết từ Sơn Hải Limousine vào MongoDB.";
             }
             else
             {
-                TempData["InfoMessage"] = "Quá trình quét hoàn tất nhưng không có thêm bài viết mới nào được lưu (Tin tức đã trùng lặp hoặc đã cũ).";
+                TempData["InfoMessage"] = "Quá trình hoàn tất. Không có tin tức mới nào được lưu (Dữ liệu đã tồn tại đầy đủ hoặc lỗi bóc tách trang con).";
             }
 
-            return RedirectToAction("ManageNews"); 
+            return RedirectToAction("ManageNews");
         }
 
-        // Trang quản lý và hiển thị danh sách tin tức dành cho Admin
+        // Trang quản lý danh sách tin tức trong hệ thống của Admin
         public IActionResult ManageNews()
         {
             var newsList = _dbContext.News.Find(_ => true).ToList()
