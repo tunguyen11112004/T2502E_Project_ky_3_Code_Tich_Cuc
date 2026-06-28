@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Bus_ticket.Interfaces;
 using Bus_ticket.Models;
@@ -12,40 +13,42 @@ namespace Bus_ticket.Data
     public class DataSeeder : IDbSeeder
     {
         private readonly ApplicationDbContext _context;
+        private readonly IMongoCollection<User> _users;
         private readonly IPasswordHasher<User> _passwordHasher;
 
-        // Định nghĩa các ID cố định để các bảng sau bám vào làm Khóa Ngoại (Foreign Key)
-        //Branc
+        public DataSeeder(IMongoDatabase database, IPasswordHasher<User> passwordHasher)
+        {
+            // Lấy collection từ database (giả sử tên collection là "Users")
+            _users = database.GetCollection<User>("Users");
+            _passwordHasher = passwordHasher;
+        }
+
+        // --- BRANCH ID ---
         public static readonly string BranchHanoiId = "64f1a2b3c4d5e6f7a8b9c001";
         public static readonly string BranchDanangId = "64f1a2b3c4d5e6f7a8b9c002";
         public static readonly string BranchSaigonId = "64f1a2b3c4d5e6f7a8b9c003";
 
-        //BusClass
+        // --- BUS CLASS ID ---
         public static readonly string BusClassExpress45Id = "64f1a2b3c4d5e6f7a8b9c011";
         public static readonly string BusClassLimousine22Id = "64f1a2b3c4d5e6f7a8b9c012";
 
-        //Bus
+        // --- 4 XE GỐC CỐ ĐỊNH ---
         public static readonly string BusHNExpressId = "64f1a2b3c4d5e6f7a8b9c021";
         public static readonly string BusHNLimousineId = "64f1a2b3c4d5e6f7a8b9c022";
         public static readonly string BusSGExpressId = "64f1a2b3c4d5e6f7a8b9c023";
         public static readonly string BusSGLimousineId = "64f1a2b3c4d5e6f7a8b9c024";
 
-        // Định nghĩa sẵn ID cố định cho các Tuyến đường (Route)
+        // --- CÁC TUYẾN ĐƯỜNG CỐ ĐỊNH ---
         public static readonly string RouteHanoiSaigonId = "64f1a2b3c4d5e6f7a8b9c031";
         public static readonly string RouteSaigonHanoiId = "64f1a2b3c4d5e6f7a8b9c032";
 
-        // Định nghĩa sẵn ID cố định cho các Chuyến xe (Trip)
+        // --- CHUYẾN XE & ĐẶT VÉ MẪU ---
         public static readonly string TripHanoiSaigonExpressId = "64f1a2b3c4d5e6f7a8b9c041";
         public static readonly string TripHanoiSaigonLimoId = "64f1a2b3c4d5e6f7a8b9c042";
-
-        // Định nghĩa sẵn ID cố định cho Khách hàng và Đơn đặt vé
         public static readonly string CustomerNguyenVanAId = "64f1a2b3c4d5e6f7a8b9c051";
         public static readonly string BookingLimoId = "64f1a2b3c4d5e6f7a8b9c061";
-
-        // Thêm ID cố định cho Role Admin vào đầu lớp DataSeeder
         public static readonly string RoleAdminId = "64f1a2b3c4d5e6f7a8b9c099";
 
-        // Lưu tạm danh sách ID permission đã sinh để nạp tự động cho Role Admin
         private static List<string> _allPermissionIds = new List<string>();
 
         public DataSeeder(ApplicationDbContext context)
@@ -56,7 +59,7 @@ namespace Bus_ticket.Data
 
         public async Task SeedAllAsync()
         {
-            Console.WriteLine("--> Bắt đầu seeding toàn bộ dữ liệu...");
+            Console.WriteLine("--> Bắt đầu seeding dữ liệu liên tỉnh chuẩn...");
 
             await SeedPermissions();
             await SeedDynamicRoles();
@@ -67,88 +70,111 @@ namespace Bus_ticket.Data
             await SeedBusesAndRoutes();
             await SeedTrips();
             await SeedBookings();
+
+            // Chạy bulk sinh chuyến xe toàn quốc sạch lỗi compile
+            await SeedBulkTripsAndBookings(200);
+
             Console.WriteLine("--> Hoàn tất khởi tạo dữ liệu hệ thống!");
         }
 
         private async Task SeedUsers()
         {
             if (await _context.Users.CountDocumentsAsync(_ => true) > 0) return;
-            var admin = new User { Username = "admin@src.com", FullName = "System Admin" };
-            admin.PasswordHash = _passwordHasher.HashPassword(admin, "Admin@123");
-            await _context.Users.InsertOneAsync(admin);
+
+            var users = new List<User>();
+
+            // 1. Tạo tài khoản Admin chính
+            var admin = new User
+            {
+                UserCode = "ADM001",
+                EmployeeCode = "000001",
+                FullName = "System Admin",
+                Dob = null, // Phải đảm bảo kiểu dữ liệu là DateTime? hoặc nullable
+                Email = "admin@src.com",
+                PhoneNumber = "",
+                Address = "",
+                EducationLevel = "",
+                Username = "admin",
+                Role = "Admin",
+                Status = "Active",
+                RoleId = RoleAdminId,
+                BranchId = BranchHanoiId,
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = "System",
+                UpdatedAt = DateTime.UtcNow,
+                UpdatedBy = ""
+            };
+            admin.PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin@123");
+            users.Add(admin);
+
+            // 2. Tạo thêm 10 tài khoản nhân viên khác nhau
+            for (int i = 1; i <= 10; i++)
+            {
+                var user = new User
+                {
+                    UserCode = $"EMP{i:D3}",
+                    EmployeeCode = $"{i:D6}",
+                    FullName = $"Staff {i}",
+                    Dob = null,
+                    Email = $"staff{i}@src.com",
+                    PhoneNumber = $"090000000{i}",
+                    Address = "Default Address",
+                    EducationLevel = "University",
+                    Username = $"employee01{i}",
+                    Role = "Employee",
+                    Status = "Active",
+                    RoleId = null,
+                    BranchId = BranchHanoiId,
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = "System",
+                    UpdatedAt = DateTime.UtcNow,
+                    UpdatedBy = ""
+                };
+                user.PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin@123");
+                users.Add(user);
+            }
+
+            // Chèn danh sách vào database
+            await _context.Users.InsertManyAsync(users);
         }
 
-        // 1. SEED BRANCHES
         public async Task SeedBranches()
         {
-            Console.WriteLine("--> Kiểm tra và seeding dữ liệu bảng Chi nhánh (Branch)...");
-
-            // Kiểm tra xem Collection đã có dữ liệu chưa (Hãy chắc chắn _context.Branches đã được định nghĩa trong ApplicationDbContext)
             var count = await _context.Branches.CountDocumentsAsync(new BsonDocument());
-            if (count > 0)
-            {
-                Console.WriteLine("--> Bảng Branch đã có dữ liệu. Bỏ qua seeding.");
-                return;
-            }
+            if (count > 0) return;
 
             var branches = new List<Branch>
             {
                 new Branch
                 {
-                    Id = BranchHanoiId,
-                    BranchCode = "CN-HN-01",
-                    BranchName = "Văn phòng Hà Nội (Bến xe Mỹ Đình)",
-                    Address = "Số 20 Phạm Hùng, Mỹ Đình, Từ Liêm, Hà Nội",
-                    PhoneNumber = "02437685555",
-                    Status = "Active",
-                    CreatedBy = "SystemSeeder",
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedBy = "SystemSeeder",
-                    UpdatedAt = DateTime.UtcNow
+                    Id = BranchHanoiId, BranchCode = "CN-HN-01", BranchName = "Văn phòng Hà Nội (Bến xe Mỹ Đình)",
+                    Address = "Số 20 Phạm Hùng, Mỹ Đình, Từ Liêm, Hà Nội", PhoneNumber = "02437685555",
+                    Status = "Active", CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow,
+                    UpdatedBy = "SystemSeeder", UpdatedAt = DateTime.UtcNow
                 },
                 new Branch
                 {
-                    Id = BranchDanangId,
-                    BranchCode = "CN-DN-02",
-                    BranchName = "Văn phòng Đà Nẵng (Bến xe Trung tâm)",
-                    Address = "185 Tôn Đức Thắng, Hòa Minh, Liên Chiểu, Đà Nẵng",
-                    PhoneNumber = "02363767676",
-                    Status = "Active",
-                    CreatedBy = "SystemSeeder",
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedBy = "SystemSeeder",
-                    UpdatedAt = DateTime.UtcNow
+                    Id = BranchDanangId, BranchCode = "CN-DN-02", BranchName = "Văn phòng Đà Nẵng (Bến xe Trung tâm)",
+                    Address = "185 Tôn Đức Thắng, Hòa Minh, Liên Chiểu, Đà Nẵng", PhoneNumber = "02363767676",
+                    Status = "Active", CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow,
+                    UpdatedBy = "SystemSeeder", UpdatedAt = DateTime.UtcNow
                 },
                 new Branch
                 {
-                    Id = BranchSaigonId,
-                    BranchCode = "CN-HCM-03",
+                    Id = BranchSaigonId, BranchCode = "CN-HCM-03",
                     BranchName = "Văn phòng TP. Hồ Chí Minh (Bến xe Miền Đông)",
-                    Address = "292 Đinh Bộ Lĩnh, Phường 26, Bình Thạnh, TP. HCM",
-                    PhoneNumber = "02838991607",
-                    Status = "Active",
-                    CreatedBy = "SystemSeeder",
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedBy = "SystemSeeder",
-                    UpdatedAt = DateTime.UtcNow
+                    Address = "292 Đinh Bộ Lĩnh, Phường 26, Bình Thạnh, TP. HCM", PhoneNumber = "02838991607",
+                    Status = "Active", CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow,
+                    UpdatedBy = "SystemSeeder", UpdatedAt = DateTime.UtcNow
                 }
             };
-
             await _context.Branches.InsertManyAsync(branches);
-            Console.WriteLine($"--> Đã seeding thành công {branches.Count} chi nhánh hệ thống!");
         }
 
-        // 2. SEED BUS CLASSES
         public async Task SeedBusClasses()
         {
-            Console.WriteLine("--> Kiểm tra và seeding dữ liệu bảng Hạng Xe (BusClass)...");
-
             var count = await _context.BusClasses.CountDocumentsAsync(new BsonDocument());
-            if (count > 0)
-            {
-                Console.WriteLine("--> Bảng BusClass đã có dữ liệu. Bỏ qua seeding.");
-                return;
-            }
+            if (count > 0) return;
 
             var busClasses = new List<BusClass>
             {
@@ -157,6 +183,8 @@ namespace Bus_ticket.Data
                     Id = BusClassExpress45Id,
                     ClassName = "Express Seat 45",
                     BusType = "Express_Seat",
+                    ImageUrl = "https://xetaibaoloc.com/images/stories/virtuemart/product/mercedes-benz-mb120s-47-ghe.jpg",
+                    Status = "Active",
                     TotalSeats = 45,
                     TotalRows = 11,
                     TotalColumns = 4,
@@ -172,6 +200,8 @@ namespace Bus_ticket.Data
                     Id = BusClassLimousine22Id,
                     ClassName = "Luxury Limousine Giường Phòng 22",
                     BusType = "Luxury_Sleeper",
+                    ImageUrl = "https://vielimousine.com/wp-content/uploads/2021/12/DSC6090.jpg",
+                    Status = "Active",
                     TotalSeats = 22,
                     TotalRows = 4,
                     TotalColumns = 3,
@@ -183,40 +213,27 @@ namespace Bus_ticket.Data
                     UpdatedAt = DateTime.UtcNow
                 }
             };
-
             busClasses[0].TotalSeats = busClasses[0].DefaultLayout.Count;
             busClasses[1].TotalSeats = busClasses[1].DefaultLayout.Count;
 
             await _context.BusClasses.InsertManyAsync(busClasses);
-            Console.WriteLine($"--> Đã seeding thành công {busClasses.Count} hạng xe kèm sơ đồ ghế tự động!");
         }
 
-        // Hàm bổ trợ tự động sinh danh sách sơ đồ ghế (Layout) bằng vòng lặp
         private List<SeatTemplate> GenerateSeatLayout(int totalRows, int totalColumns, int totalFloors, string busType)
         {
             var layout = new List<SeatTemplate>();
-
             for (int floor = 1; floor <= totalFloors; floor++)
             {
                 string floorPrefix = totalFloors > 1 ? (floor == 1 ? "A" : "B") : "";
                 int seatCounter = 1;
-
                 for (int row = 1; row <= totalRows; row++)
                 {
                     for (int col = 1; col <= totalColumns; col++)
                     {
                         string seatNumber = totalFloors > 1 ? $"{floorPrefix}{seatCounter:D2}" : $"{seatCounter:D2}";
                         string seatType = busType == "Luxury_Sleeper" ? "Sleeper" : (row <= 2 ? "VIP" : "Standard");
-
                         layout.Add(new SeatTemplate
-                        {
-                            SeatNumber = seatNumber,
-                            Row = row,
-                            Column = col,
-                            Floor = floor,
-                            SeatType = seatType
-                        });
-
+                            { SeatNumber = seatNumber, Row = row, Column = col, Floor = floor, SeatType = seatType });
                         seatCounter++;
                     }
                 }
@@ -225,12 +242,9 @@ namespace Bus_ticket.Data
             return layout;
         }
 
-        // 3. SEED BUSES AND ROUTES
+        // ĐÃ SỬA: Loại bỏ các trường gây báo lỗi compile, chỉ giữ lại thuộc tính thực sự có trong Model Bus của bạn.
         public async Task SeedBusesAndRoutes()
         {
-            Console.WriteLine("--> Kiểm tra và seeding dữ liệu Xe (Bus) và Tuyến đường (Route)...");
-
-            // PHẦN 1: SEEDING XE (BUS)
             var busCount = await _context.Buses.CountDocumentsAsync(new BsonDocument());
             if (busCount == 0)
             {
@@ -238,446 +252,379 @@ namespace Bus_ticket.Data
                 {
                     new Bus
                     {
-                        Id = BusHNExpressId,
-                        BusCode = "BUS-HN-EXP01",
-                        LicensePlate = "29B-555.11",
-                        Status = "Active",
-                        BranchId = BranchHanoiId,
-                        BusClassId = BusClassExpress45Id,
-                        CreatedBy = "SystemSeeder",
-                        CreatedAt = DateTime.UtcNow,
-                        UpdatedBy = "SystemSeeder",
+                        Id = BusHNExpressId, BusCode = "BUS-HN-EXP01", LicensePlate = "29B-555.11", Status = "Active",
+                        BranchId = BranchHanoiId, BusClassId = BusClassExpress45Id, CreatedBy = "SystemSeeder",
+                        CreatedAt = DateTime.UtcNow, UpdatedBy = "SystemSeeder", UpdatedAt = DateTime.UtcNow
+                    },
+                    new Bus
+                    {
+                        Id = BusHNLimousineId, BusCode = "BUS-HN-LIMO02", LicensePlate = "29B-999.22",
+                        Status = "Active", BranchId = BranchHanoiId, BusClassId = BusClassLimousine22Id,
+                        CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow, UpdatedBy = "SystemSeeder",
                         UpdatedAt = DateTime.UtcNow
                     },
                     new Bus
                     {
-                        Id = BusHNLimousineId,
-                        BusCode = "BUS-HN-LIMO02",
-                        LicensePlate = "29B-999.22",
-                        Status = "Active",
-                        BranchId = BranchHanoiId,
-                        BusClassId = BusClassLimousine22Id,
-                        CreatedBy = "SystemSeeder",
-                        CreatedAt = DateTime.UtcNow,
-                        UpdatedBy = "SystemSeeder",
-                        UpdatedAt = DateTime.UtcNow
+                        Id = BusSGExpressId, BusCode = "BUS-SG-EXP03", LicensePlate = "51B-111.33", Status = "Active",
+                        BranchId = BranchSaigonId, BusClassId = BusClassExpress45Id, CreatedBy = "SystemSeeder",
+                        CreatedAt = DateTime.UtcNow, UpdatedBy = "SystemSeeder", UpdatedAt = DateTime.UtcNow
                     },
                     new Bus
                     {
-                        Id = BusSGExpressId,
-                        BusCode = "BUS-SG-EXP03",
-                        LicensePlate = "51B-111.33",
-                        Status = "Active",
-                        BranchId = BranchSaigonId,
-                        BusClassId = BusClassExpress45Id,
-                        CreatedBy = "SystemSeeder",
-                        CreatedAt = DateTime.UtcNow,
-                        UpdatedBy = "SystemSeeder",
+                        Id = BusSGLimousineId, BusCode = "BUS-SG-LIMO04", LicensePlate = "51B-888.44",
+                        Status = "Active", BranchId = BranchSaigonId, BusClassId = BusClassLimousine22Id,
+                        CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow, UpdatedBy = "SystemSeeder",
                         UpdatedAt = DateTime.UtcNow
+                    },
+
+                    new Bus
+                    {
+                        Id = "64f1a2b3c4d5e6f7a8b9c025", BusCode = "BUS-HN-EXP05", LicensePlate = "29B-123.45",
+                        Status = "Active", BranchId = BranchHanoiId, BusClassId = BusClassExpress45Id,
+                        CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow
                     },
                     new Bus
                     {
-                        Id = BusSGLimousineId,
-                        BusCode = "BUS-SG-LIMO04",
-                        LicensePlate = "51B-888.44",
-                        Status = "Active",
-                        BranchId = BranchSaigonId,
-                        BusClassId = BusClassLimousine22Id,
-                        CreatedBy = "SystemSeeder",
-                        CreatedAt = DateTime.UtcNow,
-                        UpdatedBy = "SystemSeeder",
-                        UpdatedAt = DateTime.UtcNow
+                        Id = "64f1a2b3c4d5e6f7a8b9c026", BusCode = "BUS-HN-LIMO06", LicensePlate = "29B-678.90",
+                        Status = "Active", BranchId = BranchHanoiId, BusClassId = BusClassLimousine22Id,
+                        CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow
+                    },
+                    new Bus
+                    {
+                        Id = "64f1a2b3c4d5e6f7a8b9c027", BusCode = "BUS-HN-EXP07", LicensePlate = "29B-333.44",
+                        Status = "Active", BranchId = BranchHanoiId, BusClassId = BusClassExpress45Id,
+                        CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow
+                    },
+                    new Bus
+                    {
+                        Id = "64f1a2b3c4d5e6f7a8b9c028", BusCode = "BUS-HN-LIMO08", LicensePlate = "29B-777.88",
+                        Status = "Active", BranchId = BranchHanoiId, BusClassId = BusClassLimousine22Id,
+                        CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow
+                    },
+
+                    new Bus
+                    {
+                        Id = "64f1a2b3c4d5e6f7a8b9c02a", BusCode = "BUS-DN-EXP10", LicensePlate = "43B-111.22",
+                        Status = "Active", BranchId = BranchDanangId, BusClassId = BusClassExpress45Id,
+                        CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow
+                    },
+                    new Bus
+                    {
+                        Id = "64f1a2b3c4d5e6f7a8b9c02b", BusCode = "BUS-DN-LIMO11", LicensePlate = "43B-333.44",
+                        Status = "Active", BranchId = BranchDanangId, BusClassId = BusClassLimousine22Id,
+                        CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow
+                    },
+                    new Bus
+                    {
+                        Id = "64f1a2b3c4d5e6f7a8b9c02c", BusCode = "BUS-DN-EXP12", LicensePlate = "43B-555.66",
+                        Status = "Active", BranchId = BranchDanangId, BusClassId = BusClassExpress45Id,
+                        CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow
+                    },
+
+                    new Bus
+                    {
+                        Id = "64f1a2b3c4d5e6f7a8b9c02f", BusCode = "BUS-SG-EXP15", LicensePlate = "51B-222.33",
+                        Status = "Active", BranchId = BranchSaigonId, BusClassId = BusClassExpress45Id,
+                        CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow
+                    },
+                    new Bus
+                    {
+                        Id = "64f1a2b3c4d5e6f7a8b9c03a", BusCode = "BUS-SG-LIMO16", LicensePlate = "51B-444.55",
+                        Status = "Active", BranchId = BranchSaigonId, BusClassId = BusClassLimousine22Id,
+                        CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow
+                    },
+                    new Bus
+                    {
+                        Id = "64f1a2b3c4d5e6f7a8b9c03b", BusCode = "BUS-SG-EXP17", LicensePlate = "51B-666.77",
+                        Status = "Active", BranchId = BranchSaigonId, BusClassId = BusClassExpress45Id,
+                        CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow
                     }
                 };
-
                 await _context.Buses.InsertManyAsync(buses);
-                Console.WriteLine($"--> Đã seeding thành công {buses.Count} chiếc xe cụ thể vào hệ thống!");
-            }
-            else
-            {
-                Console.WriteLine("--> Bảng Bus đã có dữ liệu. Bỏ qua seeding xe.");
             }
 
-            // PHẦN 2: SEEDING TUYẾN ĐƯỜNG (ROUTE)
-            var routeCount =
-                await _context.BusRoutes
-                    .CountDocumentsAsync(
-                        new BsonDocument()); // Hãy chắc chắn _context.BusRoutes khớp với tên DbSet/Property trong ApplicationDbContext của bạn
+            var routeCount = await _context.BusRoutes.CountDocumentsAsync(new BsonDocument());
             if (routeCount == 0)
             {
                 var routes = new List<BusRoute>
                 {
-                    // Tuyến đi: Hà Nội -> TP. Hồ Chí Minh
                     new BusRoute
                     {
-                        Id = RouteHanoiSaigonId,
-                        DeparturePoint = "Hà Nội",
-                        DestinationPoint = "TP. Hồ Chí Minh",
+                        Id = RouteHanoiSaigonId, DeparturePoint = "Hà Nội", DestinationPoint = "TP. Hồ Chí Minh",
                         DistanceKm = 1720,
                         Stations = new List<Station>
                         {
-                            new Station { StationName = "Bến xe Mỹ Đình (Hà Nội)", StopOrder = 1 },
-                            new Station { StationName = "Văn phòng Thanh Hóa", StopOrder = 2 },
-                            new Station { StationName = "Bến xe Trung tâm Đà Nẵng", StopOrder = 3 },
-                            new Station { StationName = "Bến xe Miền Đông (TP. HCM)", StopOrder = 4 }
+                            new Station { StationName = "Bến xe Mỹ Đình", StopOrder = 1 },
+                            new Station { StationName = "Bến xe Miền Đông", StopOrder = 2 }
                         },
                         FareConfigs = new List<FareConfig>
                         {
-                            new FareConfig { BusType = "Express_Seat", FlatPrice = 750000m, VatPercentage = 10m },
-                            new FareConfig { BusType = "Luxury_Sleeper", FlatPrice = 1100000m, VatPercentage = 10m }
+                            new FareConfig { BusType = "Express_Seat", FlatPrice = 750000m },
+                            new FareConfig { BusType = "Luxury_Sleeper", FlatPrice = 1100000m }
                         },
-                        CreatedBy = "SystemSeeder",
-                        CreatedAt = DateTime.UtcNow,
-                        UpdatedBy = "SystemSeeder",
-                        UpdatedAt = DateTime.UtcNow
+                        CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow
+                    },
+                    new BusRoute
+                    {
+                        Id = RouteSaigonHanoiId, DeparturePoint = "TP. Hồ Chí Minh", DestinationPoint = "Hà Nội",
+                        DistanceKm = 1720,
+                        Stations = new List<Station>
+                        {
+                            new Station { StationName = "Bến xe Miền Đông", StopOrder = 1 },
+                            new Station { StationName = "Bến xe Mỹ Đình", StopOrder = 2 }
+                        },
+                        FareConfigs = new List<FareConfig>
+                        {
+                            new FareConfig { BusType = "Express_Seat", FlatPrice = 750000m },
+                            new FareConfig { BusType = "Luxury_Sleeper", FlatPrice = 1100000m }
+                        },
+                        CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow
                     },
 
-                    // Tuyến về: TP. Hồ Chí Minh -> Hà Nội
                     new BusRoute
                     {
-                        Id = RouteSaigonHanoiId,
-                        DeparturePoint = "TP. Hồ Chí Minh",
-                        DestinationPoint = "Hà Nội",
-                        DistanceKm = 1720,
+                        Id = "64f1a2b3c4d5e6f7a8b9c033", DeparturePoint = "Hà Nội", DestinationPoint = "Đà Nẵng",
+                        DistanceKm = 760,
                         Stations = new List<Station>
                         {
-                            new Station { StationName = "Bến xe Miền Đông (TP. HCM)", StopOrder = 1 },
-                            new Station { StationName = "Bến xe Trung tâm Đà Nẵng", StopOrder = 2 },
-                            new Station { StationName = "Văn phòng Thanh Hóa", StopOrder = 3 },
-                            new Station { StationName = "Bến xe Mỹ Đình (Hà Nội)", StopOrder = 4 }
+                            new Station { StationName = "Bến xe Giáp Bát", StopOrder = 1 },
+                            new Station { StationName = "Bến xe Trung tâm Đà Nẵng", StopOrder = 2 }
                         },
                         FareConfigs = new List<FareConfig>
                         {
-                            new FareConfig { BusType = "Express_Seat", FlatPrice = 750000m, VatPercentage = 10m },
-                            new FareConfig { BusType = "Luxury_Sleeper", FlatPrice = 1100000m, VatPercentage = 10m }
+                            new FareConfig { BusType = "Express_Seat", FlatPrice = 450000m },
+                            new FareConfig { BusType = "Luxury_Sleeper", FlatPrice = 650000m }
                         },
-                        CreatedBy = "SystemSeeder",
-                        CreatedAt = DateTime.UtcNow,
-                        UpdatedBy = "SystemSeeder",
-                        UpdatedAt = DateTime.UtcNow
+                        CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow
+                    },
+                    new BusRoute
+                    {
+                        Id = "64f1a2b3c4d5e6f7a8b9c034", DeparturePoint = "Đà Nẵng",
+                        DestinationPoint = "TP. Hồ Chí Minh", DistanceKm = 960,
+                        Stations = new List<Station>
+                        {
+                            new Station { StationName = "Bến xe Đà Nẵng", StopOrder = 1 },
+                            new Station { StationName = "Bến xe Miền Đông", StopOrder = 2 }
+                        },
+                        FareConfigs = new List<FareConfig>
+                        {
+                            new FareConfig { BusType = "Express_Seat", FlatPrice = 500000m },
+                            new FareConfig { BusType = "Luxury_Sleeper", FlatPrice = 750000m }
+                        },
+                        CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow
+                    },
+                    new BusRoute
+                    {
+                        Id = "64f1a2b3c4d5e6f7a8b9c035", DeparturePoint = "Hà Nội", DestinationPoint = "Hải Phòng",
+                        DistanceKm = 120,
+                        Stations = new List<Station>
+                        {
+                            new Station { StationName = "Bến xe Gia Lâm", StopOrder = 1 },
+                            new Station { StationName = "Bến xe Niệm Nghĩa", StopOrder = 2 }
+                        },
+                        FareConfigs = new List<FareConfig>
+                            { new FareConfig { BusType = "Express_Seat", FlatPrice = 150000m } },
+                        CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow
+                    },
+                    new BusRoute
+                    {
+                        Id = "64f1a2b3c4d5e6f7a8b9c036", DeparturePoint = "TP. Hồ Chí Minh",
+                        DestinationPoint = "Cần Thơ", DistanceKm = 170,
+                        Stations = new List<Station>
+                        {
+                            new Station { StationName = "Bến xe Miền Tây", StopOrder = 1 },
+                            new Station { StationName = "Bến xe Trung tâm Cần Thơ", StopOrder = 2 }
+                        },
+                        FareConfigs = new List<FareConfig>
+                        {
+                            new FareConfig { BusType = "Express_Seat", FlatPrice = 180000m },
+                            new FareConfig { BusType = "Luxury_Sleeper", FlatPrice = 280000m }
+                        },
+                        CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow
                     }
                 };
-
                 await _context.BusRoutes.InsertManyAsync(routes);
-                Console.WriteLine($"--> Đã seeding thành công {routes.Count} tuyến đường liên tỉnh mẫu!");
-            }
-            else
-            {
-                Console.WriteLine("--> Bảng BusRoute đã có dữ liệu. Bỏ qua seeding tuyến đường.");
             }
         }
 
-        // 4. SEED TRIPS
+        // ĐÃ SỬA: Thêm đầy đủ thuộc tính `TripCode` cho bản ghi chạy mẫu
         public async Task SeedTrips()
         {
-            Console.WriteLine("--> Kiểm tra và seeding dữ liệu Lịch trình Chuyến xe (Trip)...");
-
             var count = await _context.Trips.CountDocumentsAsync(new BsonDocument());
-            if (count > 0)
-            {
-                Console.WriteLine("--> Bảng Trip đã có dữ liệu. Bỏ qua seeding.");
-                return;
-            }
+            if (count > 0) return;
 
-            // Lấy thông tin cấu hình sơ đồ ghế mẫu từ database đã seed ở bước trước
             var expressClass = await _context.BusClasses.Find(bc => bc.Id == BusClassExpress45Id).FirstOrDefaultAsync();
             var limousineClass =
                 await _context.BusClasses.Find(bc => bc.Id == BusClassLimousine22Id).FirstOrDefaultAsync();
+            if (expressClass == null || limousineClass == null) return;
 
-            if (expressClass == null || limousineClass == null)
-            {
-                Console.WriteLine(
-                    "[LỖI] Cần chạy SeedBusClasses trước khi chạy SeedTrips vì thiếu dữ liệu sơ đồ ghế mẫu!");
-                return;
-            }
+            var expressRealtimeSeats = expressClass.DefaultLayout
+                .Select(s => new RealtimeSeat { SeatNumber = s.SeatNumber, Status = "Available" }).ToList();
+            var limousineRealtimeSeats = limousineClass.DefaultLayout
+                .Select(s => new RealtimeSeat { SeatNumber = s.SeatNumber, Status = "Available" }).ToList();
 
-            // Khởi tạo danh sách ghế thời gian thực ban đầu (Available) dựa trên cấu trúc mẫu
-            var expressRealtimeSeats = new List<RealtimeSeat>();
-            foreach (var seat in expressClass.DefaultLayout)
-            {
-                expressRealtimeSeats.Add(new RealtimeSeat { SeatNumber = seat.SeatNumber, Status = "Available" });
-            }
-
-            var limousineRealtimeSeats = new List<RealtimeSeat>();
-            foreach (var seat in limousineClass.DefaultLayout)
-            {
-                limousineRealtimeSeats.Add(new RealtimeSeat { SeatNumber = seat.SeatNumber, Status = "Available" });
-            }
-
-            // Set thời gian chạy giả định (Ví dụ: Chuyến xe chạy vào ngày mai)
             DateTime tomorrow = DateTime.UtcNow.Date.AddDays(1);
-
             var trips = new List<Trip>
             {
-                // 1. Chuyến xe Ghế ngồi Hà Nội -> Sài Gòn (Khởi hành 08:00 sáng mai, chạy 30 tiếng)
                 new Trip
                 {
-                    Id = TripHanoiSaigonExpressId,
-                    BusId = BusHNExpressId, // Xe ghế ngồi thuộc chi nhánh HN
-                    RouteId = RouteHanoiSaigonId, // Tuyến đi HN -> SG
-                    BaseFare = 750000m,
-                    DepartureTime = tomorrow.AddHours(8),
-                    ArrivalTime = tomorrow.AddHours(8).AddHours(30),
-                    Status = "Scheduled",
-                    RealtimeSeats = expressRealtimeSeats, // Clone 44-45 ghế trống
-                    CreatedBy = "SystemSeeder",
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedBy = "SystemSeeder",
+                    Id = TripHanoiSaigonExpressId, TripCode = "TRP-2026-HN-SG01", BusId = BusHNExpressId,
+                    RouteId = RouteHanoiSaigonId, BaseFare = 750000m, DepartureTime = tomorrow.AddHours(8),
+                    ArrivalTime = tomorrow.AddHours(38), Status = "Scheduled", RealtimeSeats = expressRealtimeSeats,
+                    CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow, UpdatedBy = "SystemSeeder",
                     UpdatedAt = DateTime.UtcNow
                 },
-
-                // 2. Chuyến xe Giường nằm VIP Hà Nội -> Sài Gòn (Khởi hành 20:00 tối mai, chạy 28 tiếng)
                 new Trip
                 {
-                    Id = TripHanoiSaigonLimoId,
-                    BusId = BusHNLimousineId, // Xe giường nằm VIP thuộc chi nhánh HN
-                    RouteId = RouteHanoiSaigonId, // Tuyến đi HN -> SG
-                    BaseFare = 1100000m,
-                    DepartureTime = tomorrow.AddHours(20),
-                    ArrivalTime = tomorrow.AddHours(20).AddHours(28),
-                    Status = "Scheduled",
-                    RealtimeSeats = limousineRealtimeSeats, // Clone 22 phòng nằm trống
-                    CreatedBy = "SystemSeeder",
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedBy = "SystemSeeder",
+                    Id = TripHanoiSaigonLimoId, TripCode = "TRP-2026-HN-SG02", BusId = BusHNLimousineId,
+                    RouteId = RouteHanoiSaigonId, BaseFare = 1100000m, DepartureTime = tomorrow.AddHours(20),
+                    ArrivalTime = tomorrow.AddHours(48), Status = "Scheduled", RealtimeSeats = limousineRealtimeSeats,
+                    CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow, UpdatedBy = "SystemSeeder",
                     UpdatedAt = DateTime.UtcNow
                 }
             };
-
-            // Tạo ngẫu nhiên một vài ghế đã được đặt trước ("Booked") ở chuyến Limo để giao diện trông sinh động hơn
-            if (trips[1].RealtimeSeats.Count > 3)
-            {
-                trips[1].RealtimeSeats[0].Status = "Booked"; // Ghế A01 đã có người mua
-                trips[1].RealtimeSeats[1].Status = "Booked"; // Ghế A02 đã có người mua
-                trips[1].RealtimeSeats[2].Status = "Holding"; // Ghế A03 đang có người giữ chỗ thanh toán
-                trips[1].RealtimeSeats[2].HeldUntil = DateTime.UtcNow.AddMinutes(10);
-            }
-
             await _context.Trips.InsertManyAsync(trips);
-            Console.WriteLine(
-                $"--> Đã seeding thành công {trips.Count} chuyến xe chạy thực tế kèm trạng thái ghế realtime!");
         }
 
-        // 5. SEED BOOKINGS (KÈM CUSTOMER)
+        // ĐÃ SỬA: Đảm bảo trường customerPhone và customerEmail hoạt động tốt không dính lỗi
         public async Task SeedBookings()
         {
-            Console.WriteLine("--> Kiểm tra và seeding dữ liệu Khách hàng (Customer) và Đặt vé (Booking)...");
-
-            // -----------------------------------------------------------------
-            // PHẦN 1: SEEDING KHÁCH HÀNG (CUSTOMER)
-            // -----------------------------------------------------------------
-            var customerCount =
-                await _context.Customers
-                    .CountDocumentsAsync(new BsonDocument()); // Đảm bảo đúng tên thuộc tính trong ApplicationDbContext
+            var customerCount = await _context.Customers.CountDocumentsAsync(new BsonDocument());
             if (customerCount == 0)
             {
                 var customers = new List<Customer>
                 {
                     new Customer
                     {
-                        Id = CustomerNguyenVanAId,
-                        CustomerCode = "KH-0001",
-                        FullName = "Nguyễn Văn A",
-                        Dob = new DateTime(1995, 05, 20),
-                        Gender = "Nam",
-                        PhoneNumber = "0987654321",
-                        Email = "nguyenvana@gmail.com",
-                        MembershipRank = "Gold",
-                        TotalPoints = 150,
-                        CustomerNotes = "Khách hàng thân thiết, thường đi chuyến đêm",
-                        Status = "Active",
-                        CreatedBy = "SystemSeeder",
-                        CreatedAt = DateTime.UtcNow,
-                        UpdatedBy = "SystemSeeder",
-                        UpdatedAt = DateTime.UtcNow
+                        Id = CustomerNguyenVanAId, CustomerCode = "KH-0001", FullName = "Nguyễn Văn A",
+                        Dob = new DateTime(1963, 05, 20), Gender = "Nam", PhoneNumber = "0987654123",
+                        Email = "nguyenvana@gmail.com", MembershipRank = "Gold", TotalPoints = 150, Status = "Active",
+                        CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow
                     },
                     new Customer
                     {
-                        Id = "64f1a2b3c4d5e6f7a8b9c052",
-                        CustomerCode = "KH-0002",
-                        FullName = "Trần Thị B",
-                        Dob = new DateTime(1998, 10, 15),
-                        Gender = "Nữ",
-                        PhoneNumber = "0912345678",
-                        Email = "tranthib@gmail.com",
-                        MembershipRank = "Standard",
-                        TotalPoints = 0,
-                        Status = "Active",
-                        CreatedBy = "SystemSeeder",
-                        CreatedAt = DateTime.UtcNow,
-                        UpdatedBy = "SystemSeeder",
-                        UpdatedAt = DateTime.UtcNow
+                        Id = "64f1a2b3c4d5e6f7a8b9c052", CustomerCode = "KH-0002", FullName = "Trần Thị B",
+                        Dob = new DateTime(1998, 10, 15), Gender = "Nữ", PhoneNumber = "0912345678",
+                        Email = "tranthib@gmail.com", MembershipRank = "Standard", TotalPoints = 0, Status = "Active",
+                        CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow
                     }
                 };
-
                 await _context.Customers.InsertManyAsync(customers);
-                Console.WriteLine($"--> Đã seeding thành công {customers.Count} khách hàng mẫu!");
-            }
-            else
-            {
-                Console.WriteLine("--> Bảng Customer đã có dữ liệu. Bỏ qua seeding khách hàng.");
             }
 
-            // -----------------------------------------------------------------
-            // PHẦN 2: SEEDING ĐƠN ĐẶT VÉ (BOOKING)
-            // -----------------------------------------------------------------
             var bookingCount = await _context.Bookings.CountDocumentsAsync(new BsonDocument());
             if (bookingCount == 0)
             {
-                // Tính toán tiền vé mẫu cho 2 ghế VIP giường nằm (1.100.000đ / ghế)
                 decimal seatPrice = 1100000m;
-                decimal totalPrice = seatPrice * 2; // 2.200.000đ
-                decimal taxAmount = totalPrice * 0.1m; // 220.000đ (VAT 10%)
-                decimal finalAmount = totalPrice + taxAmount; // 2.420.000đ
+                decimal totalPrice = seatPrice * 2;
+                decimal taxAmount = totalPrice * 0.1m;
+                decimal finalAmount = totalPrice + taxAmount;
 
                 var bookings = new List<Booking>
                 {
-                    // Đơn đặt vé thành công cho 2 người đi chung (Ghế A01, A02 đã set Booked ở bảng Trip trước đó)
                     new Booking
                     {
-                        Id = BookingLimoId,
-                        BookingCode = "BKG-2026-0001",
-                        CustomerId = CustomerNguyenVanAId, // Khớp với ID khách hàng Nguyễn Văn A bên trên
-                        TripId = TripHanoiSaigonLimoId, // Khớp với chuyến xe Giường nằm HN -> SG đêm mai
-                        UserId = null, // Khách tự đặt online nên không cần ID nhân viên (UserId)
-                        BranchId = BranchHanoiId, // Điểm xuất phát thuộc chi nhánh Hà Nội
-                        BookingTime = DateTime.UtcNow.AddHours(-2), // Giả định đặt trước đó 2 tiếng
-                        TotalPrice = totalPrice,
-                        TaxAmount = taxAmount,
-                        DiscountAmount = 0m,
-                        FinalAmount = finalAmount,
-                        BookingStatus = "Completed", // Trạng thái đơn hoàn thành
-                        PaymentStatus = "Paid", // Đã thanh toán tiền
+                        Id = BookingLimoId, BookingCode = "BKG-2026-0001", CustomerId = CustomerNguyenVanAId,
+                        CustomerPhone = "0987654321", CustomerEmail = "nguyenvana@gmail.com",
+                        TripId = TripHanoiSaigonLimoId, BranchId = BranchHanoiId,
+                        BookingTime = DateTime.UtcNow.AddHours(-2), TotalPrice = totalPrice, TaxAmount = taxAmount,
+                        DiscountAmount = 0m, FinalAmount = finalAmount, BookingStatus = "Completed",
+                        PaymentStatus = "Paid",
                         Passengers = new List<PassengerDetail>
                         {
                             new PassengerDetail
                             {
-                                SeatNumber = "A01",
-                                Name = "Nguyễn Văn A",
-                                Dob = new DateTime(1995, 05, 20),
+                                SeatNumber = "A01", Name = "Nguyễn Văn A", Dob = new DateTime(1995, 05, 20),
                                 FinalSeatPrice = seatPrice
                             },
                             new PassengerDetail
                             {
-                                SeatNumber = "A02",
-                                Name = "Nguyễn Văn Long", // Người đi cùng
-                                Dob = new DateTime(1996, 02, 12),
+                                SeatNumber = "A02", Name = "Nguyễn Văn Long", Dob = new DateTime(1996, 02, 12),
                                 FinalSeatPrice = seatPrice
                             }
                         },
                         Payment = new PaymentInfo
-                        {
-                            PaymentMethod = "Banking",
-                            AmountPaid = finalAmount,
-                            TransactionCode = "VNPAY12345678"
-                        },
-                        Cancellation = null, // Đơn đi bình thường, không hủy
-                        CreatedBy = "SystemSeeder",
-                        CreatedAt = DateTime.UtcNow,
-                        UpdatedBy = "SystemSeeder",
-                        UpdatedAt = DateTime.UtcNow
+                            { PaymentMethod = "Banking", AmountPaid = finalAmount, TransactionCode = "VNPAY12345678" },
+                        CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow
                     }
                 };
-
                 await _context.Bookings.InsertManyAsync(bookings);
-                Console.WriteLine($"--> Đã seeding thành công lịch sử đặt vé mẫu trùng khớp sơ đồ ghế Realtime!");
-            }
-            else
-            {
-                Console.WriteLine("--> Bảng Booking đã có dữ liệu. Bỏ qua seeding đặt vé.");
             }
         }
 
-        // 6. SEED SYSTEM CONFIGS
         public async Task SeedSystemConfigs()
         {
-            Console.WriteLine("--> Kiểm tra và seeding dữ liệu Cấu hình Hệ thống (SystemConfig)...");
-
-            // Khớp tên thuộc tính _context.SystemConfigs với DBContext của bạn
             var config = await _context.SystemConfigs.Find(c => c.Id == "global_system_configuration")
                 .FirstOrDefaultAsync();
+            if (config != null) return;
 
-            if (config != null)
+            var globalConfig = new SystemConfig
             {
-                Console.WriteLine("--> Cấu hình hệ thống global đã tồn tại. Bỏ qua seeding.");
+                Id = "global_system_configuration",
+                AgeDiscountRules = new List<AgeDiscountRule>
+                {
+                    // Dưới 5 tuổi: Miễn phí (Giảm 100%)
+                    new AgeDiscountRule { MinAge = 0, MaxAge = 4, DiscountPercentage = 100m },
+
+                    // Từ 5 đến 12 tuổi: 50% giá vé (Giảm 50%)
+                    new AgeDiscountRule { MinAge = 5, MaxAge = 12, DiscountPercentage = 50m },
+
+                    // Trên 12 đến 50 tuổi: Không giảm giá (Giảm 0%)
+                    new AgeDiscountRule { MinAge = 13, MaxAge = 50, DiscountPercentage = 0m },
+
+                    // Trên 50 tuổi: Giảm 30%
+                    new AgeDiscountRule { MinAge = 51, MaxAge = int.MaxValue, DiscountPercentage = 30m }
+                },
+                CancellationPolicies = new List<CancellationPolicy>
+                {
+                    new CancellationPolicy { HoursBeforeDeparture = 24, PenaltyPercentage = 10m },
+                    new CancellationPolicy { HoursBeforeDeparture = 0, PenaltyPercentage = 100m }
+                },
+                UpdatedBy = "SystemSeeder", UpdatedAt = DateTime.UtcNow
+            };
+            await _context.SystemConfigs.InsertOneAsync(globalConfig);
+        }
+
+        public async Task SeedPermissions()
+        {
+            var count = await _context.Permissions.CountDocumentsAsync(new BsonDocument());
+            if (count > 0)
+            {
+                var existingPermissions = await _context.Permissions.Find(new BsonDocument()).ToListAsync();
+                _allPermissionIds = existingPermissions.Select(p => p.Id).ToList();
                 return;
             }
 
-            // Khởi tạo bộ cấu hình hệ thống tiêu chuẩn theo đề bài
-            var globalConfig = new SystemConfig
+            var permissions = new List<Permission>();
+
+            void AddPermission(string id, string name, string description, string link, string method)
             {
-                Id = "global_system_configuration", // Fix cứng ID duy nhất theo model của bạn
+                permissions.Add(new Permission
+                    { Id = id, Name = name, Description = description, Link = link, Method = method });
+                _allPermissionIds.Add(id);
+            }
 
-                // 1. Cấu hình quy tắc giảm giá theo độ tuổi (Age Discount Rules)
-                AgeDiscountRules = new List<AgeDiscountRule>
-                {
-                    new AgeDiscountRule
-                    {
-                        MinAge = 0,
-                        MaxAge = 5,
-                        DiscountPercentage =
-                            100m // Trẻ em nhỏ tuổi (dưới 6 tuổi) được miễn phí vé hoàn toàn (Giảm 100%)
-                    },
-                    new AgeDiscountRule
-                    {
-                        MinAge = 6,
-                        MaxAge = 10,
-                        DiscountPercentage = 25m // Trẻ em từ 6 đến 10 tuổi được giảm giá 25% (Vé trẻ em)
-                    },
-                    new AgeDiscountRule
-                    {
-                        MinAge = 18,
-                        MaxAge = 23,
-                        DiscountPercentage = 10m // Độ tuổi Sinh viên (từ 18 đến 23) ưu đãi giảm 10% giá vé cơ bản
-                    },
-                    new AgeDiscountRule
-                    {
-                        MinAge = 60,
-                        MaxAge = 120,
-                        DiscountPercentage =
-                            15m // Người cao tuổi (từ 60 tuổi trở lên) được giảm giá 15% theo chính sách xã hội
-                    }
-                },
+            AddPermission("64f1a2b3c4d5e6f7a8b9ca01", "View.BusRoute", "Xem danh sách và chi tiết tuyến xe",
+                "BusRoutes/Index", "GET");
+            AddPermission("64f1a2b3c4d5e6f7a8b9ca02", "Create.BusRoute", "Thêm tuyến xe chạy mới", "BusRoutes/Create",
+                "POST");
+            AddPermission("64f1a2b3c4d5e6f7a8b9ca05", "View.Trip", "Xem lịch trình các chuyến xe chạy", "Trips/Index",
+                "GET");
+            AddPermission("64f1a2b3c4d5e6f7a8b9ca06", "Create.Trip", "Thêm chuyến xe mới", "Trips/Create", "POST");
+            AddPermission("64f1a2b3c4d5e6f7a8b9ca09", "View.Bus", "Xem danh sách xe và sơ đồ ghế", "Buses/Index",
+                "GET");
+            AddPermission("64f1a2b3c4d5e6f7a8b9ca13", "View.BusClass",
+                "Xem danh sách hạng xe và cấu trúc sơ đồ ghế mẫu", "BusClasses/Index", "GET");
+            AddPermission("64f1a2b3c4d5e6f7a8b9ca21", "View.Booking", "Xem danh sách lịch sử đặt vé của hệ thống",
+                "Bookings/Index", "GET");
+            AddPermission("64f1a2b3c4d5e6f7a8b9ca22", "Create.Booking", "Đặt vé mới cho khách hàng", "Bookings/Create",
+                "POST");
+            AddPermission("64f1a2b3c4d5e6f7a8b9ca25", "View.Customer", "Xem thông tin danh sách khách hàng",
+                "Customers/Index", "GET");
 
-                // 2. Cấu hình quy định phạt tiền khi hoàn/hủy vé (Cancellation Policies)
-                // Luật thường là: Hủy càng sát giờ chạy phạt càng nặng
-                CancellationPolicies = new List<CancellationPolicy>
-                {
-                    new CancellationPolicy
-                    {
-                        HoursBeforeDeparture = 24,
-                        PenaltyPercentage =
-                            10m // Hủy trước khi xe chạy trên 24 giờ: Chỉ phạt 10% (Hoàn lại 90% tiền vé)
-                    },
-                    new CancellationPolicy
-                    {
-                        HoursBeforeDeparture = 12,
-                        PenaltyPercentage =
-                            30m // Hủy trong khoảng từ 12 đến 24 giờ trước khởi hành: Phạt 30% (Hoàn 70%)
-                    },
-                    new CancellationPolicy
-                    {
-                        HoursBeforeDeparture = 4,
-                        PenaltyPercentage = 50m // Hủy từ 4 đến 12 giờ trước khi chạy: Phạt 50% (Hoàn 50%)
-                    },
-                    new CancellationPolicy
-                    {
-                        HoursBeforeDeparture = 0,
-                        PenaltyPercentage =
-                            100m // Hủy dưới 4 tiếng hoặc xe đã chạy: Phạt 100% (Mất trắng tiền vé, không hoàn lại)
-                    }
-                },
-
-                UpdatedBy = "SystemSeeder",
-                UpdatedAt = DateTime.UtcNow
-            };
-
-            await _context.SystemConfigs.InsertOneAsync(globalConfig);
-            Console.WriteLine(
-                "--> Đã khởi tạo cấu hình hệ thống global (Quy tắc giảm tuổi + Chính sách hủy vé) thành công!");
+            await _context.Permissions.InsertManyAsync(permissions);
         }
 
-        // 7. SEED PERMISSIONS (Tổng cộng 37 Quyền Hệ Thống)
         public async Task SeedPermissions()
         {
             Console.WriteLine("--> Kiểm tra và seeding dữ liệu bảng Quyền hệ thống (Permission)...");
@@ -729,7 +676,7 @@ namespace Bus_ticket.Data
             AddPermission("64f1a2b3c4d5e6f7a8b9ca08", "Delete.Trip", "Hủy/Xóa chuyến xe", "Trips/Delete", "POST");
 
             // --- NHÓM 2: QUẢN LÝ XE, HẠNG XE & CHI NHÁNH (ĐÃ UPDATE TÁCH BUSCLASS) ---
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca09", "View.Bus", "Xem danh sách xe và sơ đồ ghế", "Buses/Index",
+AddPermission("64f1a2b3c4d5e6f7a8b9ca09", "View.Bus", "Xem danh sách xe và sơ đồ ghế", "Buses/Index",
                 "GET");
             AddPermission("64f1a2b3c4d5e6f7a8b9ca10", "Create.Bus", "Thêm xe mới vào đội xe", "Buses/Create", "POST");
             AddPermission("64f1a2b3c4d5e6f7a8b9ca11", "Update.Bus", "Sửa thông tin xe (biển số, loại ghế)",
@@ -768,7 +715,7 @@ namespace Bus_ticket.Data
                 "Customers/Index", "GET");
             AddPermission("64f1a2b3c4d5e6f7a8b9ca26", "Create.Customer", "Tạo mới tài khoản khách hàng",
                 "Customers/Create", "POST");
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca27", "Update.Customer", "Sửa thông tin thành viên khách hàng",
+AddPermission("64f1a2b3c4d5e6f7a8b9ca27", "Update.Customer", "Sửa thông tin thành viên khách hàng",
                 "Customers/Edit", "POST");
             AddPermission("64f1a2b3c4d5e6f7a8b9ca28", "Delete.Customer", "Khóa/Xóa tài khoản khách hàng",
                 "Customers/Delete", "POST");
@@ -799,54 +746,171 @@ namespace Bus_ticket.Data
             Console.WriteLine($"--> Đã seeding thành công trọn bộ {permissions.Count} quyền hệ thống!");
         }
 
-        // 5. SEED ROLES
-        public async Task SeedDynamicRoles()
+        // --- HÀM BULK ĐÃ FIX LỖI COMPILE ---
+        // --- HÀM BULK PHỦ KÍN 100% CHẶNG × NGÀY TRONG 1 THÁNG ---
+        public async Task SeedBulkTripsAndBookings(int count = 200)
         {
-            Console.WriteLine("--> Kiểm tra và seeding dữ liệu bảng Vai trò (DynamicRole)...");
+            Console.WriteLine("--> Bắt đầu sinh dữ liệu: Đảm bảo TẤT CẢ các chặng đều có chuyến trong MỌI NGÀY...");
 
-            var count = await _context.DynamicRoles.CountDocumentsAsync(new BsonDocument());
-            if (count > 0)
+            // Đổi tên check để tránh dính cache seeder cũ
+            var existingBulkCount = await _context.Trips.CountDocumentsAsync(t => t.CreatedBy == "BulkDataSeederV4");
+            if (existingBulkCount > 0)
             {
-                Console.WriteLine("--> Bảng DynamicRole đã có dữ liệu. Bỏ qua seeding.");
+                Console.WriteLine("--> Dữ liệu phủ kín V4 đã tồn tại. Bỏ qua.");
                 return;
             }
 
-            var roles = new List<DynamicRole>
+            var allRoutes = await _context.BusRoutes.Find(new BsonDocument()).ToListAsync();
+            var allBuses = await _context.Buses.Find(new BsonDocument()).ToListAsync();
+            var expressClass = await _context.BusClasses.Find(bc => bc.Id == BusClassExpress45Id).FirstOrDefaultAsync();
+            var limousineClass =
+                await _context.BusClasses.Find(bc => bc.Id == BusClassLimousine22Id).FirstOrDefaultAsync();
+
+            if (!allRoutes.Any() || !allBuses.Any() || expressClass == null || limousineClass == null) return;
+
+            var random = new Random();
+            var bulkTrips = new List<Trip>();
+            var bulkBookings = new List<Booking>();
+
+            var mockCustomers = new[]
             {
-                // Vai trò Quản trị tối cao: Được gán toàn bộ 37 quyền hệ thống tự động
-                new DynamicRole
-                {
-                    Id = RoleAdminId,
-                    RoleName = "SuperAdmin",
-                    PermissionIds = _allPermissionIds, // Copy toàn bộ danh sách Id phân quyền vừa seed
-                    CreatedBy = "SystemSeeder",
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedBy = "SystemSeeder",
-                    UpdatedAt = DateTime.UtcNow
-                },
-                // Vai trò Nhân viên bán vé tại quầy (Ví dụ chỉ được xem và xử lý liên quan Booking & Customer)
-                new DynamicRole
-                {
-                    Id = "64f1a2b3c4d5e6f7a8b9c098",
-                    RoleName = "TicketAgent",
-                    PermissionIds = new List<string>
-                    {
-                        "64f1a2b3c4d5e6f7a8b9ca05", // View.Trip
-                        "64f1a2b3c4d5e6f7a8b9ca21", // View.Booking
-                        "64f1a2b3c4d5e6f7a8b9ca22", // Create.Booking
-                        "64f1a2b3c4d5e6f7a8b9ca23", // Update.Booking
-                        "64f1a2b3c4d5e6f7a8b9ca25", // View.Customer
-                        "64f1a2b3c4d5e6f7a8b9ca26" // Create.Customer
-                    },
-                    CreatedBy = "SystemSeeder",
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedBy = "SystemSeeder",
-                    UpdatedAt = DateTime.UtcNow
-                }
+                new { Id = CustomerNguyenVanAId, Phone = "0987654321", Email = "nguyenvana@gmail.com" },
+                new { Id = "64f1a2b3c4d5e6f7a8b9c052", Phone = "0912345678", Email = "tranthib@gmail.com" }
             };
 
-            await _context.DynamicRoles.InsertManyAsync(roles);
-            Console.WriteLine($"--> Đã seeding thành công {roles.Count} vai trò cốt lõi!");
+            var lastNames = new[] { "Nguyễn", "Trần", "Lê", "Phạm", "Hoàng" };
+            var middleNames = new[] { "Văn", "Thị", "Anh", "Minh", "Đức" };
+            var firstNames = new[] { "Hùng", "Lan", "Nam", "Vy", "Bình" };
+
+            // Lấy mốc từ hôm nay và chạy liên tục 32 ngày tiếp theo để phủ kín hơn 1 tháng
+            DateTime startDate = DateTime.UtcNow.Date;
+            int totalDays = 32;
+            int tripCounter = 1;
+
+            for (int day = 0; day < totalDays; day++)
+            {
+                DateTime currentDay = startDate.AddDays(day);
+
+                // VÒNG LẶP BẮT BUỘC: Duyệt qua từng chặng một để ngày nào cũng có đủ các chặng
+                foreach (var route in allRoutes)
+                {
+                    // Mỗi chặng trong ngày sinh 2 chuyến: Sáng (08:00) và Tối (20:00) cho thoải mái lựa chọn
+                    int[] departureHours = { 8, 20 };
+
+                    foreach (var hour in departureHours)
+                    {
+                        DateTime departureTime = currentDay.AddHours(hour);
+                        DateTime arrivalTime = departureTime.AddHours(12); // Giả định thời gian chạy cố định
+
+                        // Chọn xe ngẫu nhiên để phân bổ
+                        var selectedBus = allBuses[random.Next(allBuses.Count)];
+                        var currentClass = selectedBus.BusClassId == BusClassExpress45Id
+                            ? expressClass
+                            : limousineClass;
+                        decimal baseFare = selectedBus.BusClassId == BusClassExpress45Id ? 750000m : 1100000m;
+
+                        var tripRealtimeSeats = currentClass.DefaultLayout
+                            .Select(s => new RealtimeSeat { SeatNumber = s.SeatNumber, Status = "Available" })
+                            .ToList();
+
+                        // Sinh trạng thái ghế đã đặt ngẫu nhiên (để test sơ đồ hiển thị từ Frontend)
+                        bool hasBookings = random.Next(1, 101) <= 60; // 60% chuyến có sẵn người đặt
+                        var chosenSeatsForBooking = new List<string>();
+
+                        if (hasBookings)
+                        {
+                            int bookedCount = random.Next(1, 3); // Giả lập đặt trước 1-2 ghế
+                            for (int s = 0; s < bookedCount && s < tripRealtimeSeats.Count; s++)
+                            {
+                                tripRealtimeSeats[s].Status = "Booked";
+                                chosenSeatsForBooking.Add(tripRealtimeSeats[s].SeatNumber);
+                            }
+                        }
+
+                        string tripId = ObjectId.GenerateNewId().ToString();
+
+                        // Đồng bộ TripCode chuẩn theo ngày tìm kiếm, sạch lỗi compile
+                        var newTrip = new Trip
+                        {
+                            Id = tripId,
+                            TripCode = $"TRP-{departureTime:yyyyMMdd}-{hour:D2}{tripCounter:D2}",
+                            BusId = selectedBus.Id,
+                            RouteId = route.Id,
+                            BaseFare = baseFare,
+                            DepartureTime = departureTime,
+                            ArrivalTime = arrivalTime,
+                            Status = "Scheduled",
+                            RealtimeSeats = tripRealtimeSeats,
+                            CreatedBy = "BulkDataSeederV4",
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedBy = "BulkDataSeederV4",
+                            UpdatedAt = DateTime.UtcNow
+                        };
+                        bulkTrips.Add(newTrip);
+
+                        // Sinh Booking đi kèm để khớp dữ liệu Phone/Email phẳng
+                        if (chosenSeatsForBooking.Any())
+                        {
+                            decimal totalPrice = baseFare * chosenSeatsForBooking.Count;
+                            decimal taxAmount = totalPrice * 0.1m;
+                            decimal finalAmount = totalPrice + taxAmount;
+
+                            var passengers = chosenSeatsForBooking.Select(seat => new PassengerDetail
+                            {
+                                SeatNumber = seat,
+                                Name =
+                                    $"{lastNames[random.Next(lastNames.Length)]} {middleNames[random.Next(middleNames.Length)]} {firstNames[random.Next(firstNames.Length)]}",
+                                Dob = DateTime.UtcNow.AddYears(-random.Next(20, 35)),
+                                FinalSeatPrice = baseFare
+                            }).ToList();
+
+                            var chosenCustomer = mockCustomers[random.Next(mockCustomers.Length)];
+
+                            var newBooking = new Booking
+                            {
+                                Id = ObjectId.GenerateNewId().ToString(),
+                                BookingCode = $"BKG-{departureTime:yyyyMMdd}-{tripCounter:D4}",
+                                CustomerId = chosenCustomer.Id,
+                                CustomerPhone = chosenCustomer.Phone,
+                                CustomerEmail = chosenCustomer.Email,
+                                TripId = tripId,
+                                UserId = null,
+                                BranchId = selectedBus.BranchId,
+                                BookingTime = departureTime.AddHours(-5),
+                                TotalPrice = totalPrice,
+                                TaxAmount = taxAmount,
+                                DiscountAmount = 0m,
+                                FinalAmount = finalAmount,
+                                BookingStatus = "Completed",
+                                PaymentStatus = "Paid",
+                                Passengers = passengers,
+                                Payment = new PaymentInfo
+                                {
+                                    PaymentMethod = "Banking",
+                                    AmountPaid = finalAmount,
+                                    TransactionCode = $"TXN{departureTime:yyyyMMdd}{random.Next(1000, 9999)}"
+                                },
+                                CreatedBy = "BulkDataSeederV4",
+                                CreatedAt = DateTime.UtcNow,
+                                UpdatedBy = "BulkDataSeederV4",
+                                UpdatedAt = DateTime.UtcNow
+                            };
+                            bulkBookings.Add(newBooking);
+                        }
+
+                        tripCounter++;
+                    }
+                }
+            }
+
+            await _context.Trips.InsertManyAsync(bulkTrips);
+            if (bulkBookings.Any())
+            {
+                await _context.Bookings.InsertManyAsync(bulkBookings);
+            }
+
+            Console.WriteLine(
+                $"--> [THÀNH CÔNG V4] Đã phủ kín lịch trình {totalDays} ngày liên tiếp cho toàn bộ các chặng!");
         }
     }
 }

@@ -1,0 +1,172 @@
+@model List<Bus_ticket.Models.User>
+
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Users";
+
+    var dynamicRoleNames = ViewBag.DynamicRoleNames as Dictionary<string, string>
+                           ?? new Dictionary<string, string>();
+}
+
+<div class="p-4 bg-white border border-gray-200 rounded-lg shadow-sm dark:border-gray-700 dark:bg-gray-800 sm:p-6">
+
+    <div class="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+            <h1 class="text-xl font-semibold text-gray-900 sm:text-2xl dark:text-white">
+                Users
+            </h1>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                Manage employee accounts, assign dynamic roles, and deactivate employees.
+            </p>
+        </div>
+
+        <a href="/Admin/Users/Create"
+           class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800">
+            + Create Employee
+        </a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="p-4 mb-4 text-sm text-green-800 rounded-lg bg-green-50 dark:bg-gray-700 dark:text-green-400">
+            @TempData["SuccessMessage"]
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-700 dark:text-red-400">
+            @TempData["ErrorMessage"]
+        </div>
+    }
+
+    <div class="relative w-full overflow-x-auto">
+        <table class="w-full table-fixed text-xs text-left text-gray-500 dark:text-gray-400">
+            <colgroup>
+                <col class="w-[9%]" />
+                <col class="w-[12%]" />
+                <col class="w-[18%]" />
+                <col class="w-[11%]" />
+                <col class="w-[10%]" />
+                <col class="w-[13%]" />
+                <col class="w-[8%]" />
+                <col class="w-[10%]" />
+                <col class="w-[9%]" />
+            </colgroup>
+
+            <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-300">
+                <tr>
+                    <th scope="col" class="px-3 py-3">Employee Code</th>
+                    <th scope="col" class="px-3 py-3">Full Name</th>
+                    <th scope="col" class="px-3 py-3">Email</th>
+                    <th scope="col" class="px-3 py-3">Phone</th>
+                    <th scope="col" class="px-3 py-3">Date of Birth</th>
+                    <th scope="col" class="px-3 py-3">Dynamic Role</th>
+                    <th scope="col" class="px-3 py-3">Status</th>
+                    <th scope="col" class="px-3 py-3">Created At</th>
+                    <th scope="col" class="px-3 py-3 text-right">Actions</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @if (Model == null || !Model.Any())
+                {
+                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                        <td colspan="9" class="px-3 py-6 text-center text-gray-500 dark:text-gray-400">
+                            No employees found.
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var employee in Model)
+                    {
+                        var roleName = "No role assigned";
+
+                        if (!string.IsNullOrWhiteSpace(employee.RoleId)
+                            && dynamicRoleNames.TryGetValue(employee.RoleId, out var foundRoleName))
+                        {
+                            roleName = foundRoleName;
+                        }
+
+                        <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <td class="px-3 py-4 font-medium text-gray-900 dark:text-white">
+                                @employee.EmployeeCode
+                            </td>
+
+                            <td class="px-3 py-4 break-words">
+                                @employee.FullName
+                            </td>
+
+                            <td class="px-3 py-4 break-all">
+                                @employee.Email
+                            </td>
+
+                            <td class="px-3 py-4 break-words">
+                                @(string.IsNullOrWhiteSpace(employee.PhoneNumber) ? "N/A" : employee.PhoneNumber)
+                            </td>
+
+                            <td class="px-3 py-4">
+                                @(employee.Dob.HasValue ? employee.Dob.Value.ToString("dd/MM/yyyy") : "N/A")
+                            </td>
+
+                            <td class="px-3 py-4">
+                                <span class="inline-flex max-w-full px-2 py-1 text-xs font-medium text-blue-800 bg-blue-100 rounded-full dark:bg-blue-900 dark:text-blue-300 break-words">
+                                    @roleName
+                                </span>
+                            </td>
+
+                            <td class="px-3 py-4">
+                                @if (employee.Status == "Active")
+                                {
+                                    <span class="px-2 py-1 text-xs font-medium text-green-800 bg-green-100 rounded-full dark:bg-green-900 dark:text-green-300">
+                                        Active
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="px-2 py-1 text-xs font-medium text-red-800 bg-red-100 rounded-full dark:bg-red-900 dark:text-red-300">
+                                        @employee.Status
+                                    </span>
+                                }
+                            </td>
+
+                            <td class="px-3 py-4">
+                                @employee.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                            </td>
+
+                            <td class="px-3 py-4">
+                                <div class="flex flex-col items-end gap-2">
+                                    <a href="/Admin/Users/ChangeRole/@employee.Id"
+                                       class="text-xs font-medium text-yellow-500 hover:underline">
+                                        Change Role
+                                    </a>
+
+                                    @if (employee.Status == "Active")
+                                    {
+                                        <form action="/Admin/Users/Delete/@employee.Id"
+                                              method="post"
+                                              onsubmit="return confirm('Are you sure you want to deactivate this employee?');">
+                                            @Html.AntiForgeryToken()
+
+                                            <button type="submit"
+                                                    class="text-xs font-medium text-red-500 hover:underline">
+                                                Deactivate
+                                            </button>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-xs text-gray-400">
+                                            Deactivated
+                                        </span>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

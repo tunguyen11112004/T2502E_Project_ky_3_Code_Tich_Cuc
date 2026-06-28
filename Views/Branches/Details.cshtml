@@ -1,0 +1,58 @@
+@model Bus_ticket.Models.Branch
+
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Chi tiết Chi nhánh";
+}
+
+<div class="p-6 sm:p-8 max-w-3xl mx-auto space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold tracking-tight text-white">Chi tiết Chi nhánh</h1>
+            <p class="text-sm text-gray-400 mt-1">@Model.BranchCode - @Model.BranchName</p>
+        </div>
+        <div class="flex gap-3">
+            <a asp-controller="Branches" asp-action="Edit" asp-route-id="@Model.Id" class="px-4 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg">Sửa</a>
+            <a asp-controller="Branches" asp-action="Index" class="px-4 py-2.5 text-sm font-semibold text-gray-300 bg-gray-800 hover:bg-gray-700 rounded-lg">Quay lại</a>
+        </div>
+    </div>
+
+    <div class="bg-[#1e1e24] border border-gray-700/50 rounded-xl p-6 text-sm text-gray-300 space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <div class="text-gray-500">Mã chi nhánh</div>
+                <div class="font-semibold text-white">@Model.BranchCode</div>
+            </div>
+            <div>
+                <div class="text-gray-500">Trạng thái</div>
+                <div class="font-semibold text-white">@Model.Status</div>
+            </div>
+        </div>
+
+        <div>
+            <div class="text-gray-500">Tên chi nhánh</div>
+            <div class="font-semibold text-white">@Model.BranchName</div>
+        </div>
+
+        <div>
+            <div class="text-gray-500">Địa chỉ</div>
+            <div class="font-semibold text-white">@Model.Address</div>
+        </div>
+
+        <div>
+            <div class="text-gray-500">Hotline</div>
+            <div class="font-semibold text-white">@Model.PhoneNumber</div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-700/60">
+            <div>
+                <div class="text-gray-500">Ngày tạo</div>
+                <div>@Model.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm") bởi @Model.CreatedBy</div>
+            </div>
+            <div>
+                <div class="text-gray-500">Cập nhật cuối</div>
+                <div>@Model.UpdatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm") bởi @Model.UpdatedBy</div>
+            </div>
+        </div>
+    </div>
+</div>

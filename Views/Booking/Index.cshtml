@@ -1,122 +1,88 @@
-﻿@model List<Bus_ticket.Models.Trip>
+@model List<Bus_ticket.Models.Trip>
 @{
-    Layout = "_AdminLayout";
-    ViewData["Title"] = "Quản Lý Chuyến Xe & Đặt Vé";
-    var tripCount = Model?.Count ?? 0;
+Layout = "_AdminLayout";
+ViewData["Title"] = "Điều Hành Chuyến Xe & Hành Khách";
+var busList = ViewBag.BusList as List<Bus_ticket.Models.Bus>;
+var routeList = ViewBag.RouteList as List<Bus_ticket.Models.BusRoute>;
+int currentPage = ViewBag.CurrentPage ?? 1;
+int totalPages = ViewBag.TotalPages ?? 1;
+string searchDate = ViewBag.SearchDate ?? "";
 }
 
 <div class="p-6 sm:p-8 space-y-6">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-            <h1 class="text-2xl font-bold tracking-tight text-white">Danh sách Chuyến Xe & Đặt Vé</h1>
-            <p class="text-sm text-gray-400 mt-1">Quản lý chuyến xe, chọn ghế và đặt vé tại quầy cho hành khách.</p>
+            <h1 class="text-2xl font-bold tracking-tight text-white">Điều Hành & Danh Sách Vé Chuyến</h1>
+            <p class="text-sm text-gray-400 mt-1">Quản lý hành khách theo từng chuyến chạy, in danh sách đón khách gửi tài xế.</p>
         </div>
         <div>
-            <button type="button" onclick="clearBookingData()"
-                    class="inline-flex items-center justify-center px-4 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg transition-colors duration-200 shadow-sm">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                </svg>
-                Làm mới form
-            </button>
+            <a asp-action="Create" asp-controller="Booking"
+               class="inline-flex items-center justify-center px-4 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg transition-colors duration-200 shadow-sm">
+                + Đặt vé mới tại quầy
+            </a>
         </div>
     </div>
 
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="flex items-center p-4 text-sm text-emerald-400 rounded-lg bg-gray-800 border border-emerald-800">
-            <svg class="flex-shrink-0 inline w-4 h-4 mr-3" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-            </svg>
-            <div><span class="font-medium">Thành công!</span> @TempData["SuccessMessage"]</div>
+    <form method="get" action="@Url.Action("Index", "Booking")" class="bg-[#1e1e24] p-4 border border-gray-700/50 rounded-xl grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+        <div>
+            <label class="block mb-1 text-xs font-semibold text-gray-400 uppercase">Lọc theo ngày đi</label>
+            <input type="date" name="searchDate" value="@searchDate"
+                   class="block w-full px-3 py-2 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-1 focus:ring-amber-400 focus:border-amber-400"/>
         </div>
-    }
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="flex items-center p-4 text-sm text-red-400 rounded-lg bg-gray-800 border border-red-800">
-            <svg class="flex-shrink-0 inline w-4 h-4 mr-3" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5ZM9.5 4a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0ZM12 15H8a1 1 0 0 1 0-2h1v-3H8a1 1 0 0 1 0-2h2a1 1 0 0 1 1 1v4h1a1 1 0 0 1 0 2Z"/>
-            </svg>
-            <div><span class="font-medium">Thất bại!</span> @TempData["ErrorMessage"]</div>
+        <div>
+            <label class="block mb-1 text-xs font-semibold text-gray-400 uppercase">Tìm nhanh mã xe / tuyến</label>
+            <input type="text" id="searchTripText" placeholder="Nhập từ khóa cần tìm..."
+                   class="block w-full px-3 py-2 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-1 focus:ring-amber-400 focus:border-amber-400"/>
         </div>
-    }
+        <div class="flex gap-2">
+            <button type="submit" class="w-full px-4 py-2 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg transition-colors">
+                Lọc dữ liệu
+            </button>
+            <a href="@Url.Action("Index", "Booking")" class="px-4 py-2 text-sm font-semibold text-gray-300 bg-gray-800 hover:bg-gray-700 rounded-lg text-center transition-colors">
+                Xóa bộ lọc
+            </a>
+        </div>
+    </form>
 
     <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <div class="xl:col-span-2 space-y-4">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                <p class="text-sm text-gray-400">Click dòng chuyến để tải sơ đồ ghế</p>
-                <div class="w-full md:w-80">
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                            </svg>
-                        </div>
-                        <input type="text" id="txtSearchTrip"
-                               class="block w-full pl-10 pr-4 py-2 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 placeholder-gray-500"
-                               placeholder="Tìm kiếm chuyến xe..."/>
-                    </div>
-                </div>
-            </div>
 
+        <div class="xl:col-span-2 space-y-4">
             <div class="overflow-hidden bg-[#1e1e24] border border-gray-700/50 rounded-xl shadow-xl">
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm text-left text-gray-300 whitespace-nowrap">
                         <thead class="text-xs uppercase bg-[#141419] text-gray-400 border-b border-gray-700/60">
                         <tr>
-                            <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Thông Tin Xe</th>
-                            <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Giờ Đi</th>
-                            <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Điểm Đón</th>
-                            <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Điểm Dừng</th>
-                            <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Giá Vé</th>
-                            <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Trạng Thái</th>
+                            <th class="px-6 py-4 font-semibold">Thông Tin Xe</th>
+                            <th class="px-6 py-4 font-semibold">Tuyến Đường</th>
+                            <th class="px-6 py-4 font-semibold">Giờ Đi</th>
+                            <th class="px-6 py-4 font-semibold">Giá Vé</th>
+                            <th class="px-6 py-4 font-semibold text-center">Hành Động</th>
                         </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-700/50" id="trip-table-body">
+                        <tbody class="divide-y divide-gray-700/50" id="tripTableBody">
                         @if (Model != null && Model.Any())
                         {
                             foreach (var trip in Model)
                             {
-                                // MÓC REALTIME DỮ LIỆU BẢNG XE QUA VIEWBUG
-                                var busList = ViewBag.BusList as List<Bus_ticket.Models.Bus>;
                                 var matchedBus = busList?.FirstOrDefault(b => b.Id == trip.BusId);
-                                
-                                string realBusCode = matchedBus?.BusCode ?? "BUS-SRC01";
-                                string realBusType = matchedBus?.LegacyBusType ?? "Standard (Seat)";
+                                var matchedRoute = routeList?.FirstOrDefault(r => r.Id == trip.RouteId);
+                                string rName = matchedRoute != null ? $"{matchedRoute.DeparturePoint} → {matchedRoute.DestinationPoint}" : "Tuyến đường mẫu SRC";
 
-                                // Tự động chọn ảnh mạng chất lượng cao dựa theo phân loại xe thật
-                                string busImgUrl = "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=120&auto=format&fit=crop&q=60"; 
-
-                                if (realBusType.Contains("Sleeper") || realBusType.Contains("Luxury") || realBusType.Contains("Giường"))
-                                {
-                                    busImgUrl = "https://images.unsplash.com/photo-1570125909232-eb263c188f7e?w=120&auto=format&fit=crop&q=60";
-                                }
-                                
                                 <tr class="hover:bg-gray-800/30 transition-colors duration-150 cursor-pointer trip-row"
-                                    data-trip-id="@trip.Id"
-                                    onclick="loadSeatMatrix('@trip.Id')">
-                                    
+                                    data-trip-id="@trip.Id" onclick="loadPassengerManifest('@trip.Id', '@matchedBus?.BusCode', '@rName')">
                                     <td class="px-6 py-4 font-semibold text-amber-400">
-                                        <div class="flex items-center space-x-3">
-                                            <img class="w-14 h-9 object-cover rounded border border-gray-700 shadow bg-gray-900" 
-                                                 src="@busImgUrl" alt="@realBusType">
-                                            <div>
-                                                <div class="text-sm font-bold text-amber-400">@realBusCode</div>
-                                                <div class="text-[10px] text-gray-400 font-normal mt-0.5">@realBusType</div>
-                                            </div>
-                                        </div>
+                                        <div class="text-sm font-bold text-amber-400">@matchedBus?.BusCode</div>
+                                        <div class="text-[10px] text-gray-400 font-normal mt-0.5">@matchedBus?.LegacyBusType</div>
                                     </td>
-                                    <td class="px-6 py-4 text-gray-300">@trip.DepartureTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
-                                    
-                                    <td class="px-6 py-4 text-gray-400">Văn Phòng Đón</td>
-                                    <td class="px-6 py-4 text-gray-400">Bến Xe Đến</td>
-                                    
-                                    <td class="px-6 py-4 font-semibold text-white">@trip.BaseFare.ToString("N0") đ</td>
-                                    <td class="px-6 py-4">
-                                        <span class="inline-flex items-center px-2.5 py-0.5 text-xs font-semibold rounded-md border bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
-                                            @trip.Status
-                                        </span>
+                                    <td class="px-6 py-4 text-gray-300">@rName</td>
+                                    <td class="px-6 py-4 text-gray-300">
+                                        @trip.DepartureTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                                    </td>
+                                    <td class="px-6 py-4 font-semibold text-white">
+                                        @trip.BaseFare.ToString("N0") đ
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+                                        <span class="text-xs text-amber-400 hover:underline">Xem khách →</span>
                                     </td>
                                 </tr>
                             }
@@ -124,8 +90,8 @@
                         else
                         {
                             <tr>
-                                <td colspan="6" class="px-6 py-10 text-center text-gray-500 bg-[#1e1e24]">
-                                    Không có chuyến xe nào trong hệ thống.
+                                <td colspan="5" class="px-6 py-10 text-center text-gray-500 bg-[#1e1e24]">
+                                    Không có chuyến xe nào phù hợp với bộ lọc.
                                 </td>
                             </tr>
                         }
@@ -133,228 +99,203 @@
                     </table>
                 </div>
 
-                <div class="flex flex-col sm:flex-row items-center justify-between p-4 bg-[#141419] border-t border-gray-700/60 gap-4">
-                    <span class="text-sm text-gray-400">
-                        Hiển thị tổng số <span class="font-semibold text-white">@tripCount</span> chuyến xe
-                    </span>
-                </div>
+                @if (totalPages > 1)
+                {
+                    <div class="flex items-center justify-between p-4 bg-[#141419] border-t border-gray-700/60">
+                        <span class="text-xs text-gray-400">Trang <span class="text-white font-semibold">@currentPage</span> / @totalPages</span>
+                        <div class="inline-flex space-x-1">
+                            <a href="@Url.Action("Index", "Booking", new { page = currentPage - 1, searchDate = searchDate })"
+                               class="@(currentPage == 1 ? "pointer-events-none opacity-40" : "") px-3 py-1 text-xs font-medium text-gray-400 bg-gray-800 rounded hover:bg-gray-700 hover:text-white">
+                                Trước
+                            </a>
+                            @for (int i = 1; i <= totalPages; i++)
+                            {
+                                <a href="@Url.Action("Index", "Booking", new { page = i, searchDate = searchDate })"
+                                   class="px-3 py-1 text-xs font-medium rounded @(i == currentPage ? "bg-amber-400 text-gray-900 font-bold" : "text-gray-400 bg-gray-800 hover:bg-gray-700 hover:text-white")">
+                                    @i
+                                </a>
+                            }
+                            <a href="@Url.Action("Index", "Booking", new { page = currentPage + 1, searchDate = searchDate })"
+                               class="@(currentPage == totalPages ? "pointer-events-none opacity-40" : "") px-3 py-1 text-xs font-medium text-gray-400 bg-gray-800 rounded hover:bg-gray-700 hover:text-white">
+                                Tiếp
+                            </a>
+                        </div>
+                    </div>
+                }
             </div>
         </div>
 
         <div class="space-y-4">
-            <div class="overflow-hidden bg-[#1e1e24] border border-gray-700/50 rounded-xl shadow-xl p-6">
-                <h2 class="text-sm font-semibold uppercase tracking-wider text-gray-400 border-b border-gray-700/60 pb-3 mb-4">
-                    Sơ đồ ma trận ghế
-                </h2>
-
-                <div class="grid grid-cols-2 gap-2 text-xs font-medium mb-5 p-3 rounded-lg bg-[#141419] border border-gray-700/50 text-gray-400">
-                    <div class="flex items-center"><span class="w-3.5 h-3.5 bg-gray-700 border border-gray-600 rounded mr-2 inline-block"></span>Trống</div>
-                    <div class="flex items-center"><span class="w-3.5 h-3.5 bg-amber-400 rounded mr-2 inline-block"></span>Đang chọn</div>
-                    <div class="flex items-center"><span class="w-3.5 h-3.5 bg-amber-500 rounded mr-2 inline-block"></span>Giữ chỗ</div>
-                    <div class="flex items-center"><span class="w-3.5 h-3.5 bg-gray-600 rounded mr-2 inline-block"></span>Đã đặt</div>
+            <div class="overflow-hidden bg-[#1e1e24] border border-gray-700/50 rounded-xl shadow-xl p-5">
+                <div class="flex items-center justify-between border-b border-gray-700/60 pb-3 mb-4">
+                    <h2 class="text-sm font-semibold uppercase tracking-wider text-gray-400">Danh Sách Đón Khách</h2>
+                    <button type="button" id="btnPrint" onclick="printDriverManifest()" disabled
+                            class="opacity-50 inline-flex items-center justify-center px-3 py-1.5 text-xs font-semibold text-gray-900 bg-emerald-400 hover:bg-emerald-500 rounded-md transition-colors duration-200">
+                        In gửi tài xế
+                    </button>
                 </div>
 
-                <p id="lblBusType" class="text-xs text-gray-400 mb-3 text-center">Chọn chuyến xe để hiển thị sơ đồ</p>
-
-                <div id="grid-seats" class="grid grid-cols-4 gap-2 text-center max-w-[280px] mx-auto p-3 rounded-lg bg-[#141419] border border-gray-700/50 min-h-[120px] mb-5">
-                    <p class="col-span-4 text-xs text-gray-500 py-8">Chưa có sơ đồ ghế</p>
+                <div class="mb-4 p-3 rounded-lg bg-[#141419] border border-gray-700/50 text-xs text-gray-400 space-y-1">
+                    <div>Xe điều hành: <span id="lblTargetBus" class="text-white font-bold">-</span></div>
+                    <div>Tuyến: <span id="lblTargetRoute" class="text-white font-medium">-</span></div>
                 </div>
 
-                <form asp-action="BookTicket" asp-controller="Booking" method="post" id="formBooking" class="space-y-4 border-t border-gray-700/60 pt-4">
-                    @Html.AntiForgeryToken()
-                    <input type="hidden" name="tripId" id="hidTripId" />
-                    <div id="hidden-seats-container"></div>
-
-                    <div class="mb-4 grid grid-cols-2 gap-3 bg-[#141419] p-3 rounded-lg border border-gray-700/50">
-                        <div>
-                            <label class="block mb-1 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Điểm đón khách</label>
-                            <select name="pickUpPoint" id="ddlPickUpPoint" class="bg-gray-900 border border-gray-700 text-white text-xs rounded-lg block w-full p-2 focus:ring-2 focus:ring-amber-400 focus:border-amber-400" required>
-                                <option value="">-- Chọn điểm đón --</option>
-                                <option value="Văn phòng Hà Nội">Văn phòng Hà Nội</option>
-                                <option value="Bến xe Mỹ Đình">Bến xe Mỹ Đình</option>
-                                <option value="Ngã tư Nội Bài">Ngã tư Nội Bài</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block mb-1 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Điểm trả khách</label>
-                            <select name="dropOffPoint" id="ddlDropOffPoint" class="bg-gray-900 border border-gray-700 text-white text-xs rounded-lg block w-full p-2 focus:ring-2 focus:ring-amber-400 focus:border-amber-400" required>
-                                <option value="">-- Chọn điểm trả --</option>
-                                <option value="Văn phòng trung tâm">Văn phòng trung tâm</option>
-                                <option value="Bến xe thành phố">Bến xe thành phố</option>
-                                <option value="Trả dọc đường Quốc Lộ">Trả dọc đường Quốc Lộ</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <h3 class="text-sm font-semibold text-white">Thông tin đặt vé</h3>
-
-                    <div>
-                        <label class="block mb-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Tên hành khách</label>
-                        <input type="text" name="passengerName" id="txtPassengerName" required
-                               class="block w-full px-4 py-2 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 placeholder-gray-500"
-                               placeholder="Họ tên khách mua vé">
-                    </div>
-                    <div>
-                        <label class="block mb-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Số điện thoại</label>
-                        <input type="tel" name="passengerPhone" id="txtPassengerPhone" required pattern="[0-9]{9,11}"
-                               class="block w-full px-4 py-2 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 placeholder-gray-500"
-                               placeholder="0912345678">
-                    </div>
-                    <div>
-                        <label class="block mb-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Email</label>
-                        <input type="email" name="passengerEmail" id="txtPassengerEmail"
-                               class="block w-full px-4 py-2 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 placeholder-gray-500"
-                               placeholder="email@example.com">
-                    </div>
-                    <div>
-                        <label class="block mb-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Tuổi</label>
-                        <input type="number" name="passengerAge" id="txtPassengerAge" min="1" max="100" required value="20"
-                               class="block w-full px-4 py-2 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 placeholder-gray-500">
-                        <p class="text-[10px] text-amber-400/80 mt-1">* Giảm giá theo chính sách tuổi (trẻ em, sinh viên, người cao tuổi).</p>
-                    </div>
-                    <div>
-                        <label class="block mb-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Số ghế chọn</label>
-                        <input type="text" id="txtSeatNum" readonly
-                               class="block w-full px-4 py-2 text-sm font-semibold text-amber-400 bg-amber-400/10 border border-amber-400/30 rounded-lg"
-                               placeholder="Chọn trực tiếp trên sơ đồ xe">
-                    </div>
-
-                    <div class="flex flex-wrap justify-end gap-2 pt-2">
-                        <button type="submit"
-                                class="inline-flex items-center justify-center px-4 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg transition-colors duration-200 shadow-sm">
-                            Đặt vé
-                        </button>
-                        <button type="button" onclick="alert('Tính năng nâng cao đang phát triển!')"
-                                class="inline-flex items-center justify-center px-4 py-2.5 text-sm font-semibold text-gray-300 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg transition-colors duration-200">
-                            Cập nhật
-                        </button>
-                        <button type="button" onclick="clearBookingData()"
-                                class="inline-flex items-center justify-center px-4 py-2.5 text-sm font-semibold text-rose-400 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg transition-colors duration-200">
-                            Hủy
-                        </button>
-                    </div>
-                </form>
+                <div id="manifestContainer" class="space-y-2 max-h-[420px] overflow-y-auto pr-1">
+                    <p class="text-xs text-gray-500 text-center py-12">Bấm chọn một chuyến xe để kiểm tra vé đã bán</p>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<script>
-    const selectedSeats = [];
-    const container = document.getElementById('hidden-seats-container');
-    const txtSeatNum = document.getElementById('txtSeatNum');
-    const gridSeats = document.getElementById('grid-seats');
+<div id="successModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-[9999]">
+    <div class="bg-[#1e1e24] p-6 rounded-2xl w-full max-w-sm border border-amber-500 shadow-2xl text-white">
+        <h2 class="text-xl font-bold text-amber-400 mb-4 text-center">Vé vừa đặt thành công</h2>
+        <div id="bookingDetails" class="text-sm space-y-2 border-t border-gray-700 pt-4 mb-6"></div>
+        <div class="flex gap-3 mt-6">
+            <button onclick="printTicket()" 
+                    class="flex-1 bg-amber-500 hover:bg-amber-600 text-gray-900 font-bold py-2 rounded-lg transition-all">
+                In vé
+            </button>
+            <button onclick="document.getElementById('successModal').classList.add('hidden')" 
+                    class="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-2 rounded-lg transition-all">
+                Đóng
+            </button>
+        </div>
+    </div>
+</div>
 
-    document.getElementById('txtSearchTrip')?.addEventListener('input', function () {
-        const keyword = this.value.toLowerCase();
-        document.querySelectorAll('#trip-table-body tr.trip-row').forEach(row => {
-            row.style.display = row.textContent.toLowerCase().includes(keyword) ? '' : 'none';
+@if (TempData["NewBookingCode"] != null)
+{
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            fetch(`/Booking/GetBookingDetails?code=@TempData["NewBookingCode"]`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('bookingDetails').innerHTML = `
+                            <div class="space-y-2 text-white">
+                                <p><strong>Mã vé:</strong> ${data.bookingCode}</p>
+                                <p><strong>Thông tin xe:</strong> ${data.busInfo}</p>
+                                <p><strong>Giờ khởi hành:</strong> ${data.departureTime}</p>
+                                <hr class="border-gray-700">
+                                <p><strong>Khách hàng:</strong> ${data.passengerName}</p>
+                                <p><strong>Ghế:</strong> ${data.seats}</p>
+                                <p><strong>Tổng tiền:</strong> ${data.finalTotal}</p>
+                            </div>
+                        `;
+                        document.getElementById('successModal').classList.remove('hidden');
+                    }
+                });
+        });
+        
+        function printTicket() {
+            // Lấy nội dung của vé từ thẻ div bookingDetails
+            const ticketContent = document.getElementById('bookingDetails').innerHTML;
+
+            // Tạo cửa sổ in tạm thời
+            const printWindow = window.open('', '', 'height=600,width=400');
+            printWindow.document.write('<html><head><title>Vé xe</title>');
+            printWindow.document.write('<style>body{font-family:sans-serif; padding:20px; line-height:1.6;} hr{border:0; border-top:1px solid #ccc; margin:10px 0;}</style>');
+            printWindow.document.write('</head><body>');
+            printWindow.document.write('<h2 style="text-align:center;">VÉ XE ĐÃ ĐẶT</h2>');
+            printWindow.document.write(ticketContent);
+            printWindow.document.write('</body></html>');
+
+            printWindow.document.close();
+            printWindow.print(); // Gọi lệnh in của trình duyệt
+        }
+    </script>
+}
+
+<script>
+    let currentManifestData = [];
+    let currentBusCode = "";
+    let currentRouteName = "";
+
+    // Tìm kiếm nhanh text ngay tại client
+    document.getElementById('searchTripText')?.addEventListener('input', function() {
+        const k = this.value.toLowerCase();
+        document.querySelectorAll('#tripTableBody .trip-row').forEach(row => {
+            row.style.display = row.textContent.toLowerCase().includes(k) ? '' : 'none';
         });
     });
 
-    async function loadSeatMatrix(tripId) {
-        document.querySelectorAll('.trip-row').forEach(r => {
-            r.classList.remove('bg-amber-500/10', 'ring-1', 'ring-amber-400/50');
-        });
-        const activeRow = document.querySelector(`[data-trip-id="${tripId}"]`);
-        if (activeRow) {
-            activeRow.classList.add('bg-amber-500/10', 'ring-1', 'ring-amber-400/50');
-        }
+    async function loadPassengerManifest(tripId, busCode, routeName) {
+        document.querySelectorAll('.trip-row').forEach(r => r.classList.remove('bg-amber-500/10', 'ring-1', 'ring-amber-400/50'));
+        const targetRow = document.querySelector(`[data-trip-id="${tripId}"]`);
+        if (targetRow) targetRow.classList.add('bg-amber-500/10', 'ring-1', 'ring-amber-400/50');
 
-        selectedSeats.length = 0;
-        container.innerHTML = '';
-        txtSeatNum.value = '';
-        document.getElementById('hidTripId').value = tripId;
+        currentBusCode = busCode || "N/A";
+        currentRouteName = routeName || "N/A";
+        document.getElementById('lblTargetBus').innerText = currentBusCode;
+        document.getElementById('lblTargetRoute').innerText = currentRouteName;
+
+        const container = document.getElementById('manifestContainer');
+        const btnPrint = document.getElementById('btnPrint');
+        container.innerHTML = '<p class="text-xs text-gray-400 text-center py-6">Đang tải danh sách...</p>';
 
         try {
-            const response = await fetch(`/Booking/GetSeats?tripId=${encodeURIComponent(tripId)}`, {
-                credentials: 'same-origin'
-            });
-            if (!response.ok) {
-                alert(`Không thể kết nối lấy dữ liệu ghế! (${response.status})`);
-                return;
-            }
-            const data = await response.json();
-            gridSeats.innerHTML = '';
+            const response = await fetch('/Booking/GetManifest?tripId=' + tripId);
+            if (!response.ok) throw new Error();
 
-            const columns = data.totalColumns || 4;
-            gridSeats.style.gridTemplateColumns = `repeat(${columns}, minmax(0, 1fr))`;
-            document.getElementById('lblBusType').innerText = `Sơ đồ xe: ${data.busType || 'Standard Layout'}`;
+            currentManifestData = await response.json();
+            container.innerHTML = '';
 
-            const allSeats = data.realtimeSeats || data.seats || [];
-            if (allSeats.length === 0) {
-                gridSeats.innerHTML = '<p class="col-span-4 text-xs text-rose-400 py-8 text-center">Chưa có dữ liệu ghế</p>';
+            if (currentManifestData.length === 0) {
+                container.innerHTML = '<p class="text-xs text-rose-400 text-center py-12">Chưa có vé nào được đặt trên chuyến này.</p>';
+                btnPrint.disabled = true;
+                btnPrint.classList.add('opacity-50');
                 return;
             }
 
-            allSeats.forEach(seat => {
-                const cell = document.createElement('div');
-                cell.textContent = seat.seatType === 'VIP' ? `${seat.seatNumber}⭐` : seat.seatNumber;
-                cell.className = 'p-2 rounded font-bold text-xs border transition shadow-sm';
+            btnPrint.disabled = false;
+            btnPrint.classList.remove('opacity-50');
 
-                if (seat.status === 'Booked') {
-                    cell.className += ' bg-gray-600 text-gray-400 border-gray-600 cursor-not-allowed';
-                    cell.title = `Ghế ${seat.seatNumber} (Đã đặt)`;
-                } else if (seat.status === 'Holding') {
-                    cell.className += ' bg-amber-500 text-gray-900 border-amber-500 cursor-not-allowed';
-                    cell.title = `Ghế ${seat.seatNumber} (Giữ chỗ)`;
-                } else {
-                    cell.className += ' bg-gray-800 border-gray-600 text-gray-200 cursor-pointer hover:bg-amber-400 hover:text-gray-900 hover:border-amber-400';
-                    cell.setAttribute('data-seat', seat.seatNumber);
-                    cell.addEventListener('click', function () { toggleSeatSelection(this, seat.seatNumber); });
-                }
-                gridSeats.appendChild(cell);
+            currentManifestData.forEach(p => {
+                const item = document.createElement('div');
+                item.className = "p-3 rounded-lg bg-[#141419] border border-gray-700/40 flex items-center justify-between";
+                // ĐÃ KHẮC PHỤC HIỂN THỊ TRỐN LỖI RAZOR BẰNG CÁCH DÙNG PHÉP CỘNG CHUỖI TRUYỀN THỐNG TRÁNH DẤU $
+                item.innerHTML = '<div>' +
+                    '<div class="text-xs font-bold text-white">' + p.passengerName + '</div>' +
+                    '<div class="text-[11px] text-gray-400">' + p.phone + '</div>' +
+                    '<div class="text-[10px] text-gray-500 mt-1">Mã: ' + p.bookingCode + ' | ' + p.paymentStatus + '</div>' +
+                    '</div>' +
+                    '<div class="px-2.5 py-1 text-xs font-black text-amber-400 bg-amber-400/10 rounded border border-amber-400/20 shadow-inner">' +
+                    'Ghế ' + p.seatNumber +
+                    '</div>';
+                container.appendChild(item);
             });
         } catch {
-            alert('Lỗi hệ thống khi tải ma trận lưới ghế động!');
+            container.innerHTML = '<p class="text-xs text-red-400 text-center py-6">Lỗi hệ thống khi tải dữ liệu!</p>';
         }
     }
 
-    function toggleSeatSelection(element, seatCode) {
-        const index = selectedSeats.indexOf(seatCode);
-        if (index > -1) {
-            element.classList.remove('bg-amber-400', 'text-gray-900', 'border-amber-400', 'font-extrabold');
-            element.classList.add('bg-gray-800', 'text-gray-200', 'border-gray-600');
-            selectedSeats.splice(index, 1);
-        } else {
-            element.classList.remove('bg-gray-800', 'text-gray-200', 'border-gray-600');
-            element.classList.add('bg-amber-400', 'text-gray-900', 'border-amber-400', 'font-extrabold');
-            selectedSeats.push(seatCode);
-        }
+    function printDriverManifest() {
+        if (currentManifestData.length === 0) return;
 
-        txtSeatNum.value = selectedSeats.join(', ');
-        container.innerHTML = '';
-        selectedSeats.forEach(seat => {
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = 'seatNumbers';
-            input.value = seat;
-            container.appendChild(input);
+        let rowsHtml = '';
+        currentManifestData.forEach((p, index) => {
+            rowsHtml += '<tr>' +
+                '<td style="border: 1px solid #000; padding: 8px; text-align: center;">' + (index + 1) + '</td>' +
+                '<td style="border: 1px solid #000; padding: 8px; font-weight: bold; text-align: center;">' + p.seatNumber + '</td>' +
+                '<td style="border: 1px solid #000; padding: 8px;">' + p.passengerName + '</td>' +
+                '<td style="border: 1px solid #000; padding: 8px; text-align: center;">' + p.phone + '</td>' +
+                '<td style="border: 1px solid #000; padding: 8px; text-align: center;">' + p.paymentStatus + '</td>' +
+                '</tr>';
         });
-    }
 
-    function clearBookingData() {
-        document.getElementById('formBooking').reset();
-        document.getElementById('hidTripId').value = '';
-        txtSeatNum.value = '';
-        container.innerHTML = '';
-        selectedSeats.length = 0;
-        gridSeats.innerHTML = '<p class="col-span-4 text-xs text-gray-500 py-8 text-center">Chưa có sơ đồ ghế</p>';
-        document.getElementById('lblBusType').innerText = 'Chọn chuyến xe để hiển thị sơ đồ';
-        document.querySelectorAll('.trip-row').forEach(r => {
-            r.classList.remove('bg-amber-500/10', 'ring-1', 'ring-amber-400/50');
-        });
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write('<html><head><title>DANH SÁCH ĐÓN KHÁCH - XE ' + currentBusCode + '</title>' +
+            '<style>body { font-family: Arial, sans-serif; margin: 30px; line-height: 1.4; color: #000; } .header { text-align: center; margin-bottom: 25px; } .info-meta { margin-bottom: 15px; font-size: 14px; } table { width: 100%; border-collapse: collapse; margin-top: 10px; }</style>' +
+            '</head><body>' +
+            '<div class="header"><h2>SRC TRAVEL - DANH SÁCH ĐÓN HÀNH KHÁCH</h2><p>Mã Số Xe Điều Hành: <strong>' + currentBusCode + '</strong></p></div>' +
+            '<div class="info-meta"><div><strong>Tuyến đường:</strong> ' + currentRouteName + '</div><div><strong>Ngày in lệnh:</strong> ' + new Date().toLocaleString('vi-VN') + '</div></div>' +
+            '<table><thead><tr style="background-color: #f2f2f2;"><th style="border: 1px solid #000; padding: 8px; width: 5%;">STT</th><th style="border: 1px solid #000; padding: 8px; width: 15%;">Số Ghế</th><th style="border: 1px solid #000; padding: 8px; width: 40%;">Tên Hành Khách</th><th style="border: 1px solid #000; padding: 8px; width: 20%;">Số Điện Thoại</th><th style="border: 1px solid #000; padding: 8px; width: 20%;">Trạng Thái</th></tr></thead>' +
+            '<tbody>' + rowsHtml + '</tbody></table>' +
+            '<div style="margin-top: 40px; float: right; text-align: center; width: 200px;"><p><strong>Người xuất lệnh</strong></p><br/><br/><br/><p><i>(Ký và ghi rõ họ tên)</i></p></div>' +
+            '</body></html>');
+        printWindow.document.close();
+        printWindow.print();
     }
-
-    document.getElementById('formBooking').addEventListener('submit', function (e) {
-        if (!document.getElementById('hidTripId').value) {
-            e.preventDefault();
-            alert('Vui lòng click chọn một chuyến xe trong bảng trước!');
-            return;
-        }
-        if (selectedSeats.length === 0) {
-            e.preventDefault();
-            alert('Vui lòng tích chọn ít nhất một ghế trên sơ đồ xe!');
-        }
-    });
 </script>
