@@ -1,0 +1,185 @@
+@model Bus_ticket.ViewModels.CreateEmployeeViewModel
+@using Bus_ticket.Models
+
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Create Employee";
+
+    var dynamicRoles = ViewBag.DynamicRoles as List<DynamicRole> ?? new List<DynamicRole>();
+    var hasValidationErrors = !ViewData.ModelState.IsValid && ViewData.ModelState.Values.Any(v => v.Errors.Count > 0);
+}
+
+<div class="p-4 bg-white border border-gray-200 rounded-lg shadow-sm dark:border-gray-700 dark:bg-gray-800 sm:p-6">
+
+    <div class="mb-6">
+        <a href="/Admin/Users"
+           class="inline-flex items-center text-sm font-medium text-blue-600 hover:underline dark:text-blue-400">
+            ← Back to users
+        </a>
+
+        <h1 class="mt-3 text-xl font-semibold text-gray-900 sm:text-2xl dark:text-white">
+            Create Employee Account
+        </h1>
+
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            Admin creates a new employee account and assigns a dynamic role.
+        </p>
+    </div>
+
+    <form action="/Admin/Users/Create" method="post" class="space-y-6" autocomplete="off">
+        @Html.AntiForgeryToken()
+        <input type="text"
+               name="fake_username"
+               autocomplete="username"
+               tabindex="-1"
+               style="position:absolute; left:-9999px; width:1px; height:1px; opacity:0;" />
+
+        <input type="password"
+               name="fake_password"
+               autocomplete="new-password"
+               tabindex="-1"
+               style="position:absolute; left:-9999px; width:1px; height:1px; opacity:0;" />
+        
+        @if (hasValidationErrors)
+        {
+            <div asp-validation-summary="All"
+                 class="p-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-700 dark:text-red-400">
+            </div>
+        }
+
+        @if (!dynamicRoles.Any())
+        {
+            <div class="p-4 text-sm text-yellow-800 rounded-lg bg-yellow-50 dark:bg-gray-700 dark:text-yellow-300">
+                No dynamic roles found. Please create a Dynamic Role before creating an employee.
+            </div>
+        }
+
+        <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+
+            <div>
+                <label asp-for="Email" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                    Email
+                </label>
+                <input asp-for="Email"
+                       type="email"
+                       autocomplete="off"
+                       placeholder="employee@src.com"
+                       class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+                <span asp-validation-for="Email" class="text-sm text-red-600 dark:text-red-400"></span>
+            </div>
+
+            <div>
+                <label asp-for="Password" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                    Initial Password
+                </label>
+                <input asp-for="Password"
+                       type="password"
+                       placeholder="Employee@123"
+                       autocomplete="new-password"
+                       class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+                <span asp-validation-for="Password" class="text-sm text-red-600 dark:text-red-400"></span>
+            </div>
+
+            <div>
+                <label asp-for="FullName" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                    Full Name
+                </label>
+                <input asp-for="FullName"
+                       placeholder="Employee full name"
+                       class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+                <span asp-validation-for="FullName" class="text-sm text-red-600 dark:text-red-400"></span>
+            </div>
+
+            <div>
+                <label asp-for="Dob" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                    Date of Birth
+                </label>
+                <input asp-for="Dob"
+                       type="date"
+                       class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+                <span asp-validation-for="Dob" class="text-sm text-red-600 dark:text-red-400"></span>
+            </div>
+
+            <div>
+                <label asp-for="PhoneNumber" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                    Phone Number
+                </label>
+                <input asp-for="PhoneNumber"
+                       placeholder="02012345678"
+                       class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+                <span asp-validation-for="PhoneNumber" class="text-sm text-red-600 dark:text-red-400"></span>
+            </div>
+
+            <div>
+                <label asp-for="Qualifications" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                    Qualifications
+                </label>
+                <input asp-for="Qualifications"
+                       placeholder="Bachelor"
+                       class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+                <span asp-validation-for="Qualifications" class="text-sm text-red-600 dark:text-red-400"></span>
+            </div>
+
+            <div class="md:col-span-2">
+                <label asp-for="RoleId" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                    Dynamic Role
+                </label>
+
+                <select asp-for="RoleId"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                    <option value="">-- Select dynamic role --</option>
+
+                    @foreach (var role in dynamicRoles)
+                    {
+                        <option value="@role.Id">@role.RoleName</option>
+                    }
+                </select>
+
+                <span asp-validation-for="RoleId" class="text-sm text-red-600 dark:text-red-400"></span>
+            </div>
+
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-4">
+            <a href="/Admin/Users"
+               class="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600">
+                Cancel
+            </a>
+
+            <button type="submit"
+                    class="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800">
+                Create Employee
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    @if (!hasValidationErrors)
+    {
+        <script>
+            window.addEventListener("load", function () {
+                const form = document.querySelector('form[action="/Admin/Users/Create"]');
+
+                if (!form) {
+                    return;
+                }
+
+                setTimeout(function () {
+                    const emailInput = form.querySelector('[name="Email"]');
+                    const passwordInput = form.querySelector('[name="Password"]');
+
+                    if (emailInput) {
+                        emailInput.value = "";
+                    }
+
+                    if (passwordInput) {
+                        passwordInput.value = "";
+                    }
+                }, 200);
+            });
+        </script>
+    }
+}

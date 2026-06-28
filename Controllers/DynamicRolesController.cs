@@ -7,9 +7,10 @@ using MongoDB.Driver;
 using Bus_ticket.Data;
 using Bus_ticket.Models;
 using MongoDB.Bson;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Bus_ticket.Controllers
-{
+{  [Authorize(Roles = "Admin,Employee")]
     public class DynamicRolesController : Controller
     {
         private readonly ApplicationDbContext _context;
