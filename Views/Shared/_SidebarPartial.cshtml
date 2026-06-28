@@ -205,6 +205,15 @@
                                     </li>
                                 }
                   
+                                @if (canViewBranches)
+                                {
+                                    <li>
+                                        <a asp-controller="Branches" asp-action="Index" class="nav-link-item @subMenuItemClass">
+                                          Branches
+                                        </a>
+                                    </li>
+                                }
+                                  
                                 @if (canViewBusClasses)
                                 {
                                     <li>
@@ -318,6 +327,15 @@
                                     <li>
                                         <a href="/Admin/Users" class="@subMenuItemClass">
                                             Manage Employees
+                                        </a>
+                                    </li>
+                                }
+                  
+                                @if (canViewBranches)
+                                {
+                                    <li>
+                                        <a href="/Admin/Branches" class="@subMenuItemClass">
+                                          Manage Branches
                                         </a>
                                     </li>
                                 }
