@@ -60,5 +60,67 @@ namespace Bus_ticket.Controllers
         {
             return new Random().Next(10000, 99999).ToString();
         }
+[HttpGet]
+        public async Task<IActionResult> PriceConfig()
+        {
+            // Lấy thẳng danh sách giá độc lập, cực nhẹ và sạch code
+            var priceList = await _dbContext.PriceConfigs.Find(_ => true).ToListAsync();
+            return View(priceList);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SavePriceConfig(string busType, string departurePoint, string destinationPoint, decimal basePrice)
+        {
+            if (string.IsNullOrEmpty(busType) || string.IsNullOrEmpty(departurePoint) || string.IsNullOrEmpty(destinationPoint) || basePrice <= 0)
+            {
+                TempData["ErrorMessage"] = "Dữ liệu cấu hình giá vé không hợp lệ!";
+                return RedirectToAction(nameof(PriceConfig));
+            }
+
+            try
+            {
+                // Bộ lọc tìm kiếm: Khớp chính xác bộ ba: Loại xe + Điểm đi + Điểm đến
+                var filter = Builders<PriceConfig>.Filter.And(
+                    Builders<PriceConfig>.Filter.Eq(p => p.BusType, busType),
+                    Builders<PriceConfig>.Filter.Eq(p => p.DeparturePoint, departurePoint),
+                    Builders<PriceConfig>.Filter.Eq(p => p.DestinationPoint, destinationPoint)
+                );
+
+                var update = Builders<PriceConfig>.Update
+                    .Set(p => p.BasePrice, basePrice)
+                    .Set(p => p.UpdatedAt, DateTime.UtcNow);
+
+                var options = new UpdateOptions { IsUpsert = true };
+                await _dbContext.PriceConfigs.UpdateOneAsync(filter, update, options);
+                
+                TempData["SuccessMessage"] = "Cập nhật cấu hình giá vé nền thành công!";
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = "Lỗi xử lý database MongoDB: " + ex.Message;
+            }
+
+            return RedirectToAction(nameof(PriceConfig));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeletePriceConfig(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return BadRequest();
+
+            try
+            {
+                await _dbContext.PriceConfigs.DeleteOneAsync(p => p.Id == id);
+                TempData["SuccessMessage"] = "Xóa cấu hình giá vé thành công!";
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = "Lỗi khi thực hiện xóa dữ liệu: " + ex.Message;
+            }
+
+            return RedirectToAction(nameof(PriceConfig));
+        }
     }
 }

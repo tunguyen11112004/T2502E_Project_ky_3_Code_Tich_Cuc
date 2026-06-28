@@ -213,6 +213,15 @@
                                         </a>
                                     </li>
                                 }
+                  
+                                @if (canViewBranches)
+                                {
+                                    <li>
+                                        <a asp-controller="Admin" asp-action="PriceConfig" class="nav-link-item @subMenuItemClass">
+                                          Pricing
+                                      </a>
+                                    </li>
+                                }
                                   
                                 @if (canViewBusClasses)
                                 {
