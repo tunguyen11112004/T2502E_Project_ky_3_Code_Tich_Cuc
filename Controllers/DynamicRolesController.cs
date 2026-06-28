@@ -7,9 +7,10 @@ using MongoDB.Driver;
 using Bus_ticket.Data;
 using Bus_ticket.Models;
 using MongoDB.Bson;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Bus_ticket.Controllers
-{
+{  [Authorize(Roles = "Admin,Employee")]
     public class DynamicRolesController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -69,7 +70,8 @@ namespace Bus_ticket.Controllers
         public async Task<IActionResult> Create(DynamicRole role, List<string> selectedPermissions)
         {
             ModelState.Remove("Id");
-
+            ModelState.Remove("CreatedBy");
+            ModelState.Remove("UpdatedBy");
             if (ModelState.IsValid)
             {
                 role.PermissionIds = selectedPermissions ?? new List<string>();
@@ -85,7 +87,7 @@ namespace Bus_ticket.Controllers
 
                 // THÊM: Gán thông tin audit khi tạo mới
                 role.CreatedAt = DateTime.UtcNow;
-                role.CreatedBy = User.Identity?.Name ?? "Admin"; // Lấy tên người dùng đăng nhập hoặc mặc định Admin
+                role.CreatedBy = User.Identity?.Name ?? "Admin"; // Lấy tên người dùng đăng nhập 
                 role.UpdatedAt = DateTime.UtcNow;
                 role.UpdatedBy = User.Identity?.Name ?? "Admin";
 
@@ -93,6 +95,7 @@ namespace Bus_ticket.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            TempData["SuccessMessage"] = "Tạo vai trò mới thành công.";
             ViewBag.AllPermissions = await _context.Permissions.Find(_ => true).SortBy(p => p.Name).ToListAsync();
             return View(role);
         }
@@ -128,7 +131,7 @@ namespace Bus_ticket.Controllers
                 await _context.DynamicRoles.UpdateOneAsync(r => r.Id == id, update);
                 return RedirectToAction(nameof(Index));
             }
-
+            TempData["SuccessMessage"] = "Sửa vai trò thành công.";
             ViewBag.AllPermissions = await _context.Permissions.Find(_ => true).SortBy(p => p.Name).ToListAsync();
             return View(role);
         }

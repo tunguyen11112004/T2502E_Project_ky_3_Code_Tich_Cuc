@@ -1,0 +1,301 @@
+@model List<Bus_ticket.Models.Trip>
+@{
+Layout = "_AdminLayout";
+ViewData["Title"] = "Điều Hành Chuyến Xe & Hành Khách";
+var busList = ViewBag.BusList as List<Bus_ticket.Models.Bus>;
+var routeList = ViewBag.RouteList as List<Bus_ticket.Models.BusRoute>;
+int currentPage = ViewBag.CurrentPage ?? 1;
+int totalPages = ViewBag.TotalPages ?? 1;
+string searchDate = ViewBag.SearchDate ?? "";
+}
+
+<div class="p-6 sm:p-8 space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold tracking-tight text-white">Điều Hành & Danh Sách Vé Chuyến</h1>
+            <p class="text-sm text-gray-400 mt-1">Quản lý hành khách theo từng chuyến chạy, in danh sách đón khách gửi tài xế.</p>
+        </div>
+        <div>
+            <a asp-action="Create" asp-controller="Booking"
+               class="inline-flex items-center justify-center px-4 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg transition-colors duration-200 shadow-sm">
+                + Đặt vé mới tại quầy
+            </a>
+        </div>
+    </div>
+
+    <form method="get" action="@Url.Action("Index", "Booking")" class="bg-[#1e1e24] p-4 border border-gray-700/50 rounded-xl grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+        <div>
+            <label class="block mb-1 text-xs font-semibold text-gray-400 uppercase">Lọc theo ngày đi</label>
+            <input type="date" name="searchDate" value="@searchDate"
+                   class="block w-full px-3 py-2 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-1 focus:ring-amber-400 focus:border-amber-400"/>
+        </div>
+        <div>
+            <label class="block mb-1 text-xs font-semibold text-gray-400 uppercase">Tìm nhanh mã xe / tuyến</label>
+            <input type="text" id="searchTripText" placeholder="Nhập từ khóa cần tìm..."
+                   class="block w-full px-3 py-2 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-1 focus:ring-amber-400 focus:border-amber-400"/>
+        </div>
+        <div class="flex gap-2">
+            <button type="submit" class="w-full px-4 py-2 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg transition-colors">
+                Lọc dữ liệu
+            </button>
+            <a href="@Url.Action("Index", "Booking")" class="px-4 py-2 text-sm font-semibold text-gray-300 bg-gray-800 hover:bg-gray-700 rounded-lg text-center transition-colors">
+                Xóa bộ lọc
+            </a>
+        </div>
+    </form>
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+
+        <div class="xl:col-span-2 space-y-4">
+            <div class="overflow-hidden bg-[#1e1e24] border border-gray-700/50 rounded-xl shadow-xl">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left text-gray-300 whitespace-nowrap">
+                        <thead class="text-xs uppercase bg-[#141419] text-gray-400 border-b border-gray-700/60">
+                        <tr>
+                            <th class="px-6 py-4 font-semibold">Thông Tin Xe</th>
+                            <th class="px-6 py-4 font-semibold">Tuyến Đường</th>
+                            <th class="px-6 py-4 font-semibold">Giờ Đi</th>
+                            <th class="px-6 py-4 font-semibold">Giá Vé</th>
+                            <th class="px-6 py-4 font-semibold text-center">Hành Động</th>
+                        </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-700/50" id="tripTableBody">
+                        @if (Model != null && Model.Any())
+                        {
+                            foreach (var trip in Model)
+                            {
+                                var matchedBus = busList?.FirstOrDefault(b => b.Id == trip.BusId);
+                                var matchedRoute = routeList?.FirstOrDefault(r => r.Id == trip.RouteId);
+                                string rName = matchedRoute != null ? $"{matchedRoute.DeparturePoint} → {matchedRoute.DestinationPoint}" : "Tuyến đường mẫu SRC";
+
+                                <tr class="hover:bg-gray-800/30 transition-colors duration-150 cursor-pointer trip-row"
+                                    data-trip-id="@trip.Id" onclick="loadPassengerManifest('@trip.Id', '@matchedBus?.BusCode', '@rName')">
+                                    <td class="px-6 py-4 font-semibold text-amber-400">
+                                        <div class="text-sm font-bold text-amber-400">@matchedBus?.BusCode</div>
+                                        <div class="text-[10px] text-gray-400 font-normal mt-0.5">@matchedBus?.LegacyBusType</div>
+                                    </td>
+                                    <td class="px-6 py-4 text-gray-300">@rName</td>
+                                    <td class="px-6 py-4 text-gray-300">
+                                        @trip.DepartureTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                                    </td>
+                                    <td class="px-6 py-4 font-semibold text-white">
+                                        @trip.BaseFare.ToString("N0") đ
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+                                        <span class="text-xs text-amber-400 hover:underline">Xem khách →</span>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="5" class="px-6 py-10 text-center text-gray-500 bg-[#1e1e24]">
+                                    Không có chuyến xe nào phù hợp với bộ lọc.
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+
+                @if (totalPages > 1)
+                {
+                    <div class="flex items-center justify-between p-4 bg-[#141419] border-t border-gray-700/60">
+                        <span class="text-xs text-gray-400">Trang <span class="text-white font-semibold">@currentPage</span> / @totalPages</span>
+                        <div class="inline-flex space-x-1">
+                            <a href="@Url.Action("Index", "Booking", new { page = currentPage - 1, searchDate = searchDate })"
+                               class="@(currentPage == 1 ? "pointer-events-none opacity-40" : "") px-3 py-1 text-xs font-medium text-gray-400 bg-gray-800 rounded hover:bg-gray-700 hover:text-white">
+                                Trước
+                            </a>
+                            @for (int i = 1; i <= totalPages; i++)
+                            {
+                                <a href="@Url.Action("Index", "Booking", new { page = i, searchDate = searchDate })"
+                                   class="px-3 py-1 text-xs font-medium rounded @(i == currentPage ? "bg-amber-400 text-gray-900 font-bold" : "text-gray-400 bg-gray-800 hover:bg-gray-700 hover:text-white")">
+                                    @i
+                                </a>
+                            }
+                            <a href="@Url.Action("Index", "Booking", new { page = currentPage + 1, searchDate = searchDate })"
+                               class="@(currentPage == totalPages ? "pointer-events-none opacity-40" : "") px-3 py-1 text-xs font-medium text-gray-400 bg-gray-800 rounded hover:bg-gray-700 hover:text-white">
+                                Tiếp
+                            </a>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="space-y-4">
+            <div class="overflow-hidden bg-[#1e1e24] border border-gray-700/50 rounded-xl shadow-xl p-5">
+                <div class="flex items-center justify-between border-b border-gray-700/60 pb-3 mb-4">
+                    <h2 class="text-sm font-semibold uppercase tracking-wider text-gray-400">Danh Sách Đón Khách</h2>
+                    <button type="button" id="btnPrint" onclick="printDriverManifest()" disabled
+                            class="opacity-50 inline-flex items-center justify-center px-3 py-1.5 text-xs font-semibold text-gray-900 bg-emerald-400 hover:bg-emerald-500 rounded-md transition-colors duration-200">
+                        In gửi tài xế
+                    </button>
+                </div>
+
+                <div class="mb-4 p-3 rounded-lg bg-[#141419] border border-gray-700/50 text-xs text-gray-400 space-y-1">
+                    <div>Xe điều hành: <span id="lblTargetBus" class="text-white font-bold">-</span></div>
+                    <div>Tuyến: <span id="lblTargetRoute" class="text-white font-medium">-</span></div>
+                </div>
+
+                <div id="manifestContainer" class="space-y-2 max-h-[420px] overflow-y-auto pr-1">
+                    <p class="text-xs text-gray-500 text-center py-12">Bấm chọn một chuyến xe để kiểm tra vé đã bán</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="successModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-[9999]">
+    <div class="bg-[#1e1e24] p-6 rounded-2xl w-full max-w-sm border border-amber-500 shadow-2xl text-white">
+        <h2 class="text-xl font-bold text-amber-400 mb-4 text-center">Vé vừa đặt thành công</h2>
+        <div id="bookingDetails" class="text-sm space-y-2 border-t border-gray-700 pt-4 mb-6"></div>
+        <div class="flex gap-3 mt-6">
+            <button onclick="printTicket()" 
+                    class="flex-1 bg-amber-500 hover:bg-amber-600 text-gray-900 font-bold py-2 rounded-lg transition-all">
+                In vé
+            </button>
+            <button onclick="document.getElementById('successModal').classList.add('hidden')" 
+                    class="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-2 rounded-lg transition-all">
+                Đóng
+            </button>
+        </div>
+    </div>
+</div>
+
+@if (TempData["NewBookingCode"] != null)
+{
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            fetch(`/Booking/GetBookingDetails?code=@TempData["NewBookingCode"]`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('bookingDetails').innerHTML = `
+                            <div class="space-y-2 text-white">
+                                <p><strong>Mã vé:</strong> ${data.bookingCode}</p>
+                                <p><strong>Thông tin xe:</strong> ${data.busInfo}</p>
+                                <p><strong>Giờ khởi hành:</strong> ${data.departureTime}</p>
+                                <hr class="border-gray-700">
+                                <p><strong>Khách hàng:</strong> ${data.passengerName}</p>
+                                <p><strong>Ghế:</strong> ${data.seats}</p>
+                                <p><strong>Tổng tiền:</strong> ${data.finalTotal}</p>
+                            </div>
+                        `;
+                        document.getElementById('successModal').classList.remove('hidden');
+                    }
+                });
+        });
+        
+        function printTicket() {
+            // Lấy nội dung của vé từ thẻ div bookingDetails
+            const ticketContent = document.getElementById('bookingDetails').innerHTML;
+
+            // Tạo cửa sổ in tạm thời
+            const printWindow = window.open('', '', 'height=600,width=400');
+            printWindow.document.write('<html><head><title>Vé xe</title>');
+            printWindow.document.write('<style>body{font-family:sans-serif; padding:20px; line-height:1.6;} hr{border:0; border-top:1px solid #ccc; margin:10px 0;}</style>');
+            printWindow.document.write('</head><body>');
+            printWindow.document.write('<h2 style="text-align:center;">VÉ XE ĐÃ ĐẶT</h2>');
+            printWindow.document.write(ticketContent);
+            printWindow.document.write('</body></html>');
+
+            printWindow.document.close();
+            printWindow.print(); // Gọi lệnh in của trình duyệt
+        }
+    </script>
+}
+
+<script>
+    let currentManifestData = [];
+    let currentBusCode = "";
+    let currentRouteName = "";
+
+    // Tìm kiếm nhanh text ngay tại client
+    document.getElementById('searchTripText')?.addEventListener('input', function() {
+        const k = this.value.toLowerCase();
+        document.querySelectorAll('#tripTableBody .trip-row').forEach(row => {
+            row.style.display = row.textContent.toLowerCase().includes(k) ? '' : 'none';
+        });
+    });
+
+    async function loadPassengerManifest(tripId, busCode, routeName) {
+        document.querySelectorAll('.trip-row').forEach(r => r.classList.remove('bg-amber-500/10', 'ring-1', 'ring-amber-400/50'));
+        const targetRow = document.querySelector(`[data-trip-id="${tripId}"]`);
+        if (targetRow) targetRow.classList.add('bg-amber-500/10', 'ring-1', 'ring-amber-400/50');
+
+        currentBusCode = busCode || "N/A";
+        currentRouteName = routeName || "N/A";
+        document.getElementById('lblTargetBus').innerText = currentBusCode;
+        document.getElementById('lblTargetRoute').innerText = currentRouteName;
+
+        const container = document.getElementById('manifestContainer');
+        const btnPrint = document.getElementById('btnPrint');
+        container.innerHTML = '<p class="text-xs text-gray-400 text-center py-6">Đang tải danh sách...</p>';
+
+        try {
+            const response = await fetch('/Booking/GetManifest?tripId=' + tripId);
+            if (!response.ok) throw new Error();
+
+            currentManifestData = await response.json();
+            container.innerHTML = '';
+
+            if (currentManifestData.length === 0) {
+                container.innerHTML = '<p class="text-xs text-rose-400 text-center py-12">Chưa có vé nào được đặt trên chuyến này.</p>';
+                btnPrint.disabled = true;
+                btnPrint.classList.add('opacity-50');
+                return;
+            }
+
+            btnPrint.disabled = false;
+            btnPrint.classList.remove('opacity-50');
+
+            currentManifestData.forEach(p => {
+                const item = document.createElement('div');
+                item.className = "p-3 rounded-lg bg-[#141419] border border-gray-700/40 flex items-center justify-between";
+                // ĐÃ KHẮC PHỤC HIỂN THỊ TRỐN LỖI RAZOR BẰNG CÁCH DÙNG PHÉP CỘNG CHUỖI TRUYỀN THỐNG TRÁNH DẤU $
+                item.innerHTML = '<div>' +
+                    '<div class="text-xs font-bold text-white">' + p.passengerName + '</div>' +
+                    '<div class="text-[11px] text-gray-400">' + p.phone + '</div>' +
+                    '<div class="text-[10px] text-gray-500 mt-1">Mã: ' + p.bookingCode + ' | ' + p.paymentStatus + '</div>' +
+                    '</div>' +
+                    '<div class="px-2.5 py-1 text-xs font-black text-amber-400 bg-amber-400/10 rounded border border-amber-400/20 shadow-inner">' +
+                    'Ghế ' + p.seatNumber +
+                    '</div>';
+                container.appendChild(item);
+            });
+        } catch {
+            container.innerHTML = '<p class="text-xs text-red-400 text-center py-6">Lỗi hệ thống khi tải dữ liệu!</p>';
+        }
+    }
+
+    function printDriverManifest() {
+        if (currentManifestData.length === 0) return;
+
+        let rowsHtml = '';
+        currentManifestData.forEach((p, index) => {
+            rowsHtml += '<tr>' +
+                '<td style="border: 1px solid #000; padding: 8px; text-align: center;">' + (index + 1) + '</td>' +
+                '<td style="border: 1px solid #000; padding: 8px; font-weight: bold; text-align: center;">' + p.seatNumber + '</td>' +
+                '<td style="border: 1px solid #000; padding: 8px;">' + p.passengerName + '</td>' +
+                '<td style="border: 1px solid #000; padding: 8px; text-align: center;">' + p.phone + '</td>' +
+                '<td style="border: 1px solid #000; padding: 8px; text-align: center;">' + p.paymentStatus + '</td>' +
+                '</tr>';
+        });
+
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write('<html><head><title>DANH SÁCH ĐÓN KHÁCH - XE ' + currentBusCode + '</title>' +
+            '<style>body { font-family: Arial, sans-serif; margin: 30px; line-height: 1.4; color: #000; } .header { text-align: center; margin-bottom: 25px; } .info-meta { margin-bottom: 15px; font-size: 14px; } table { width: 100%; border-collapse: collapse; margin-top: 10px; }</style>' +
+            '</head><body>' +
+            '<div class="header"><h2>SRC TRAVEL - DANH SÁCH ĐÓN HÀNH KHÁCH</h2><p>Mã Số Xe Điều Hành: <strong>' + currentBusCode + '</strong></p></div>' +
+            '<div class="info-meta"><div><strong>Tuyến đường:</strong> ' + currentRouteName + '</div><div><strong>Ngày in lệnh:</strong> ' + new Date().toLocaleString('vi-VN') + '</div></div>' +
+            '<table><thead><tr style="background-color: #f2f2f2;"><th style="border: 1px solid #000; padding: 8px; width: 5%;">STT</th><th style="border: 1px solid #000; padding: 8px; width: 15%;">Số Ghế</th><th style="border: 1px solid #000; padding: 8px; width: 40%;">Tên Hành Khách</th><th style="border: 1px solid #000; padding: 8px; width: 20%;">Số Điện Thoại</th><th style="border: 1px solid #000; padding: 8px; width: 20%;">Trạng Thái</th></tr></thead>' +
+            '<tbody>' + rowsHtml + '</tbody></table>' +
+            '<div style="margin-top: 40px; float: right; text-align: center; width: 200px;"><p><strong>Người xuất lệnh</strong></p><br/><br/><br/><p><i>(Ký và ghi rõ họ tên)</i></p></div>' +
+            '</body></html>');
+        printWindow.document.close();
+        printWindow.print();
+    }
+</script>

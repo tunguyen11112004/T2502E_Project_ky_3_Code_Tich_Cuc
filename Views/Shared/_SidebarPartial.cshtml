@@ -1,5 +1,129 @@
+@using System.Security.Claims
+@using Bus_ticket.Services
+@inject SidebarPermissionService SidebarPermissionService
+
 @{
-    // Thêm class nền tảng để JS nhận biết và tính toán cấu trúc CSS dễ dàng hơn
+    var fullName = User.Identity?.Name ?? "Unknown User";
+    var employeeCode = User.FindFirst("EmployeeCode")?.Value ?? "N/A";
+    var role = User.FindFirst(ClaimTypes.Role)?.Value ?? "Unknown";
+
+    var permissionNames = await SidebarPermissionService.GetCurrentUserPermissionNamesAsync(User);
+
+    var isAdmin = User.IsInRole("Admin");
+    var isEmployee = User.IsInRole("Employee");
+
+    var canViewBooking = SidebarPermissionService.HasPermission(
+        permissionNames,
+        "Booking",
+        "Book",
+        "Ticket",
+        "/Booking"
+    );
+
+    var canViewUsers = SidebarPermissionService.HasPermission(
+        permissionNames,
+        "User",
+        "Users",
+        "Employee",
+        "Employees",
+        "/Admin/Users"
+    );
+
+    var canViewDynamicRoles = SidebarPermissionService.HasPermission(
+        permissionNames,
+        "DynamicRole",
+        "DynamicRoles",
+        "Role",
+        "Roles",
+        "/DynamicRoles"
+    );
+
+    var canViewPermissions = SidebarPermissionService.HasPermission(
+        permissionNames,
+        "Permission",
+        "Permissions",
+        "/Permissions"
+    );
+
+    var canManageBuses = SidebarPermissionService.HasPermission(
+        permissionNames,
+        "Bus",
+        "Buses",
+        "/Admin/Buses"
+    );
+
+    var canManageRoutes = SidebarPermissionService.HasPermission(
+        permissionNames,
+        "Route",
+        "Routes",
+        "BusRoute",
+        "/Admin/Routes"
+    );
+
+    var canManagePrices = SidebarPermissionService.HasPermission(
+        permissionNames,
+        "Price",
+        "Prices",
+        "PriceList",
+        "Fare",
+        "/Admin/Prices"
+    );
+
+    var canViewEmployeeCounter = SidebarPermissionService.HasPermission(
+        permissionNames,
+        "Employee",
+        "Counter",
+        "Booking",
+        "Trip",
+        "Ticket"
+    );
+
+    var canSearchTrips = SidebarPermissionService.HasPermission(
+        permissionNames,
+        "Trip",
+        "Route",
+        "Search",
+        "BusRoute"
+    );
+
+    var canBookTicket = SidebarPermissionService.HasPermission(
+        permissionNames,
+        "Booking",
+        "Book",
+        "Ticket"
+    );
+
+    var canViewPriceList = SidebarPermissionService.HasPermission(
+        permissionNames,
+        "Price",
+        "Fare",
+        "PriceList"
+    );
+
+    var canViewPolicy = SidebarPermissionService.HasPermission(
+        permissionNames,
+        "Policy",
+        "Refund",
+        "Cancel",
+        "Cancellation"
+    );
+
+    var showCrudMenu = canViewBooking
+                       || canViewUsers
+                       || canViewDynamicRoles
+                       || canViewPermissions;
+
+    var showSrcAdminFlow = canViewUsers
+                           || canManageBuses
+                           || canManageRoutes
+                           || canManagePrices;
+
+    var showEmployeeMenu = canViewEmployeeCounter
+                           || canSearchTrips
+                           || canBookTicket
+                           || canViewPriceList
+                           || canViewPolicy;
+
     var menuItemClass = "nav-link-item flex items-center p-2 text-base text-gray-900 rounded-lg hover:bg-gray-100 group dark:text-gray-200 dark:hover:bg-gray-700 transition-all duration-150";
     var subMenuItemClass = "nav-link-item flex items-center p-2 text-base text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700 transition-all duration-150";
     var buttonMenuClass = "flex items-center w-full p-2 text-base text-gray-900 transition duration-75 rounded-lg group hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700";
@@ -25,13 +149,17 @@
                                         <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"></path>
                                     </svg>
                                 </div>
-                                <input type="text" name="search" id="mobile-search" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full pl-10 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-gray-200" placeholder="Search">
+                                <input type="text"
+                                       name="search"
+                                       id="mobile-search"
+                                       class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full pl-10 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-gray-200"
+                                       placeholder="Search">
                             </div>
                         </form>
                     </li>
 
-                    @* ================= ADMIN MENU ================= *@
-                    @if (User.IsInRole("Admin"))
+                    @* ================= SYSTEM ADMIN ONLY ================= *@
+                    @if (isAdmin)
                     {
                         <li>
                             <a href="/Admin" class="@menuItemClass">
@@ -53,7 +181,11 @@
                                 <li><a href="/Admin/Layouts/Sidebar" class="@subMenuItemClass">Sidebar</a></li>
                             </ul>
                         </li>
+                    }
 
+                    @* ================= CRUD - PERMISSION BASED ================= *@
+                    @if (showCrudMenu)
+                    {
                         <li>
                             <button type="button" class="@buttonMenuClass" aria-controls="dropdown-crud" data-collapse-toggle="dropdown-crud">
                                 <span class="w-6 text-center text-gray-500">🗂️</span>
@@ -62,14 +194,76 @@
                                     <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path>
                                 </svg>
                             </button>
+
                             <ul id="dropdown-crud" class="hidden py-2 space-y-2">
-                                <li><a href="/Admin/Products" class="@subMenuItemClass">Products</a></li>
-                                <li><a href="/Admin/Users" class="@subMenuItemClass">Users</a></li>
-                                <li><a href="/DynamicRoles" class="@subMenuItemClass">Roles</a></li>
-                                <li><a asp-controller="Permissions" asp-action="Index" class="@subMenuItemClass">Permissions</a></li>
+                                @if (canViewBooking)
+                                {
+                                    <li>
+                                        <a asp-controller="Booking" asp-action="Index" class="nav-link-item @subMenuItemClass">
+                                            Booking
+                                        </a>
+                                    </li>
+                                }
+                  
+                                @if (canViewBranches)
+                                {
+                                    <li>
+                                        <a asp-controller="Branches" asp-action="Index" class="nav-link-item @subMenuItemClass">
+                                          Branches
+                                        </a>
+                                    </li>
+                                }
+                  
+                                @if (canViewBranches)
+                                {
+                                    <li>
+                                        <a asp-controller="Admin" asp-action="PriceConfig" class="nav-link-item @subMenuItemClass">
+                                          Pricing
+                                      </a>
+                                    </li>
+                                }
+                                  
+                                @if (canViewBusClasses)
+                                {
+                                    <li>
+                                        <a asp-controller="BusClasses" asp-action="Index" class="nav-link-item @subMenuItemClass">
+                                          BusClasses
+                                        </a>
+                                    </li>
+
+                                @if (canViewUsers)
+                                {
+                                    <li>
+                                        <a href="/Admin/Users" class="nav-link-item @subMenuItemClass">
+                                            Users
+                                        </a>
+                                    </li>
+                                }
+
+                                @if (canViewDynamicRoles)
+                                {
+                                    <li>
+                                        <a asp-controller="DynamicRoles" asp-action="Index" class="nav-link-item @subMenuItemClass">
+                                            DynamicRoles
+                                        </a>
+                                    </li>
+                                }
+
+                                @if (canViewPermissions)
+                                {
+                                    <li>
+                                        <a asp-controller="Permissions" asp-action="Index" class="nav-link-item @subMenuItemClass">
+                                            Permissions
+                                        </a>
+                                    </li>
+                                }
                             </ul>
                         </li>
+                    }
 
+                    @* ================= SYSTEM ADMIN ONLY ================= *@
+                    @if (isAdmin)
+                    {
                         <li>
                             <a href="/Admin/Settings" class="@menuItemClass">
                                 <span class="w-6 text-center text-gray-500">⚙️</span>
@@ -122,7 +316,11 @@
                                 <li><a href="/Admin/Playground/Sidebar" class="@subMenuItemClass">Sidebar</a></li>
                             </ul>
                         </li>
+                    }
 
+                    @* ================= SRC ADMIN FLOW - PERMISSION BASED ================= *@
+                    @if (showSrcAdminFlow)
+                    {
                         <li>
                             <button type="button" class="@buttonMenuClass" aria-controls="dropdown-src-admin" data-collapse-toggle="dropdown-src-admin">
                                 <span class="w-6 text-center text-gray-500">🚌</span>
@@ -131,33 +329,136 @@
                                     <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path>
                                 </svg>
                             </button>
+
                             <ul id="dropdown-src-admin" class="hidden py-2 space-y-2">
-                                <li><a href="/Admin/Employees" class="@subMenuItemClass">Manage Employees</a></li>
-                                <li><a href="/Admin/Buses" class="@subMenuItemClass">Manage Buses</a></li>
-                                <li><a href="/Admin/Routes" class="@subMenuItemClass">Manage Routes</a></li>
-                                <li><a href="/Admin/Prices" class="@subMenuItemClass">Manage Price List</a></li>
+                                @if (canViewUsers)
+                                {
+                                    <li>
+                                        <a href="/Admin/Users" class="@subMenuItemClass">
+                                            Manage Employees
+                                        </a>
+                                    </li>
+                                }
+                  
+                                @if (canViewBranches)
+                                {
+                                    <li>
+                                        <a href="/Admin/Branches" class="@subMenuItemClass">
+                                          Manage Branches
+                                        </a>
+                                    </li>
+                                }
+
+                                @if (canManageBuses)
+                                {
+                                    <li>
+                                        <a href="/Admin/Buses" class="@subMenuItemClass">
+                                            Manage Buses
+                                        </a>
+                                    </li>
+                                }
+
+                                @if (canManageRoutes)
+                                {
+                                    <li>
+                                        <a href="/Admin/Routes" class="@subMenuItemClass">
+                                            Manage Routes
+                                        </a>
+                                    </li>
+                                }
+
+                                @if (canManagePrices)
+                                {
+                                    <li>
+                                        <a href="/Admin/Prices" class="@subMenuItemClass">
+                                            Manage Price List
+                                        </a>
+                                    </li>
+                                }
                             </ul>
                         </li>
                     }
 
-                    @* ================= EMPLOYEE MENU ================= *@
-                    @if (User.IsInRole("Employee") || User.IsInRole("Admin"))
+                    @* ================= EMPLOYEE FLOW - PERMISSION BASED ================= *@
+                    @if (showEmployeeMenu)
                     {
-                        <li><a href="/Employee" class="@menuItemClass"><span class="w-6 text-center text-gray-500">🎫</span><span class="ml-3">Employee Counter</span></a></li>
-                        <li><a href="/Employee/SearchTrips" class="@menuItemClass"><span class="w-6 text-center text-gray-500">🔎</span><span class="ml-3">Search Trips</span></a></li>
-                        <li><a href="/Employee/BookTicket" class="@menuItemClass"><span class="w-6 text-center text-gray-500">🧾</span><span class="ml-3">Book Ticket</span></a></li>
-                        <li><a href="/Employee/PriceList" class="@menuItemClass"><span class="w-6 text-center text-gray-500">💰</span><span class="ml-3">Price List</span></a></li>
-                        <li><a href="/Employee/Policy" class="@menuItemClass"><span class="w-6 text-center text-gray-500">📌</span><span class="ml-3">Policy</span></a></li>
+                        if (canViewEmployeeCounter)
+                        {
+                            <li>
+                                <a href="/Employee" class="@menuItemClass">
+                                    <span class="w-6 text-center text-gray-500">🎫</span>
+                                    <span class="ml-3">Employee Counter</span>
+                                </a>
+                            </li>
+                        }
+
+                        if (canSearchTrips)
+                        {
+                            <li>
+                                <a href="/Employee/SearchTrips" class="@menuItemClass">
+                                    <span class="w-6 text-center text-gray-500">🔎</span>
+                                    <span class="ml-3">Search Trips</span>
+                                </a>
+                            </li>
+                        }
+
+                        if (canBookTicket)
+                        {
+                            <li>
+                                <a href="/Employee/BookTicket" class="@menuItemClass">
+                                    <span class="w-6 text-center text-gray-500">🧾</span>
+                                    <span class="ml-3">Book Ticket</span>
+                                </a>
+                            </li>
+                        }
+
+                        if (canViewPriceList)
+                        {
+                            <li>
+                                <a href="/Employee/PriceList" class="@menuItemClass">
+                                    <span class="w-6 text-center text-gray-500">💰</span>
+                                    <span class="ml-3">Price List</span>
+                                </a>
+                            </li>
+                        }
+
+                        if (canViewPolicy)
+                        {
+                            <li>
+                                <a href="/Employee/Policy" class="@menuItemClass">
+                                    <span class="w-6 text-center text-gray-500">📌</span>
+                                    <span class="ml-3">Policy</span>
+                                </a>
+                            </li>
+                        }
+                    }
+
+                    @if (!isAdmin && !showCrudMenu && !showSrcAdminFlow && !showEmployeeMenu)
+                    {
+                        <li>
+                            <div class="p-3 text-sm text-gray-500 rounded-lg bg-gray-50 dark:bg-gray-700 dark:text-gray-300">
+                                No menu assigned. Please contact admin.
+                            </div>
+                        </li>
                     }
                 </ul>
 
-                @* ================= Resource links ================= *@
-                @if (User.IsInRole("Admin"))
+                @* ================= RESOURCE LINKS - SYSTEM ADMIN ONLY ================= *@
+                @if (isAdmin)
                 {
                     <div class="pt-2 space-y-2">
-                        <a href="https://flowbite.com/application-ui/demo/" target="_blank" class="@menuItemClass"><span class="w-6 text-center text-gray-500">🚀</span><span class="ml-3">View Pro Version</span></a>
-                        <a href="https://github.com/themesberg/flowbite-admin-dashboard" target="_blank" class="@menuItemClass"><span class="w-6 text-center text-gray-500">💻</span><span class="ml-3">GitHub Repository</span></a>
-                        <a href="https://flowbite.com/docs/getting-started/introduction/" target="_blank" class="@menuItemClass"><span class="w-6 text-center text-gray-500">📚</span><span class="ml-3">Flowbite Docs</span></a>
+                        <a href="https://flowbite.com/application-ui/demo/" target="_blank" class="@menuItemClass">
+                            <span class="w-6 text-center text-gray-500">🚀</span>
+                            <span class="ml-3">View Pro Version</span>
+                        </a>
+                        <a href="https://github.com/themesberg/flowbite-admin-dashboard" target="_blank" class="@menuItemClass">
+                            <span class="w-6 text-center text-gray-500">💻</span>
+                            <span class="ml-3">GitHub Repository</span>
+                        </a>
+                        <a href="https://flowbite.com/docs/getting-started/introduction/" target="_blank" class="@menuItemClass">
+                            <span class="w-6 text-center text-gray-500">📚</span>
+                            <span class="ml-3">Flowbite Docs</span>
+                        </a>
                     </div>
                 }
             </div>
@@ -166,3 +467,4 @@
 
     <div class="fixed inset-0 z-10 hidden bg-gray-900/50 dark:bg-gray-900/90" id="sidebarBackdrop"></div>
 </aside>
+

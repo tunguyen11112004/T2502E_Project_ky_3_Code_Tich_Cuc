@@ -1,4 +1,4 @@
-import ApexCharts from 'apexcharts';
+const ApexCharts = window.ApexCharts;
 
 const getMainChartOptions = () => {
 	let mainChartColors = {}
