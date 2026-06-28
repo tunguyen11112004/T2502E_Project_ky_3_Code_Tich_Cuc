@@ -44,7 +44,7 @@ public class BusClass
 
     [BsonElement("imagePublicId")]
     public string ImagePublicId { get; set; } = string.Empty;
-
+  
     [BsonElement("totalSeats")]
     public int TotalSeats { get; set; }
 
