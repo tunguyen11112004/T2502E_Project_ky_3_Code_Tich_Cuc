@@ -21,6 +21,7 @@ builder.Services.Configure<MongoDbSettings>(
 // Services
 builder.Services.AddSingleton<ApplicationDbContext>();
 builder.Services.AddSingleton<UserService>();
+builder.Services.AddSingleton<ICloudinaryService, CloudinaryService>();
 builder.Services.AddScoped<SidebarPermissionService>();
 
 // Cookie Authentication

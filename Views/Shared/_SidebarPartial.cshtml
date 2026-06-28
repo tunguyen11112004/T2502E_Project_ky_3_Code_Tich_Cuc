@@ -204,6 +204,14 @@
                                         </a>
                                     </li>
                                 }
+                  
+                                @if (canViewBusClasses)
+                                {
+                                    <li>
+                                        <a asp-controller="BusClasses" asp-action="Index" class="nav-link-item @subMenuItemClass">
+                                          BusClasses
+                                        </a>
+                                    </li>
 
                                 @if (canViewUsers)
                                 {

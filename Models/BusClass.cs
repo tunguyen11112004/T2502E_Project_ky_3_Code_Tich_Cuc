@@ -8,59 +8,61 @@ namespace Bus_ticket.Models;
 
 public class SeatTemplate
 {
-    [BsonElement("seatNumber")] 
+    [BsonElement("seatNumber")]
     public string SeatNumber { get; set; }
 
-    [BsonElement("row")] 
+    [BsonElement("row")]
     public int Row { get; set; }
 
-    [BsonElement("column")] 
+    [BsonElement("column")]
     public int Column { get; set; }
 
-    [BsonElement("floor")] 
+    [BsonElement("floor")]
     public int Floor { get; set; }
 
-    [BsonElement("seatType")] 
+    [BsonElement("seatType")]
     public string SeatType { get; set; } = "Standard";
 }
 
+[BsonIgnoreExtraElements]
 public class BusClass
 {
     [BsonId]
     [BsonRepresentation(BsonType.ObjectId)]
     public string Id { get; set; }
 
-    [BsonElement("className")] 
-    [Required] 
+    [BsonElement("className")]
+    [Required]
     public string ClassName { get; set; }
 
-    [BsonElement("busType")] 
+    [BsonElement("busType")]
     [Required]
     public string BusType { get; set; }
 
     [BsonElement("imageUrl")]
-    public string ImageUrl { get; set; } // Đường dẫn URL của ảnh
+    public string ImageUrl { get; set; } = string.Empty;
 
     [BsonElement("imagePublicId")]
-    public string ImagePublicId { get; set; } // ID dùng để xóa/sửa ảnh trên Cloudinary
-
-    [BsonElement("totalSeats")] 
+    public string ImagePublicId { get; set; } = string.Empty;
+  
+    [BsonElement("totalSeats")]
     public int TotalSeats { get; set; }
 
-    [BsonElement("totalRows")] 
+    [BsonElement("totalRows")]
     public int TotalRows { get; set; }
 
-    [BsonElement("totalColumns")] 
+    [BsonElement("totalColumns")]
     public int TotalColumns { get; set; }
 
-    [BsonElement("totalFloors")] 
+    [BsonElement("totalFloors")]
     public int TotalFloors { get; set; } = 1;
 
-    [BsonElement("defaultLayout")] 
+    [BsonElement("defaultLayout")]
     public List<SeatTemplate> DefaultLayout { get; set; } = new List<SeatTemplate>();
 
-    [BsonElement("status")] public string Status { get; set; } = "Active";
-    
+    [BsonElement("status")]
+    public string Status { get; set; } = "Active";
+
     [BsonElement("createdAt")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
