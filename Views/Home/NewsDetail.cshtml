@@ -1,0 +1,49 @@
+@model Bus_ticket.Models.News
+
+@{
+    ViewData["Title"] = Model.Title;
+}
+
+<div class="max-w-4xl mx-auto px-4 py-12 min-h-screen">
+    <div class="mb-6">
+        <a asp-controller="Home" asp-action="News" class="inline-flex items-center text-sm font-medium text-blue-600 hover:underline gap-1">
+            <i class="fas fa-arrow-left text-xs"></i> Quay lại danh sách tin tức
+        </a>
+    </div>
+
+    <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-950 mb-4 leading-tight">
+        @Model.Title
+    </h1>
+    
+    <div class="flex flex-wrap items-center gap-4 text-xs text-gray-400 mb-8 pb-4 border-b border-gray-100">
+        <span><i class="far fa-calendar-alt mr-1"></i> Quét ngày: @Model.CreatedDate.ToString("dd/MM/yyyy HH:mm")</span>
+        <span class="bg-blue-50 text-blue-700 px-2.5 py-0.5 rounded-full font-semibold">Nguồn bài viết: @Model.SourceSite</span>
+    </div>
+
+    <div class="prose dark:prose-invert max-w-none c-content bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-gray-100">
+        @Html.Raw(Model.Content)
+    </div>
+</div>
+
+<style>
+    .c-content img {
+        max-width: 100% !important;
+        height: auto !important;
+        margin: 1.5rem auto !important;
+        display: block;
+        border-radius: 0.75rem;
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
+    }
+    .c-content p {
+        margin-bottom: 1.25rem !important;
+        line-height: 1.75 !important;
+        color: #374151 !important;
+        font-size: 1.05rem;
+    }
+    .c-content h2, .c-content h3 {
+        font-weight: 700;
+        color: #111827;
+        margin-top: 1.75rem;
+        margin-bottom: 0.75rem;
+    }
+</style>
