@@ -169,6 +169,21 @@ public class PermissionMiddleware
                 ActionKeywords: GetActionKeywords(currentPath, method)
             );
         }
+        if (currentPath == "branches" || currentPath.StartsWith("branches/"))
+        {
+            return new PermissionRequirement(
+                ModuleKeywords: new[] { "branch", "branches" },
+                ActionKeywords: GetActionKeywords(currentPath, method)
+            );
+        }
+
+        if (currentPath == "busclasses" || currentPath.StartsWith("busclasses/"))
+        {
+            return new PermissionRequirement(
+                ModuleKeywords: new[] { "busclass", "busclasses", "bus class", "bus classes", "seat", "layout" },
+                ActionKeywords: GetActionKeywords(currentPath, method)
+            );
+        }
 
         if (currentPath == "dynamicroles" || currentPath.StartsWith("dynamicroles/"))
         {
@@ -202,7 +217,10 @@ public class PermissionMiddleware
             );
         }
 
-        if (currentPath == "admin/prices" || currentPath.StartsWith("admin/prices/"))
+        if (currentPath == "admin/prices"
+            || currentPath.StartsWith("admin/prices/")
+            || currentPath == "admin/priceconfig"
+            || currentPath.StartsWith("admin/priceconfig/"))
         {
             return new PermissionRequirement(
                 ModuleKeywords: new[] { "price", "prices", "pricelist", "fare" },

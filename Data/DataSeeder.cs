@@ -222,18 +222,34 @@ namespace Bus_ticket.Data
         private List<SeatTemplate> GenerateSeatLayout(int totalRows, int totalColumns, int totalFloors, string busType)
         {
             var layout = new List<SeatTemplate>();
+
+            if (totalRows <= 0) totalRows = 1;
+            if (totalColumns <= 0) totalColumns = 1;
+            if (totalFloors <= 0) totalFloors = 1;
+
             for (int floor = 1; floor <= totalFloors; floor++)
             {
-                string floorPrefix = totalFloors > 1 ? (floor == 1 ? "A" : "B") : "";
+                string floorPrefix = floor == 1 ? "A" : "B";
                 int seatCounter = 1;
+
                 for (int row = 1; row <= totalRows; row++)
                 {
                     for (int col = 1; col <= totalColumns; col++)
                     {
-                        string seatNumber = totalFloors > 1 ? $"{floorPrefix}{seatCounter:D2}" : $"{seatCounter:D2}";
-                        string seatType = busType == "Luxury_Sleeper" ? "Sleeper" : (row <= 2 ? "VIP" : "Standard");
+                        string seatNumber = $"{floorPrefix}{seatCounter:D2}";
+                        string seatType = busType == "Luxury_Sleeper"
+                            ? "Sleeper"
+                            : row <= 2 ? "VIP" : "Standard";
+
                         layout.Add(new SeatTemplate
-                            { SeatNumber = seatNumber, Row = row, Column = col, Floor = floor, SeatType = seatType });
+                        {
+                            SeatNumber = seatNumber,
+                            Row = row,
+                            Column = col,
+                            Floor = floor,
+                            SeatType = seatType
+                        });
+
                         seatCounter++;
                     }
                 }
@@ -587,46 +603,6 @@ namespace Bus_ticket.Data
 
         public async Task SeedPermissions()
         {
-            var count = await _context.Permissions.CountDocumentsAsync(new BsonDocument());
-            if (count > 0)
-            {
-                var existingPermissions = await _context.Permissions.Find(new BsonDocument()).ToListAsync();
-                _allPermissionIds = existingPermissions.Select(p => p.Id).ToList();
-                return;
-            }
-
-            var permissions = new List<Permission>();
-
-            void AddPermission(string id, string name, string description, string link, string method)
-            {
-                permissions.Add(new Permission
-                    { Id = id, Name = name, Description = description, Link = link, Method = method });
-                _allPermissionIds.Add(id);
-            }
-
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca01", "View.BusRoute", "Xem danh sách và chi tiết tuyến xe",
-                "BusRoutes/Index", "GET");
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca02", "Create.BusRoute", "Thêm tuyến xe chạy mới", "BusRoutes/Create",
-                "POST");
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca05", "View.Trip", "Xem lịch trình các chuyến xe chạy", "Trips/Index",
-                "GET");
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca06", "Create.Trip", "Thêm chuyến xe mới", "Trips/Create", "POST");
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca09", "View.Bus", "Xem danh sách xe và sơ đồ ghế", "Buses/Index",
-                "GET");
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca13", "View.BusClass",
-                "Xem danh sách hạng xe và cấu trúc sơ đồ ghế mẫu", "BusClasses/Index", "GET");
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca21", "View.Booking", "Xem danh sách lịch sử đặt vé của hệ thống",
-                "Bookings/Index", "GET");
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca22", "Create.Booking", "Đặt vé mới cho khách hàng", "Bookings/Create",
-                "POST");
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca25", "View.Customer", "Xem thông tin danh sách khách hàng",
-                "Customers/Index", "GET");
-
-            await _context.Permissions.InsertManyAsync(permissions);
-        }
-
-        public async Task SeedPermissions()
-        {
             Console.WriteLine("--> Kiểm tra và seeding dữ liệu bảng Quyền hệ thống (Permission)...");
 
             var count =
@@ -744,6 +720,44 @@ AddPermission("64f1a2b3c4d5e6f7a8b9ca27", "Update.Customer", "Sửa thông tin t
 
             await _context.Permissions.InsertManyAsync(permissions);
             Console.WriteLine($"--> Đã seeding thành công trọn bộ {permissions.Count} quyền hệ thống!");
+        }
+        public async Task SeedDynamicRoles()
+        {
+            var count = await _context.DynamicRoles.CountDocumentsAsync(new BsonDocument());
+            if (count > 0) return;
+
+            var roles = new List<DynamicRole>
+            {
+                new DynamicRole
+                {
+                    Id = RoleAdminId,
+                    RoleName = "SuperAdmin",
+                    PermissionIds = _allPermissionIds,
+                    CreatedBy = "SystemSeeder",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedBy = "SystemSeeder",
+                    UpdatedAt = DateTime.UtcNow
+                },
+                new DynamicRole
+                {
+                    Id = "64f1a2b3c4d5e6f7a8b9c098",
+                    RoleName = "TicketAgent",
+                    PermissionIds = new List<string>
+                    {
+                        "64f1a2b3c4d5e6f7a8b9ca05",
+                        "64f1a2b3c4d5e6f7a8b9ca13",
+                        "64f1a2b3c4d5e6f7a8b9ca21",
+                        "64f1a2b3c4d5e6f7a8b9ca22",
+                        "64f1a2b3c4d5e6f7a8b9ca25"
+                    },
+                    CreatedBy = "SystemSeeder",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedBy = "SystemSeeder",
+                    UpdatedAt = DateTime.UtcNow
+                }
+            };
+
+            await _context.DynamicRoles.InsertManyAsync(roles);
         }
 
         // --- HÀM BULK ĐÃ FIX LỖI COMPILE ---
