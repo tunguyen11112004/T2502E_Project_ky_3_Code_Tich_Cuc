@@ -44,6 +44,18 @@
         "Permissions",
         "/Permissions"
     );
+    var canViewBranches = SidebarPermissionService.HasPermission(
+        permissionNames,
+        "Branch",
+        "Branches",
+        "/Branches"
+    );
+    var canViewBusClasses = SidebarPermissionService.HasPermission(
+        permissionNames,
+        "BusClass",
+        "BusClasses",
+        "/BusClasses"
+    );
 
     var canManageBuses = SidebarPermissionService.HasPermission(
         permissionNames,
@@ -109,6 +121,8 @@
     );
 
     var showCrudMenu = canViewBooking
+                       || canViewBranches
+                       || canViewBusClasses
                        || canViewUsers
                        || canViewDynamicRoles
                        || canViewPermissions;
@@ -199,42 +213,43 @@
                                 @if (canViewBooking)
                                 {
                                     <li>
-                                        <a asp-controller="Booking" asp-action="Index" class="nav-link-item @subMenuItemClass">
+                                        <a asp-controller="Booking" asp-action="Index" class="@subMenuItemClass">
                                             Booking
                                         </a>
                                     </li>
                                 }
-                  
+
                                 @if (canViewBranches)
                                 {
                                     <li>
-                                        <a asp-controller="Branches" asp-action="Index" class="nav-link-item @subMenuItemClass">
-                                          Branches
+                                        <a asp-controller="Branches" asp-action="Index" class="@subMenuItemClass">
+                                            Branches
                                         </a>
                                     </li>
                                 }
-                  
-                                @if (canViewBranches)
-                                {
-                                    <li>
-                                        <a asp-controller="Admin" asp-action="PriceConfig" class="nav-link-item @subMenuItemClass">
-                                          Pricing
-                                      </a>
-                                    </li>
-                                }
-                                  
+
                                 @if (canViewBusClasses)
                                 {
                                     <li>
-                                        <a asp-controller="BusClasses" asp-action="Index" class="nav-link-item @subMenuItemClass">
-                                          BusClasses
+                                        <a asp-controller="BusClasses" asp-action="Index" class="@subMenuItemClass">
+                                            BusClasses
                                         </a>
                                     </li>
+                                }
+
+                                @if (canManagePrices)
+                                {
+                                    <li>
+                                        <a asp-controller="Admin" asp-action="PriceConfig" class="@subMenuItemClass">
+                                            Pricing
+                                        </a>
+                                    </li>
+                                }
 
                                 @if (canViewUsers)
                                 {
                                     <li>
-                                        <a href="/Admin/Users" class="nav-link-item @subMenuItemClass">
+                                        <a href="/Admin/Users" class="@subMenuItemClass">
                                             Users
                                         </a>
                                     </li>
@@ -243,7 +258,7 @@
                                 @if (canViewDynamicRoles)
                                 {
                                     <li>
-                                        <a asp-controller="DynamicRoles" asp-action="Index" class="nav-link-item @subMenuItemClass">
+                                        <a asp-controller="DynamicRoles" asp-action="Index" class="@subMenuItemClass">
                                             DynamicRoles
                                         </a>
                                     </li>
@@ -252,7 +267,7 @@
                                 @if (canViewPermissions)
                                 {
                                     <li>
-                                        <a asp-controller="Permissions" asp-action="Index" class="nav-link-item @subMenuItemClass">
+                                        <a asp-controller="Permissions" asp-action="Index" class="@subMenuItemClass">
                                             Permissions
                                         </a>
                                     </li>

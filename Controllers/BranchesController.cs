@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Bus_ticket.Controllers;
 
-[Authorize(Roles = "Admin")]
+[Authorize(Roles = "Admin,Employee")]
 public class BranchesController : Controller
 {
     private readonly BranchService _branchService;

@@ -14,7 +14,7 @@ using MongoDB.Driver;
 
 namespace Bus_ticket.Controllers;
 
-[Authorize(Roles = "Admin")]
+[Authorize(Roles = "Admin,Employee")]
 public class BusClassesController : Controller
 {
     private readonly ApplicationDbContext _context;

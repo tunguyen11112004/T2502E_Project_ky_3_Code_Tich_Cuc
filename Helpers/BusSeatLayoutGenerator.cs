@@ -9,21 +9,24 @@ public static class BusSeatLayoutGenerator
     {
         var layout = new List<SeatTemplate>();
 
+        if (totalRows <= 0) totalRows = 1;
+        if (totalColumns <= 0) totalColumns = 1;
+        if (totalFloors <= 0) totalFloors = 1;
+
         for (int floor = 1; floor <= totalFloors; floor++)
         {
-            string floorPrefix = totalFloors > 1 ? (floor == 1 ? "A" : "B") : "";
+            string floorPrefix = floor == 1 ? "A" : "B";
             int seatCounter = 1;
 
             for (int row = 1; row <= totalRows; row++)
             {
                 for (int col = 1; col <= totalColumns; col++)
                 {
-                    string seatNumber = totalFloors > 1
-                        ? $"{floorPrefix}{seatCounter:D2}"
-                        : $"{seatCounter:D2}";
+                    string seatNumber = $"{floorPrefix}{seatCounter:D2}";
+
                     string seatType = busType == "Luxury_Sleeper"
                         ? "Sleeper"
-                        : (row <= 2 ? "VIP" : "Standard");
+                        : row <= 2 ? "VIP" : "Standard";
 
                     layout.Add(new SeatTemplate
                     {
