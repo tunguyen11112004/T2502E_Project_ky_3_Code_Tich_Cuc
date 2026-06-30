@@ -25,6 +25,7 @@ builder.Services.AddScoped<BranchService>();
 builder.Services.AddSingleton<ICloudinaryService, CloudinaryService>();
 builder.Services.AddScoped<SidebarPermissionService>();
 builder.Services.AddScoped<NewsScraperService>();
+builder.Services.AddScoped<DashboardService>();
 
 // Cookie Authentication
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
