@@ -1,3 +1,4 @@
+using System;
 using System.ComponentModel.DataAnnotations;
 
 namespace Bus_ticket.ViewModels;
@@ -15,12 +16,15 @@ public class CreateEmployeeViewModel
     [Required(ErrorMessage = "Full name is required.")]
     public string FullName { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Age is required.")]
-    [Range(18, 100, ErrorMessage = "Age must be between 18 and 100.")]
-    public int Age { get; set; }
+    [Required(ErrorMessage = "Date of birth is required.")]
+    [DataType(DataType.Date)]
+    public DateTime? Dob { get; set; }
 
     [Phone(ErrorMessage = "Invalid phone number.")]
     public string PhoneNumber { get; set; } = string.Empty;
 
     public string Qualifications { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Please select a dynamic role.")]
+    public string RoleId { get; set; } = string.Empty;
 }

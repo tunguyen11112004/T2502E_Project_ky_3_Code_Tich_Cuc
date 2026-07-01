@@ -1,51 +1,48 @@
-<footer class="p-10 text-neutral-content bg-titleColor">
+<footer class="py-6 text-neutral-content bg-titleColor">
     <div class="mx-auto px-4">
-        <div class="footer-top lg:flex justify-between border-b-2 border-dashed border-sky-500 pb-10">
-            <div class="left-side mb-8 lg:mb-0">
-                <h2 class="lg:text-3xl text-xl font-bold text-white">SRC Travel</h2>
-                <!-- Đã fix nội dung hiển thị mặc định đồng bộ theo bộ dịch -->
-                <p class="text-priColor text-sm mt-2" 
+        <div class="footer-top lg:flex justify-between items-center pb-6">
+            <div class="left-side mb-4 lg:mb-0">
+                <h2 class="lg:text-2xl text-xl font-bold text-white">SRC Travel</h2>
+                <p class="text-priColor text-xs mt-1" 
                    data-vi="SRC Travel là nền tảng kỹ thuật số giúp trải nghiệm di chuyển hàng ngày của bạn tốt hơn." 
                    data-en="SRC Travel is a digital platform to make your daily commuting better.">
                     SRC Travel là nền tảng kỹ thuật số giúp trải nghiệm di chuyển hàng ngày của bạn tốt hơn.
                 </p>
             </div>
-            <div class="right-side">
-                <h6 class="footer-title text-priColor" 
-                    data-vi="Tải ứng dụng của chúng tôi" 
-                    data-en="Download Our App">
-                    Tải ứng dụng của chúng tôi
+            <div class="right-side flex items-center gap-3">
+                <h6 class="footer-title text-priColor text-xs font-medium" 
+                    data-vi="Tải ứng dụng:" 
+                    data-en="Download App:">
+                    Tải ứng dụng:
                 </h6> 
-                <div class="grid grid-flow-col gap-4 mt-3">
-                    <div class="card card-side p-0 border border-white/50 hover:border-ternaryColor transition duration-300">
-                        <figure class="p-3">
-                            <img src="~/client-assets/images/playstore.png" alt="Google Playstore"/>
+                <div class="inline-block">
+                    <div class="card card-side p-0 border border-white/30 hover:border-ternaryColor transition duration-300 flex items-center rounded-md">
+                        <figure class="p-2 pr-1">
+                            <img src="~/client-assets/images/playstore.png" class="h-5 w-5 object-contain" alt="Google Playstore"/>
                         </figure>
-                        <div class="card-body p-2">
-                            <p class="text-priColor text-xs" 
+                        <div class="card-body p-2 pl-1 leading-none flex flex-col justify-center">
+                            <p class="text-priColor text-[10px] m-0" 
                                data-vi="Tải về trên" 
                                data-en="Get it on">
                                 Tải về trên
                             </p>
-                            <h2 class="card-title font-bold text-sm text-white">Google Play</h2>
+                            <h2 class="card-title font-bold text-xs text-white m-0 mt-0.5">Google Play</h2>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="border-t-2 border-dashed border-sky-500 lg:flex lg:justify-between mt-10 py-5 flex flex-col sm:flex-row sm:justify-between">
+        <div class="border-t border-white/10 lg:flex lg:justify-between mt-6 py-3 flex flex-col sm:flex-row sm:justify-between items-center">
             <div>
-                <!-- Đa ngôn ngữ cho dòng bản quyền -->
-                <p class="text-priColor text-sm text-center sm:text-left mb-3 lg:mb-0" 
+                <p class="text-priColor text-xs text-center sm:text-left mb-2 lg:mb-0" 
                    data-vi="Bản quyền © 2026 - Bảo lưu mọi quyền bởi SRC Travel" 
                    data-en="Copyright © 2026 - All right reserved by SRC Travel">
                     Bản quyền © 2026 - Bảo lưu mọi quyền bởi SRC Travel
                 </p>
             </div>
-            <div class="text-center sm:text-right flex flex-wrap justify-center sm:justify-end gap-2">
-                <!-- Nút Chính sách: Đã chuyển nội dung mặc định thành tiếng Việt đồng bộ -->
+            <div class="text-center sm:text-right flex flex-wrap justify-center sm:justify-end gap-3">
                 <a asp-controller="Home" asp-action="Policy" 
-                   class="mx-1 p-1 text-sm text-white/80 hover:text-ternaryColor transition duration-300 font-medium" 
+                   class="p-1 text-xs text-white/80 hover:text-ternaryColor transition duration-300 font-medium" 
                    data-vi="Chính sách & Hoàn tiền" 
                    data-en="Return & refund policy">
                    Chính sách & Hoàn tiền
@@ -53,14 +50,14 @@
                 <a href="https://www.facebook.com/ntd.606" 
                    target="_blank" 
                    rel="nofollow"
-                   class="mx-1 p-1 text-sm text-white/80 hover:text-ternaryColor transition duration-300 inline-flex items-center gap-1">
-                    <i class="fab fa-facebook text-blue-500"></i> Facebook
+                   class="p-1 text-xs text-white/80 hover:text-ternaryColor transition duration-300 inline-flex items-center gap-1">
+                    <i class="fab fa-facebook text-blue-500 text-sm"></i> Facebook
                 </a>
                 <a href="https://www.tiktok.com/@@ntd606_" 
                    target="_blank" 
                    rel="nofollow"
-                   class="mx-1 p-1 text-sm text-white/80 hover:text-ternaryColor transition duration-300 inline-flex items-center gap-1">
-                    <i class="fab fa-tiktok text-black"></i> Tiktok
+                   class="p-1 text-xs text-white/80 hover:text-ternaryColor transition duration-300 inline-flex items-center gap-1">
+                    <i class="fab fa-tiktok text-black text-sm"></i> Tiktok
                 </a>
             </div>
         </div>

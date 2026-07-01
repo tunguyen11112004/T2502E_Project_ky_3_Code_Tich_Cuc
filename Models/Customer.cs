@@ -10,6 +10,14 @@ public class Customer
     [BsonId]
     [BsonRepresentation(BsonType.ObjectId)]
     public string Id { get; set; }
+    
+    public int ConsecutiveUnpaidCount { get; set; } = 0;
+
+    public bool IsBlocked { get; set; } = false;
+
+    public string? BlockReason { get; set; }
+
+    public DateTime? BlockedAt { get; set; }
 
     [BsonElement("customerCode")] public string CustomerCode { get; set; }
 

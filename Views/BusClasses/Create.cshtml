@@ -1,0 +1,108 @@
+@model Bus_ticket.ViewModels.BusClassFormViewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Thêm Hạng Xe";
+}
+
+<div class="p-6 sm:p-8 space-y-6 max-w-4xl mx-auto">
+    <div class="border-b border-gray-700/50 pb-4">
+        <a asp-action="Index" class="inline-flex items-center text-sm font-medium text-gray-400 hover:text-amber-400 mb-2">Quay lại danh sách</a>
+        <h1 class="text-2xl font-bold tracking-tight text-white">Thêm Hạng Xe Mới</h1>
+    </div>
+
+    <form asp-action="Create" method="post" enctype="multipart/form-data" class="space-y-6">
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="ModelOnly" class="text-sm text-red-400"></div>
+
+        <div class="p-6 bg-[#1e1e24] border border-gray-700/50 rounded-xl space-y-4 shadow-md">
+            <h3 class="text-lg font-semibold text-white">Thông tin hạng xe</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label asp-for="ClassName" class="block mb-2 text-sm font-medium text-gray-300"></label>
+                    <input asp-for="ClassName" class="w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400"/>
+                    <span asp-validation-for="ClassName" class="text-xs text-red-400"></span>
+                </div>
+                <div>
+                    <label asp-for="BusType" class="block mb-2 text-sm font-medium text-gray-300"></label>
+                    <select asp-for="BusType" class="w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400">
+                        <option value="Express_Seat">Express_Seat (Ghế ngồi)</option>
+                        <option value="Luxury_Sleeper">Luxury_Sleeper (Giường nằm)</option>
+                        <option value="Limousine_Sleeper">Limousine_Sleeper</option>
+                    </select>
+                </div>
+                <div>
+                    <label asp-for="TotalRows" class="block mb-2 text-sm font-medium text-gray-300"></label>
+                    <input asp-for="TotalRows" type="number" min="1" max="20" id="totalRows" class="w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400"/>
+                    <span asp-validation-for="TotalRows" class="text-xs text-red-400"></span>
+                </div>
+                <div>
+                    <label asp-for="TotalColumns" class="block mb-2 text-sm font-medium text-gray-300"></label>
+                    <input asp-for="TotalColumns" type="number" min="1" max="10" id="totalColumns" class="w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400"/>
+                    <span asp-validation-for="TotalColumns" class="text-xs text-red-400"></span>
+                </div>
+                <div>
+                    <label asp-for="TotalFloors" class="block mb-2 text-sm font-medium text-gray-300"></label>
+                    <input asp-for="TotalFloors" type="number" min="1" max="2" id="totalFloors" class="w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400"/>
+                </div>
+                <div>
+                    <label asp-for="Status" class="block mb-2 text-sm font-medium text-gray-300"></label>
+                    <select asp-for="Status" class="w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400">
+                        <option value="Active">Hoạt động</option>
+                        <option value="Inactive">Ngưng hoạt động</option>
+                    </select>
+                </div>
+                <div>
+                    <label asp-for="LicensePlate" class="block mb-2 text-sm font-medium text-gray-300"></label>
+                    <input asp-for="LicensePlate" placeholder="29B-123.45" class="w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400"/>
+                    <span asp-validation-for="LicensePlate" class="text-xs text-red-400"></span>
+                </div>
+                <div>
+                    <label asp-for="ImageFile" class="block mb-2 text-sm font-medium text-gray-300"></label>
+                    <input asp-for="ImageFile" type="file" accept="image/*" class="w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-amber-400 file:text-gray-900"/>
+                </div>
+            </div>
+
+            <div>
+                <p class="text-xs text-gray-400 mb-2">Xem trước sơ đồ ghế (tổng: <span id="seatPreviewCount">@Model.TotalRows * Model.TotalColumns * Model.TotalFloors</span> ghế)</p>
+                <div id="seatPreview" class="grid gap-1 p-3 bg-[#141419] rounded-lg border border-gray-700/50 max-w-md"></div>
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-3">
+            <a asp-action="Index" class="px-5 py-2.5 text-sm font-semibold text-gray-300 bg-gray-800 border border-gray-700 rounded-lg hover:bg-gray-700">Hủy</a>
+            <button type="submit" class="px-5 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg">Lưu hạng xe</button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial"/>
+    <script>
+        function renderSeatPreview() {
+            const rows = parseInt(document.getElementById('totalRows').value) || 1;
+            const cols = parseInt(document.getElementById('totalColumns').value) || 1;
+            const floors = parseInt(document.getElementById('totalFloors').value) || 1;
+            const container = document.getElementById('seatPreview');
+            const countEl = document.getElementById('seatPreviewCount');
+            container.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
+            container.innerHTML = '';
+            let total = 0;
+            for (let f = 0; f < floors; f++) {
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        total++;
+                        const cell = document.createElement('div');
+                        cell.className = 'text-[10px] font-bold text-center py-1 rounded bg-gray-700 text-gray-200 border border-gray-600';
+                        cell.textContent = total;
+                        container.appendChild(cell);
+                    }
+                }
+            }
+            countEl.textContent = total;
+        }
+        ['totalRows', 'totalColumns', 'totalFloors'].forEach(id => {
+            document.getElementById(id)?.addEventListener('input', renderSeatPreview);
+        });
+        renderSeatPreview();
+    </script>
+}
