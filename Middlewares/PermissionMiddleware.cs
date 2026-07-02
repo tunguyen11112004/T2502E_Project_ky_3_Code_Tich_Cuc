@@ -153,6 +153,13 @@ public class PermissionMiddleware
                 ActionKeywords: GetActionKeywords(currentPath, method)
             );
         }
+        if (currentPath == "dashboard" || currentPath.StartsWith("dashboard/"))
+        {
+            return new PermissionRequirement(
+                ModuleKeywords: new[] { "dashboard", "report", "revenue", "route", "statistic", "statistics" },
+                ActionKeywords: GetActionKeywords(currentPath, method)
+            );
+        }
 
         if (currentPath == "employee" || currentPath.StartsWith("employee/"))
         {
@@ -264,6 +271,11 @@ public class PermissionMiddleware
         if (currentPath.Contains("search", StringComparison.OrdinalIgnoreCase))
         {
             return new[] { "view", "read", "list", "search" };
+        }
+        if (currentPath.Contains("export", StringComparison.OrdinalIgnoreCase)
+            || currentPath.Contains("download", StringComparison.OrdinalIgnoreCase))
+        {
+            return new[] { "export", "download", "report", "view" };
         }
 
         if (method == "GET")

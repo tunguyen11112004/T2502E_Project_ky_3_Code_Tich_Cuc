@@ -28,6 +28,7 @@ builder.Services.AddScoped<NewsScraperService>();
 builder.Services.AddSingleton<CrawlerProducer>();
 builder.Services.AddScoped<NewsScraperService>();
 builder.Services.AddHostedService<ArticleProcessorConsumer>();
+builder.Services.AddScoped<DashboardService>();
 
 // Cookie Authentication
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
