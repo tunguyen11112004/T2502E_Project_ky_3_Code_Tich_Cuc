@@ -22,6 +22,7 @@ builder.Services.Configure<MongoDbSettings>(
 builder.Services.AddSingleton<ApplicationDbContext>();
 builder.Services.AddSingleton<UserService>();
 builder.Services.AddScoped<BranchService>();
+builder.Services.AddScoped<BusService>();
 builder.Services.AddSingleton<ICloudinaryService, CloudinaryService>();
 builder.Services.AddScoped<SidebarPermissionService>();
 builder.Services.AddScoped<NewsScraperService>();

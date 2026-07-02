@@ -208,10 +208,13 @@ public class PermissionMiddleware
             );
         }
 
-        if (currentPath == "admin/buses" || currentPath.StartsWith("admin/buses/"))
+        if (currentPath == "buses"
+            || currentPath.StartsWith("buses/")
+            || currentPath == "admin/buses"
+            || currentPath.StartsWith("admin/buses/"))
         {
             return new PermissionRequirement(
-                ModuleKeywords: new[] { "bus", "buses" },
+                ModuleKeywords: new[] { "buses" },
                 ActionKeywords: GetActionKeywords(currentPath, method)
             );
         }

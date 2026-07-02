@@ -44,12 +44,14 @@
         "Permissions",
         "/Permissions"
     );
+
     var canViewBranches = SidebarPermissionService.HasPermission(
         permissionNames,
         "Branch",
         "Branches",
         "/Branches"
     );
+
     var canViewBusClasses = SidebarPermissionService.HasPermission(
         permissionNames,
         "BusClass",
@@ -57,10 +59,16 @@
         "/BusClasses"
     );
 
-    var canManageBuses = SidebarPermissionService.HasPermission(
+    /*
+     * Đã sửa:
+     * - Admin luôn thấy menu Buses.
+     * - Hỗ trợ cả route mới /Buses và route cũ /Admin/Buses.
+     */
+    var canManageBuses = isAdmin || SidebarPermissionService.HasPermission(
         permissionNames,
         "Bus",
         "Buses",
+        "/Buses",
         "/Admin/Buses"
     );
 
@@ -119,6 +127,7 @@
         "Cancel",
         "Cancellation"
     );
+
     var canViewRouteRevenue = isAdmin
                               || SidebarPermissionService.HasPermission(
                                   permissionNames,
@@ -129,11 +138,18 @@
                                   "RouteRevenue",
                                   "/Dashboard/RouteRevenue"
                               );
+
     var showDashboardMenu = isAdmin || canViewRouteRevenue;
 
+    /*
+     * Đã sửa:
+     * - Thêm canManageBuses vào showCrudMenu.
+     * - Nếu có quyền Bus hoặc là Admin thì mục CRUD sẽ hiện.
+     */
     var showCrudMenu = canViewBooking
                        || canViewBranches
                        || canViewBusClasses
+                       || canManageBuses
                        || canManagePrices
                        || canViewUsers
                        || canViewDynamicRoles
@@ -183,6 +199,7 @@
                             </div>
                         </form>
                     </li>
+
                     @if (showDashboardMenu)
                     {
                         <li>
@@ -217,6 +234,7 @@
                             </ul>
                         </li>
                     }
+
                     @* ================= SYSTEM ADMIN ONLY ================= *@
                     @if (isAdmin)
                     {
@@ -271,6 +289,16 @@
                                     <li>
                                         <a asp-controller="BusClasses" asp-action="Index" class="@subMenuItemClass">
                                             BusClasses
+                                        </a>
+                                    </li>
+                                }
+
+                                @* Đã thêm menu Buses trong CRUD *@
+                                @if (canManageBuses)
+                                {
+                                    <li>
+                                        <a asp-controller="Buses" asp-action="Index" class="@subMenuItemClass">
+                                            Buses
                                         </a>
                                     </li>
                                 }
@@ -392,7 +420,7 @@
                                         </a>
                                     </li>
                                 }
-                  
+
                                 @if (canViewBranches)
                                 {
                                     <li>
@@ -402,10 +430,11 @@
                                     </li>
                                 }
 
+                                @* Đã sửa link Manage Buses từ /Admin/Buses sang /Buses *@
                                 @if (canManageBuses)
                                 {
                                     <li>
-                                        <a href="/Admin/Buses" class="@subMenuItemClass">
+                                        <a asp-controller="Buses" asp-action="Index" class="@subMenuItemClass">
                                             Manage Buses
                                         </a>
                                     </li>
@@ -520,4 +549,3 @@
 
     <div class="fixed inset-0 z-10 hidden bg-gray-900/50 dark:bg-gray-900/90" id="sidebarBackdrop"></div>
 </aside>
-

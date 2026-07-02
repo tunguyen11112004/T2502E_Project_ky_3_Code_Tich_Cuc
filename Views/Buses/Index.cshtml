@@ -1,0 +1,425 @@
+﻿@model Bus_ticket.ViewModels.BusIndexViewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Quản lý Xe khách";
+
+    long startItem = Model.TotalItems == 0 ? 0 : ((Model.CurrentPage - 1) * Model.PageSize) + 1;
+    long endItem = (Model.CurrentPage * Model.PageSize) > Model.TotalItems ? Model.TotalItems : (Model.CurrentPage * Model.PageSize);
+    string previousPageClass = Model.CurrentPage == 1 ? "pointer-events-none opacity-40" : string.Empty;
+    string nextPageClass = Model.CurrentPage == Model.TotalPages ? "pointer-events-none opacity-40" : string.Empty;
+}
+
+<div class="p-4 sm:p-6 lg:p-8 space-y-6 max-w-full overflow-x-hidden">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold tracking-tight text-white">Danh mục Xe khách (Buses)</h1>
+            <p class="text-sm text-gray-400 mt-1">
+                CRUD xe khách, đồng bộ collection <span class="font-semibold text-amber-400">buses</span> trong MongoDB Compass và phục vụ dữ liệu nền cho đặt vé.
+            </p>
+        </div>
+
+        <button type="button"
+                data-modal-target="create-bus-modal"
+                data-modal-toggle="create-bus-modal"
+                class="inline-flex items-center justify-center px-4 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg transition-colors duration-200 shadow-sm">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+            </svg>
+            Thêm xe khách
+        </button>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="flex items-center p-4 text-sm text-emerald-400 rounded-lg bg-gray-800 border border-emerald-800">
+            <span class="font-medium mr-1">Thành công!</span> @TempData["SuccessMessage"]
+        </div>
+    }
+
+    @if (TempData["WarningMessage"] != null)
+    {
+        <div class="flex items-center p-4 text-sm text-amber-300 rounded-lg bg-gray-800 border border-amber-700">
+            <span class="font-medium mr-1">Lưu ý!</span> @TempData["WarningMessage"]
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="flex items-center p-4 text-sm text-red-400 rounded-lg bg-gray-800 border border-red-800">
+            <span class="font-medium mr-1">Thất bại!</span> @TempData["ErrorMessage"]
+        </div>
+    }
+
+    <form method="get" asp-controller="Buses" asp-action="Index" class="grid grid-cols-1 md:grid-cols-5 gap-3">
+        <div class="md:col-span-2">
+            <label for="searchTerm" class="sr-only">Tìm kiếm</label>
+            <div class="relative">
+                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </div>
+                <input type="text"
+                       id="searchTerm"
+                       name="searchTerm"
+                       value="@Model.SearchTerm"
+                       class="block w-full pl-10 pr-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 placeholder-gray-500"
+                       placeholder="Tìm mã xe, biển số, loại xe..." />
+            </div>
+        </div>
+
+        <select name="status"
+                class="block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400">
+            <option value="">Tất cả trạng thái</option>
+            <option value="Active" selected='@(Model.Status == "Active")'>Active</option>
+            <option value="Maintenance" selected='@(Model.Status == "Maintenance")'>Maintenance</option>
+            <option value="Inactive" selected='@(Model.Status == "Inactive")'>Inactive</option>
+        </select>
+
+        <select name="busClassId"
+                class="block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400">
+            <option value="">Tất cả loại xe</option>
+            @foreach (var busClass in Model.BusClasses)
+            {
+                <option value="@busClass.Id" selected='@(Model.BusClassId == busClass.Id)'>@busClass.Text</option>
+            }
+        </select>
+
+        <div class="flex gap-2">
+            <select name="branchId"
+                    class="block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400">
+                <option value="">Tất cả chi nhánh</option>
+                @foreach (var branch in Model.Branches)
+                {
+                    <option value="@branch.Id" selected='@(Model.BranchId == branch.Id)'>@branch.Text</option>
+                }
+            </select>
+
+            <button type="submit" class="px-4 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg transition-colors">
+                Lọc
+            </button>
+        </div>
+    </form>
+
+    <div class="w-full max-w-full overflow-hidden bg-[#1e1e24] border border-gray-700/50 rounded-xl shadow-xl">
+        <div class="w-full overflow-x-auto">
+            <table class="w-full min-w-[1180px] text-sm text-left text-gray-300">
+                <thead class="text-xs uppercase bg-[#141419] text-gray-400 border-b border-gray-700/60">
+                    <tr>
+                        <th class="px-5 py-4 font-semibold tracking-wider">Mã xe</th>
+                        <th class="px-5 py-4 font-semibold tracking-wider">Biển số</th>
+                        <th class="px-5 py-4 font-semibold tracking-wider">Loại xe</th>
+                        <th class="px-5 py-4 font-semibold tracking-wider">Chi nhánh</th>
+                        <th class="px-5 py-4 font-semibold tracking-wider">Số ghế</th>
+                        <th class="px-5 py-4 font-semibold tracking-wider">Liên kết</th>
+                        <th class="px-5 py-4 font-semibold tracking-wider">Trạng thái</th>
+                        <th class="px-5 py-4 font-semibold tracking-wider text-right">Hành động</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-700/50">
+                    @if (Model.Items == null || !Model.Items.Any())
+                    {
+                        <tr>
+                            <td colspan="8" class="px-5 py-10 text-center text-gray-500 bg-[#1e1e24]">
+                                Chưa có xe khách phù hợp với bộ lọc hiện tại.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        foreach (var item in Model.Items)
+                        {
+                            var statusBadgeClass = item.Status == "Active"
+                                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                                : item.Status == "Maintenance"
+                                    ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                                    : "bg-rose-500/10 text-rose-400 border-rose-500/20";
+
+                            <tr class="hover:bg-gray-800/30 transition-colors duration-150">
+                                <td class="px-5 py-4 font-semibold text-white">@item.BusCode</td>
+                                <td class="px-5 py-4">
+                                    <span class="inline-flex items-center rounded-md border border-gray-700 bg-gray-900 px-2.5 py-1 text-xs font-semibold text-amber-300">
+                                        @item.LicensePlate
+                                    </span>
+                                </td>
+                                <td class="px-5 py-4">
+                                    <span class="block font-semibold text-gray-200">@item.BusClassName</span>
+                                    <span class="block text-xs text-gray-500">@item.BusType</span>
+                                </td>
+                                <td class="px-5 py-4 text-gray-400 max-w-[220px] truncate">@item.BranchName</td>
+                                <td class="px-5 py-4">
+                                    <span class="block font-semibold text-gray-200">@item.TotalSeats ghế</span>
+                                </td>
+                                <td class="px-5 py-4 text-xs text-gray-400">
+                                    <span class="block">@item.TripCount lịch trình</span>
+                                    <span class="block">@item.BookingCount vé</span>
+                                </td>
+                                <td class="px-5 py-4">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 text-xs font-semibold rounded-md border @statusBadgeClass">
+                                        @item.Status
+                                    </span>
+                                </td>
+                                <td class="px-5 py-4 text-right">
+                                    <div class="inline-flex items-center gap-3">
+                                        <button type="button"
+                                                data-modal-target="edit-bus-modal-@item.Id"
+                                                data-modal-toggle="edit-bus-modal-@item.Id"
+                                                class="text-amber-400 hover:text-amber-300 font-semibold">
+                                            Sửa
+                                        </button>
+                                        <span class="text-gray-600">|</span>
+                                        <button type="button"
+                                                data-modal-target="delete-bus-modal-@item.Id"
+                                                data-modal-toggle="delete-bus-modal-@item.Id"
+                                                class="text-rose-400 hover:text-rose-300 font-semibold">
+                                            Xóa
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="flex flex-col sm:flex-row items-center justify-between p-4 bg-[#141419] border-t border-gray-700/60 gap-4">
+            <span class="text-sm text-gray-400">
+                Hiển thị từ <span class="font-semibold text-white">@startItem</span> đến
+                <span class="font-semibold text-white">@endItem</span> trong tổng số
+                <span class="font-semibold text-white">@Model.TotalItems</span> xe khách
+            </span>
+
+            @if (Model.TotalPages > 1)
+            {
+                <nav class="inline-flex items-center -space-x-px rounded-md shadow-sm">
+                    <a asp-action="Index"
+                       asp-route-page="@(Model.CurrentPage - 1)"
+                       asp-route-searchTerm="@Model.SearchTerm"
+                       asp-route-status="@Model.Status"
+                       asp-route-busClassId="@Model.BusClassId"
+                       asp-route-branchId="@Model.BranchId"
+                       class="relative inline-flex items-center rounded-l-md px-3 py-2 text-sm font-medium border border-gray-700 bg-gray-900 text-gray-400 hover:bg-gray-800 hover:text-white @previousPageClass">
+                        Trước
+                    </a>
+
+                    @for (int i = 1; i <= Model.TotalPages; i++)
+                    {
+                        if (i == Model.CurrentPage)
+                        {
+                            <span class="relative z-10 inline-flex items-center bg-amber-400 px-4 py-2 text-sm font-semibold text-gray-900 border border-amber-400">@i</span>
+                        }
+                        else
+                        {
+                            <a asp-action="Index"
+                               asp-route-page="@i"
+                               asp-route-searchTerm="@Model.SearchTerm"
+                               asp-route-status="@Model.Status"
+                               asp-route-busClassId="@Model.BusClassId"
+                               asp-route-branchId="@Model.BranchId"
+                               class="relative inline-flex items-center border border-gray-700 bg-gray-900 px-4 py-2 text-sm font-medium text-gray-400 hover:bg-gray-800 hover:text-white">
+                                @i
+                            </a>
+                        }
+                    }
+
+                    <a asp-action="Index"
+                       asp-route-page="@(Model.CurrentPage + 1)"
+                       asp-route-searchTerm="@Model.SearchTerm"
+                       asp-route-status="@Model.Status"
+                       asp-route-busClassId="@Model.BusClassId"
+                       asp-route-branchId="@Model.BranchId"
+                       class="relative inline-flex items-center rounded-r-md px-3 py-2 text-sm font-medium border border-gray-700 bg-gray-900 text-gray-400 hover:bg-gray-800 hover:text-white @nextPageClass">
+                        Tiếp
+                    </a>
+                </nav>
+            }
+        </div>
+    </div>
+</div>
+
+<div id="create-bus-modal" tabindex="-1" aria-hidden="true" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
+    <div class="relative p-4 w-full max-w-2xl max-h-full">
+        <div class="relative bg-white rounded-lg shadow dark:bg-gray-800 border border-gray-700">
+            <div class="flex items-center justify-between p-5 border-b rounded-t dark:border-gray-700">
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-white">Thêm xe khách mới</h3>
+                <button type="button" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-700 dark:hover:text-white" data-modal-hide="create-bus-modal">
+                    <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" />
+                    </svg>
+                    <span class="sr-only">Đóng</span>
+                </button>
+            </div>
+
+            <form asp-controller="Buses" asp-action="Create" method="post" class="p-5 space-y-5">
+                @Html.AntiForgeryToken()
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Mã xe</label>
+                        <input name="BusCode" value="@Model.CreateForm.BusCode" type="text"
+                               class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-amber-500 focus:border-amber-500 block w-full p-2.5 dark:bg-gray-900 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white"
+                               placeholder="Để trống để tự sinh mã" />
+                    </div>
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Biển số xe <span class="text-red-400">*</span></label>
+                        <input name="LicensePlate" value="@Model.CreateForm.LicensePlate" type="text" required
+                               class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-amber-500 focus:border-amber-500 block w-full p-2.5 dark:bg-gray-900 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white"
+                               placeholder="VD: 29B-123.45" />
+                    </div>
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Loại/Hạng xe <span class="text-red-400">*</span></label>
+                        <select name="BusClassId" required
+                                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-amber-500 focus:border-amber-500 block w-full p-2.5 dark:bg-gray-900 dark:border-gray-600 dark:text-white">
+                            <option value="">-- Chọn loại xe --</option>
+                            @foreach (var busClass in Model.BusClasses)
+                            {
+                                <option value="@busClass.Id" selected='@(Model.CreateForm.BusClassId == busClass.Id)'>@busClass.Text</option>
+                            }
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Chi nhánh quản lý</label>
+                        <select name="BranchId"
+                                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-amber-500 focus:border-amber-500 block w-full p-2.5 dark:bg-gray-900 dark:border-gray-600 dark:text-white">
+                            <option value="">-- Không gán chi nhánh --</option>
+                            @foreach (var branch in Model.Branches)
+                            {
+                                <option value="@branch.Id" selected='@(Model.CreateForm.BranchId == branch.Id)'>@branch.Text</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Trạng thái</label>
+                        <select name="Status"
+                                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-amber-500 focus:border-amber-500 block w-full p-2.5 dark:bg-gray-900 dark:border-gray-600 dark:text-white">
+                            <option value="Active" selected='@(Model.CreateForm.Status == "Active")'>Active - Đang hoạt động</option>
+                            <option value="Maintenance" selected='@(Model.CreateForm.Status == "Maintenance")'>Maintenance - Bảo trì</option>
+                            <option value="Inactive" selected='@(Model.CreateForm.Status == "Inactive")'>Inactive - Ngưng hoạt động</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="rounded-lg border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-200">
+                    Khi thêm mới, hệ thống tự tạo sơ đồ ghế mặc định theo loại xe đã chọn để phục vụ chức năng đặt vé.
+                </div>
+
+                <div class="flex items-center justify-end gap-3 border-t border-gray-700 pt-4">
+                    <button type="button" data-modal-hide="create-bus-modal" class="px-4 py-2 text-sm font-medium text-gray-300 bg-gray-700 hover:bg-gray-600 rounded-lg">Hủy</button>
+                    <button type="submit" class="px-4 py-2 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg">Lưu xe</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@if (Model.Items != null)
+{
+    foreach (var item in Model.Items)
+    {
+        <div id="edit-bus-modal-@item.Id" tabindex="-1" aria-hidden="true" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
+            <div class="relative p-4 w-full max-w-2xl max-h-full">
+                <div class="relative bg-white rounded-lg shadow dark:bg-gray-800 border border-gray-700">
+                    <div class="flex items-center justify-between p-5 border-b rounded-t dark:border-gray-700">
+                        <h3 class="text-xl font-semibold text-gray-900 dark:text-white">Sửa xe @item.LicensePlate</h3>
+                        <button type="button" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-700 dark:hover:text-white" data-modal-hide="edit-bus-modal-@item.Id">
+                            <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" />
+                            </svg>
+                            <span class="sr-only">Đóng</span>
+                        </button>
+                    </div>
+
+                    <form asp-controller="Buses" asp-action="Edit" asp-route-id="@item.Id" method="post" class="p-5 space-y-5">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="Id" value="@item.Id" />
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Mã xe</label>
+                                <input name="BusCode" value="@item.BusCode" type="text"
+                                       class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-amber-500 focus:border-amber-500 block w-full p-2.5 dark:bg-gray-900 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white" />
+                            </div>
+                            <div>
+                                <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Biển số xe <span class="text-red-400">*</span></label>
+                                <input name="LicensePlate" value="@item.LicensePlate" type="text" required
+                                       class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-amber-500 focus:border-amber-500 block w-full p-2.5 dark:bg-gray-900 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white" />
+                            </div>
+                            <div>
+                                <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Loại/Hạng xe <span class="text-red-400">*</span></label>
+                                <select name="BusClassId" required
+                                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-amber-500 focus:border-amber-500 block w-full p-2.5 dark:bg-gray-900 dark:border-gray-600 dark:text-white">
+                                    <option value="">-- Chọn loại xe --</option>
+                                    @foreach (var busClass in Model.BusClasses)
+                                    {
+                                        <option value="@busClass.Id" selected='@(item.BusClassId == busClass.Id)'>@busClass.Text</option>
+                                    }
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Chi nhánh quản lý</label>
+                                <select name="BranchId"
+                                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-amber-500 focus:border-amber-500 block w-full p-2.5 dark:bg-gray-900 dark:border-gray-600 dark:text-white">
+                                    <option value="">-- Không gán chi nhánh --</option>
+                                    @foreach (var branch in Model.Branches)
+                                    {
+                                        <option value="@branch.Id" selected='@(item.BranchId == branch.Id)'>@branch.Text</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Trạng thái</label>
+                                <select name="Status"
+                                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-amber-500 focus:border-amber-500 block w-full p-2.5 dark:bg-gray-900 dark:border-gray-600 dark:text-white">
+                                    <option value="Active" selected='@(item.Status == "Active")'>Active - Đang hoạt động</option>
+                                    <option value="Maintenance" selected='@(item.Status == "Maintenance")'>Maintenance - Bảo trì</option>
+                                    <option value="Inactive" selected='@(item.Status == "Inactive")'>Inactive - Ngưng hoạt động</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="rounded-lg border border-cyan-500/20 bg-cyan-500/10 p-4 text-sm text-cyan-200">
+                            Logic cập nhật chỉ thay đổi mã xe, biển số, loại xe, chi nhánh và trạng thái. Dữ liệu ghế đã tạo trước đó sẽ được giữ nguyên.
+                        </div>
+
+                        <div class="flex items-center justify-end gap-3 border-t border-gray-700 pt-4">
+                            <button type="button" data-modal-hide="edit-bus-modal-@item.Id" class="px-4 py-2 text-sm font-medium text-gray-300 bg-gray-700 hover:bg-gray-600 rounded-lg">Hủy</button>
+                            <button type="submit" class="px-4 py-2 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg">Cập nhật</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div id="delete-bus-modal-@item.Id" tabindex="-1" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
+            <div class="relative p-4 w-full max-w-md max-h-full">
+                <div class="relative bg-white rounded-lg shadow dark:bg-gray-800 border border-gray-700">
+                    <button type="button" class="absolute top-3 end-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-700 dark:hover:text-white" data-modal-hide="delete-bus-modal-@item.Id">
+                        <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" />
+                        </svg>
+                        <span class="sr-only">Đóng</span>
+                    </button>
+                    <div class="p-5 text-center">
+                        <svg class="mx-auto mb-4 text-gray-400 w-12 h-12 dark:text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 11V6m0 8h.01M19 10a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                        </svg>
+                        <h3 class="mb-3 text-lg font-normal text-gray-500 dark:text-gray-300">
+                            Bạn muốn xóa xe <span class="font-semibold text-white">@item.LicensePlate</span>?
+                        </h3>
+                        <p class="mb-5 text-sm text-gray-400">
+                            Nếu xe đã có lịch trình hoặc vé bán ra, hệ thống sẽ không xóa cứng mà chuyển trạng thái sang Inactive để bảo toàn dữ liệu đặt vé/thống kê.
+                        </p>
+                        <form asp-controller="Buses" asp-action="Delete" asp-route-id="@item.Id" method="post" class="inline-flex items-center gap-3">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:outline-none focus:ring-red-900 font-medium rounded-lg text-sm inline-flex items-center px-5 py-2.5 text-center">
+                                Xác nhận
+                            </button>
+                            <button data-modal-hide="delete-bus-modal-@item.Id" type="button" class="py-2.5 px-5 text-sm font-medium text-gray-300 focus:outline-none bg-gray-700 rounded-lg border border-gray-600 hover:bg-gray-600 hover:text-white focus:z-10 focus:ring-4 focus:ring-gray-700">
+                                Hủy
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+}

@@ -68,6 +68,7 @@ namespace Bus_ticket.Data
             await SeedBusClasses();
             await SeedSystemConfigs();
             await SeedBusesAndRoutes();
+            await BackfillBusSeatLayouts();
             await SeedTrips();
             await SeedBookings();
 
@@ -258,7 +259,63 @@ namespace Bus_ticket.Data
             return layout;
         }
 
-        // ĐÃ SỬA: Loại bỏ các trường gây báo lỗi compile, chỉ giữ lại thuộc tính thực sự có trong Model Bus của bạn.
+        // Bổ sung ma trận ghế cho các xe seed cũ chưa có seatsLayout để MongoDB Compass khớp với UI đặt vé.
+        private async Task BackfillBusSeatLayouts()
+        {
+            var missingLayoutFilter = Builders<Bus>.Filter.Or(
+                Builders<Bus>.Filter.Exists("seatsLayout", false),
+                Builders<Bus>.Filter.Eq("seatsLayout", BsonNull.Value),
+                Builders<Bus>.Filter.Size("seatsLayout", 0)
+            );
+
+            var buses = await _context.Buses.Find(missingLayoutFilter).ToListAsync();
+            if (!buses.Any()) return;
+
+            var classIds = buses
+                .Select(bus => bus.BusClassId)
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .Select(id => id!)
+                .Distinct()
+                .ToList();
+
+            if (!classIds.Any()) return;
+
+            var busClasses = await _context.BusClasses
+                .Find(Builders<BusClass>.Filter.In(busClass => busClass.Id, classIds))
+                .ToListAsync();
+
+            var classMap = busClasses.ToDictionary(busClass => busClass.Id, busClass => busClass);
+
+            foreach (var bus in buses)
+            {
+                if (string.IsNullOrWhiteSpace(bus.BusClassId) || !classMap.TryGetValue(bus.BusClassId, out var busClass))
+                {
+                    continue;
+                }
+
+                var layout = busClass.DefaultLayout != null && busClass.DefaultLayout.Any()
+                    ? busClass.DefaultLayout.Select(seat => new SeatTemplate
+                    {
+                        SeatNumber = seat.SeatNumber,
+                        Row = seat.Row,
+                        Column = seat.Column,
+                        Floor = seat.Floor,
+                        SeatType = seat.SeatType
+                    }).ToList()
+                    : GenerateSeatLayout(busClass.TotalRows, busClass.TotalColumns, busClass.TotalFloors, busClass.BusType);
+
+                var update = Builders<Bus>.Update
+                    .Set(item => item.SeatsLayout, layout)
+                    .Set(item => item.LegacyBusType, busClass.BusType)
+                    .Set(item => item.LegacyTotalSeats, layout.Count)
+                    .Set(item => item.UpdatedAt, DateTime.UtcNow)
+                    .Set(item => item.UpdatedBy, "SystemBackfill");
+
+                await _context.Buses.UpdateOneAsync(item => item.Id == bus.Id, update);
+            }
+        }
+
+        // Seed xe và tuyến nền tảng. SeatsLayout sẽ được backfill ngay sau đó nếu document cũ còn thiếu.
         public async Task SeedBusesAndRoutes()
         {
             var busCount = await _context.Buses.CountDocumentsAsync(new BsonDocument());
