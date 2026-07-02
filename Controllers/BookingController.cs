@@ -186,11 +186,14 @@ namespace Bus_ticket.Controllers
     var trips = await _dbContext.Trips
         .Find(t => t.RouteId == matchedRoute.Id
                    && t.DepartureTime >= startOfDay
-                   && t.DepartureTime <= endOfDay)
+                   && t.DepartureTime <= endOfDay
+                   && (t.Status == "Scheduled" || t.Status == "Active"))
         .ToListAsync();
 
     var buses = await _dbContext.Buses.Find(_ => true).ToListAsync();
     var busClasses = await _dbContext.BusClasses.Find(_ => true).ToListAsync();
+    var priceConfigs = await _dbContext.PriceConfigs.Find(_ => true).ToListAsync();
+    var routeMap = allRoutes.ToDictionary(r => r.Id, r => r);
 
     var tripIds = trips.Select(t => t.Id).ToList();
 
@@ -206,13 +209,13 @@ namespace Bus_ticket.Controllers
         {
             var bus = buses.FirstOrDefault(b => b.Id == t.BusId);
             var busClass = busClasses.FirstOrDefault(c => c.Id == bus?.BusClassId);
+            var route = routeMap.GetValueOrDefault(t.RouteId);
 
             var bookedSeatsCount = activeBookings
                 .Where(b => b.TripId == t.Id)
                 .Sum(b => b.Passengers?.Count ?? 0);
 
             int totalSeats = 45;
-
             if (busClass != null && busClass.TotalSeats > 0)
             {
                 totalSeats = busClass.TotalSeats;
@@ -221,19 +224,40 @@ namespace Bus_ticket.Controllers
             {
                 totalSeats = bus.LegacyTotalSeats.Value;
             }
+            else if (t.RealtimeSeats?.Count > 0)
+            {
+                totalSeats = t.RealtimeSeats.Count;
+            }
 
             int availableSeats = totalSeats - bookedSeatsCount;
             if (availableSeats < 0) availableSeats = 0;
 
+            decimal baseFare = t.BaseFare;
+            if (baseFare <= 0 && route != null)
+            {
+                var matchedPrice = priceConfigs.FirstOrDefault(p =>
+                    p.DeparturePoint == route.DeparturePoint
+                    && p.DestinationPoint == route.DestinationPoint
+                    && BusTypeMatcher.Matches(p.BusType, busClass, bus));
+                if (matchedPrice != null)
+                {
+                    baseFare = matchedPrice.BasePrice;
+                }
+            }
+
             return new
             {
                 id = t.Id,
+                tripCode = t.TripCode ?? string.Empty,
                 departureTime = t.DepartureTime.ToLocalTime().ToString("yyyy-MM-ddTHH:mm:ss"),
-                baseFare = t.BaseFare,
-                busCode = bus?.BusCode ?? "Mã xe ẩn",
+                baseFare,
+                busCode = bus?.BusCode ?? "—",
+                licensePlate = bus?.LicensePlate ?? "—",
                 busType = busClass?.ClassName ?? bus?.LegacyBusType ?? "Ghế ngồi",
                 totalSeats,
-                availableSeats
+                availableSeats,
+                departurePoint = route?.DeparturePoint ?? departure.Trim(),
+                destinationPoint = route?.DestinationPoint ?? destination.Trim()
             };
         })
         .ToList();

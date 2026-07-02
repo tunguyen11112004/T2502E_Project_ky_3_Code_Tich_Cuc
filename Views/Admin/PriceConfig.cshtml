@@ -1,162 +1,147 @@
-﻿@model List<Bus_ticket.Models.PriceConfig>
+﻿@model Bus_ticket.ViewModels.PriceManagementViewModel
 @{
     Layout = "_AdminLayout";
-    ViewData["Title"] = "Cấu Hình Giá Vé Nền";
+    ViewData["Title"] = "Quản lý Chuyến Xe";
+    int currentPage = ViewBag.CurrentPage ?? 1;
+    int totalPages = ViewBag.TotalPages ?? 1;
+    long totalItems = ViewBag.TotalItems ?? 0;
+    string searchDate = ViewBag.SearchDate ?? string.Empty;
+    string searchText = ViewBag.SearchText ?? string.Empty;
 }
 
 <div class="p-6 sm:p-8 space-y-6">
-    <div>
-        <h1 class="text-2xl font-bold tracking-tight text-white">Quản Lý Cấu Hình Giá Vé Nền (Độc Lập)</h1>
-        <p class="text-sm text-gray-400 mt-1">Cấu hình trực tiếp mức giá vé gốc theo từng loại lớp xe và điểm hành trình di chuyển.</p>
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold tracking-tight text-white">Quản Lý Chuyến Xe & Tuyến Chạy</h1>
+            <p class="text-sm text-gray-400 mt-1">
+                Danh sách chuyến hiển thị trên <strong class="text-amber-400">Booking → Đặt vé tại quầy</strong> khi tra cùng tuyến và ngày đi.
+            </p>
+        </div>
+        <a asp-action="CreateTrip"
+           class="inline-flex items-center justify-center px-4 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg transition-colors duration-200 shadow-sm">
+            + Thêm tuyến đường cho xe chạy
+        </a>
     </div>
 
     @if (TempData["SuccessMessage"] != null)
     {
-        <div class="flex items-center p-4 text-sm text-emerald-400 rounded-lg bg-gray-800 border border-emerald-800 animate-fade-in">
-            <svg class="w-4 h-4 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-            </svg>
+        <div class="flex items-center p-4 text-sm text-emerald-400 rounded-lg bg-gray-800 border border-emerald-800">
             <div><span class="font-medium">Thành công!</span> @TempData["SuccessMessage"]</div>
         </div>
     }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="flex items-center p-4 text-sm text-red-400 rounded-lg bg-gray-800 border border-red-800">
+            <div><span class="font-medium">Thất bại!</span> @TempData["ErrorMessage"]</div>
+        </div>
+    }
 
-    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <div class="space-y-4">
-            <div class="bg-[#1e1e24] border border-gray-700/50 rounded-xl p-6 shadow-xl">
-                <h2 id="formTitle" class="text-base font-semibold text-white mb-4 flex items-center">
-                    <span class="w-2 h-4 bg-amber-400 rounded mr-2 inline-block"></span>
-                    Cấu hình giá vé mới
-                </h2>
+    <form method="get" asp-action="PriceConfig" class="bg-[#1e1e24] p-4 border border-gray-700/50 rounded-xl grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+        <div>
+            <label class="block mb-1 text-xs font-semibold text-gray-400 uppercase">Lọc theo ngày đi</label>
+            <input type="date" name="searchDate" value="@searchDate"
+                   class="block w-full px-3 py-2 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-1 focus:ring-amber-400 focus:border-amber-400"/>
+        </div>
+        <div>
+            <label class="block mb-1 text-xs font-semibold text-gray-400 uppercase">Tìm nhanh mã chuyến / biển số / tuyến</label>
+            <input type="text" name="searchText" value="@searchText" placeholder="Nhập từ khóa cần tìm..."
+                   class="block w-full px-3 py-2 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-1 focus:ring-amber-400 focus:border-amber-400"/>
+        </div>
+        <div class="flex gap-2">
+            <button type="submit" class="w-full px-4 py-2 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg transition-colors">
+                Lọc dữ liệu
+            </button>
+            <a asp-action="PriceConfig" class="px-4 py-2 text-sm font-semibold text-gray-300 bg-gray-800 hover:bg-gray-700 rounded-lg text-center transition-colors">
+                Xóa bộ lọc
+            </a>
+        </div>
+    </form>
 
-                <form asp-action="SavePriceConfig" asp-controller="Admin" method="post" id="formPriceConfig" class="space-y-4">
-                    @Html.AntiForgeryToken()
-
-                    <div>
-                        <label class="block mb-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Lớp xe (Bus Type)</label>
-                        <select name="busType" id="ddlBusType" class="bg-gray-900 border border-gray-700 text-white text-sm rounded-lg block w-full p-2.5 focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-colors" required>
-                            <option value="">-- Chọn lớp xe --</option>
-                            <option value="Standard (Seat)">Standard (Seat) - Xe ghế ngồi</option>
-                            <option value="Luxury Sleeper">Luxury Sleeper - Xe giường nằm</option>
-                            <option value="Limousine Caravan">Limousine Caravan - Xe VIP Luxury</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block mb-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Điểm đi / Trạm đón</label>
-                        <input type="text" name="departurePoint" id="txtDeparturePoint" required
-                               class="block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 placeholder-gray-500"
-                               placeholder="Ví dụ: Hà Nội">
-                    </div>
-
-                    <div>
-                        <label class="block mb-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Điểm đến / Trạm dừng</label>
-                        <input type="text" name="destinationPoint" id="txtDestinationPoint" required
-                               class="block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 placeholder-gray-500"
-                               placeholder="Ví dụ: Hải Phòng">
-                    </div>
-
-                    <div>
-                        <label class="block mb-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Giá vé nền (VND)</label>
-                        <div class="relative">
-                            <input type="number" name="basePrice" id="txtBasePrice" min="1000" step="1000" required
-                                   class="block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 placeholder-gray-500 font-semibold text-amber-400"
-                                   placeholder="Ví dụ: 150000">
-                            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-xs text-gray-500">đ</div>
-                        </div>
-                    </div>
-
-                    <div class="flex items-center gap-2 pt-2">
-                        <button type="submit" id="btnSubmitPrice"
-                                class="w-full inline-flex items-center justify-center px-4 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg transition-colors duration-200 shadow-sm">
-                            Lưu cấu hình
-                        </button>
-                        <button type="button" onclick="resetPriceForm()" id="btnCancelEdit" class="hidden px-4 py-2.5 text-sm font-semibold text-gray-400 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors duration-200 border border-gray-700">
-                            Hủy
-                        </button>
-                    </div>
-                </form>
-            </div>
+    <div class="overflow-hidden bg-[#1e1e24] border border-gray-700/50 rounded-xl shadow-xl">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left text-gray-300 whitespace-nowrap">
+                <thead class="text-xs uppercase bg-[#141419] text-gray-400 border-b border-gray-700/60">
+                <tr>
+                    <th class="px-6 py-4 font-semibold">Mã chuyến</th>
+                    <th class="px-6 py-4 font-semibold">Biển số</th>
+                    <th class="px-6 py-4 font-semibold">Lớp xe</th>
+                    <th class="px-6 py-4 font-semibold">Tuyến đường</th>
+                    <th class="px-6 py-4 font-semibold">Giờ đi</th>
+                    <th class="px-6 py-4 font-semibold">Giá vé</th>
+                    <th class="px-6 py-4 font-semibold">Ghế</th>
+                    <th class="px-6 py-4 font-semibold">Trạng thái</th>
+                    <th class="px-6 py-4 font-semibold text-center">Hành động</th>
+                </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-700/50">
+                @if (Model.Trips.Any())
+                {
+                    foreach (var trip in Model.Trips)
+                    {
+                        <tr class="hover:bg-gray-800/30 transition-colors duration-150">
+                            <td class="px-6 py-4 font-semibold text-amber-400 text-xs">@trip.TripCode</td>
+                            <td class="px-6 py-4 font-bold text-white">@trip.LicensePlate</td>
+                            <td class="px-6 py-4 text-xs text-gray-400 max-w-[160px] truncate" title="@trip.BusClassName">@trip.BusClassName</td>
+                            <td class="px-6 py-4 text-xs max-w-[180px] truncate" title="@trip.RouteLabel">@trip.RouteLabel</td>
+                            <td class="px-6 py-4 text-gray-300">@trip.DepartureTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                            <td class="px-6 py-4 font-semibold text-white">@trip.BaseFare.ToString("N0") đ</td>
+                            <td class="px-6 py-4 text-xs text-gray-400">@trip.BookedSeats/@trip.TotalSeats</td>
+                            <td class="px-6 py-4 text-xs">@trip.Status</td>
+                            <td class="px-6 py-4">
+                                <div class="flex justify-center gap-2">
+                                    <a asp-action="EditTrip" asp-route-id="@trip.Id"
+                                       class="px-3 py-1.5 text-xs font-semibold rounded bg-amber-400/10 text-amber-400 hover:bg-amber-400 hover:text-gray-900 transition-colors">
+                                        Sửa
+                                    </a>
+                                    <form asp-action="DeleteTrip" method="post" class="inline" onsubmit="return confirm('Xóa chuyến @trip.TripCode?');">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@trip.Id"/>
+                                        <button type="submit" class="px-3 py-1.5 text-xs font-semibold rounded bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white transition-colors">
+                                            Xóa
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="9" class="px-6 py-12 text-center text-gray-500">
+                            Không có chuyến xe nào phù hợp.
+                            <a asp-action="CreateTrip" class="text-amber-400 hover:underline font-semibold">Thêm tuyến đường cho xe chạy</a>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
         </div>
 
-        <div class="xl:col-span-2">
-            <div class="overflow-hidden bg-[#1e1e24] border border-gray-700/50 rounded-xl shadow-xl">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm text-left text-gray-300 whitespace-nowrap">
-                        <thead class="text-xs uppercase bg-[#141419] text-gray-400 border-b border-gray-700/60">
-                        <tr>
-                            <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Lớp Xe</th>
-                            <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Tuyến Chặng Áp Dụng</th>
-                            <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Giá Vé Nền</th>
-                            <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Cập Nhật Cuối</th>
-                            <th scope="col" class="px-6 py-4 font-semibold tracking-wider text-center">Hành Động</th>
-                        </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-700/50">
-                        @if (Model != null && Model.Any())
-                        {
-                            foreach (var price in Model)
-                            {
-                                <tr>
-                                    <td class="px-6 py-4 font-bold text-white">@price.BusType</td>
-                                    <td class="px-6 py-4 text-gray-300">@price.DeparturePoint ➔ @price.DestinationPoint</td>
-                                    <td class="px-6 py-4 font-semibold text-amber-400">@price.BasePrice.ToString("N0") đ</td>
-                                    <td class="px-6 py-4 text-xs text-gray-400">@price.UpdatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
-                                    <td class="px-6 py-4 flex items-center justify-center space-x-2">
-                                        <button type="button" onclick="prepareEditPrice('@price.BusType', '@price.DeparturePoint', '@price.DestinationPoint', '@price.BasePrice')"
-                                                class="px-2.5 py-1.5 text-xs font-semibold rounded bg-amber-400/10 text-amber-400 hover:bg-amber-400 hover:text-gray-900 transition-colors duration-150">
-                                            Sửa
-                                        </button>
-                                        
-                                        <form asp-action="DeletePriceConfig" asp-controller="Admin" asp-route-id="@price.Id" method="post" onsubmit="return confirm('Bạn chắc chắn muốn xóa cấu hình giá này khỏi hệ thống?');" class="inline">
-                                            @Html.AntiForgeryToken()
-                                            <button type="submit" class="px-2.5 py-1.5 text-xs font-semibold rounded bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white transition-colors duration-150">
-                                                Xóa
-                                            </button>
-                                        </form>
-                                    </td>
-                                </tr>
-                            }
-                        }
-                        else
-                        {
-                            <tr>
-                                <td colspan="5" class="px-6 py-10 text-center text-gray-500 bg-[#1e1e24]">
-                                    Chưa có cấu hình giá vé nền nào trong hệ thống.
-                                </td>
-                            </tr>
-                        }
-                        </tbody>
-                    </table>
+        @if (totalPages > 1)
+        {
+            <div class="flex items-center justify-between p-4 bg-[#141419] border-t border-gray-700/60">
+                <span class="text-xs text-gray-400">
+                    @totalItems chuyến — Trang <span class="text-white font-semibold">@currentPage</span> / @totalPages
+                </span>
+                <div class="inline-flex space-x-1">
+                    <a asp-action="PriceConfig" asp-route-page="@(currentPage - 1)" asp-route-searchDate="@searchDate" asp-route-searchText="@searchText"
+                       class="@(currentPage == 1 ? "pointer-events-none opacity-40" : "") px-3 py-1 text-xs font-medium text-gray-400 bg-gray-800 rounded hover:bg-gray-700 hover:text-white">
+                        Trước
+                    </a>
+                    @for (int i = 1; i <= totalPages; i++)
+                    {
+                        <a asp-action="PriceConfig" asp-route-page="@i" asp-route-searchDate="@searchDate" asp-route-searchText="@searchText"
+                           class="px-3 py-1 text-xs font-medium rounded @(i == currentPage ? "bg-amber-400 text-gray-900 font-bold" : "text-gray-400 bg-gray-800 hover:bg-gray-700 hover:text-white")">
+                            @i
+                        </a>
+                    }
+                    <a asp-action="PriceConfig" asp-route-page="@(currentPage + 1)" asp-route-searchDate="@searchDate" asp-route-searchText="@searchText"
+                       class="@(currentPage == totalPages ? "pointer-events-none opacity-40" : "") px-3 py-1 text-xs font-medium text-gray-400 bg-gray-800 rounded hover:bg-gray-700 hover:text-white">
+                        Tiếp
+                    </a>
                 </div>
             </div>
-        </div>
+        }
     </div>
 </div>
-
-<script>
-    function prepareEditPrice(busType, departurePoint, destinationPoint, basePrice) {
-        document.getElementById('formTitle').innerHTML = '<span class="w-2 h-4 bg-teal-400 rounded mr-2 inline-block"></span> Chỉnh sửa mức giá';
-        document.getElementById('ddlBusType').value = busType;
-        document.getElementById('txtDeparturePoint').value = departurePoint;
-        document.getElementById('txtDestinationPoint').value = destinationPoint;
-        document.getElementById('txtBasePrice').value = basePrice;
-        
-        const submitBtn = document.getElementById('btnSubmitPrice');
-        submitBtn.textContent = 'Cập nhật giá';
-        submitBtn.className = "w-full inline-flex items-center justify-center px-4 py-2.5 text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 rounded-lg transition-colors duration-200 shadow-sm";
-        
-        document.getElementById('btnCancelEdit').classList.remove('hidden');
-        document.getElementById('txtBasePrice').focus();
-    }
-
-    function resetPriceForm() {
-        document.getElementById('formPriceConfig').reset();
-        document.getElementById('formTitle').innerHTML = '<span class="w-2 h-4 bg-amber-400 rounded mr-2 inline-block"></span> Cấu hình giá vé mới';
-        
-        const submitBtn = document.getElementById('btnSubmitPrice');
-        submitBtn.textContent = 'Lưu cấu hình';
-        submitBtn.className = "w-full inline-flex items-center justify-center px-4 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg transition-colors duration-200 shadow-sm";
-        
-        document.getElementById('btnCancelEdit').classList.add('hidden');
-    }
-</script>
