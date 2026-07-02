@@ -56,6 +56,10 @@ public class Trip
     [BsonElement("routeId")]
     [BsonRepresentation(BsonType.ObjectId)]
     public string RouteId { get; set; }
+    
+    [BsonElement("branchId")]
+    [BsonRepresentation(BsonType.ObjectId)]
+    public string? BranchId { get; set; }
 
     [BsonElement("baseFare")] public decimal BaseFare { get; set; }
 

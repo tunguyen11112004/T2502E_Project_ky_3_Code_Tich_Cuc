@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Bus_ticket.Interfaces;
 using Bus_ticket.Models;
-using Microsoft.AspNetCore.Identity;
 using MongoDB.Driver;
 using MongoDB.Bson;
 
@@ -13,21 +12,18 @@ namespace Bus_ticket.Data
     public class DataSeeder : IDbSeeder
     {
         private readonly ApplicationDbContext _context;
-        private readonly IMongoCollection<User> _users;
-        private readonly IPasswordHasher<User> _passwordHasher;
-
-        public DataSeeder(IMongoDatabase database, IPasswordHasher<User> passwordHasher)
-        {
-            // Lấy collection từ database (giả sử tên collection là "Users")
-            _users = database.GetCollection<User>("Users");
-            _passwordHasher = passwordHasher;
-        }
 
         // --- BRANCH ID ---
         public static readonly string BranchHanoiId = "64f1a2b3c4d5e6f7a8b9c001";
         public static readonly string BranchDanangId = "64f1a2b3c4d5e6f7a8b9c002";
         public static readonly string BranchSaigonId = "64f1a2b3c4d5e6f7a8b9c003";
-
+        
+        // --- BUS OPERATOR ID ---
+        public static readonly string OperatorPhuongTrangId = "64f1a2b3c4d5e6f7a8b9c071";
+        public static readonly string OperatorThanhBuoiId = "64f1a2b3c4d5e6f7a8b9c072";
+        public static readonly string OperatorHoangLongId = "64f1a2b3c4d5e6f7a8b9c073";
+        public static readonly string OperatorHaiVanId = "64f1a2b3c4d5e6f7a8b9c074";
+        
         // --- BUS CLASS ID ---
         public static readonly string BusClassExpress45Id = "64f1a2b3c4d5e6f7a8b9c011";
         public static readonly string BusClassLimousine22Id = "64f1a2b3c4d5e6f7a8b9c012";
@@ -54,7 +50,6 @@ namespace Bus_ticket.Data
         public DataSeeder(ApplicationDbContext context)
         {
             _context = context;
-            _passwordHasher = new PasswordHasher<User>();
         }
 
         public async Task SeedAllAsync()
@@ -65,9 +60,12 @@ namespace Bus_ticket.Data
             await SeedDynamicRoles();
             await SeedUsers();
             await SeedBranches();
+            await SeedBusOperators();
             await SeedBusClasses();
             await SeedSystemConfigs();
             await SeedBusesAndRoutes();
+            await EnsureBusOperatorIdsForExistingBusesAsync();
+            await SeedBusBranchesAsync();
             await SeedTrips();
             await SeedBookings();
 
@@ -170,6 +168,70 @@ namespace Bus_ticket.Data
             };
             await _context.Branches.InsertManyAsync(branches);
         }
+        
+        private async Task SeedBusOperators()
+        {
+            var count = await _context.BusOperators.CountDocumentsAsync(_ => true);
+            if (count > 0) return;
+
+            var operators = new List<BusOperator>
+            {
+                new BusOperator
+                {
+                    Id = OperatorPhuongTrangId,
+                    OperatorCode = "OP-PT-01",
+                    OperatorName = "Nhà xe Phương Trang",
+                    PhoneNumber = "19006067",
+                    Email = "phuongtrang@example.com",
+                    Address = "TP. Hồ Chí Minh",
+                    ContactPerson = "Phương Trang Admin",
+                    Status = "Active",
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = "SystemSeeder"
+                },
+                new BusOperator
+                {
+                    Id = OperatorThanhBuoiId,
+                    OperatorCode = "OP-TB-02",
+                    OperatorName = "Nhà xe Thành Bưởi",
+                    PhoneNumber = "19006079",
+                    Email = "thanhbuoi@example.com",
+                    Address = "TP. Hồ Chí Minh",
+                    ContactPerson = "Thành Bưởi Admin",
+                    Status = "Active",
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = "SystemSeeder"
+                },
+                new BusOperator
+                {
+                    Id = OperatorHoangLongId,
+                    OperatorCode = "OP-HL-03",
+                    OperatorName = "Nhà xe Hoàng Long",
+                    PhoneNumber = "19009888",
+                    Email = "hoanglong@example.com",
+                    Address = "Hà Nội",
+                    ContactPerson = "Hoàng Long Admin",
+                    Status = "Active",
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = "SystemSeeder"
+                },
+                new BusOperator
+                {
+                    Id = OperatorHaiVanId,
+                    OperatorCode = "OP-HV-04",
+                    OperatorName = "Nhà xe Hải Vân",
+                    PhoneNumber = "19006776",
+                    Email = "haivan@example.com",
+                    Address = "Đà Nẵng",
+                    ContactPerson = "Hải Vân Admin",
+                    Status = "Active",
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = "SystemSeeder"
+                }
+            };
+
+            await _context.BusOperators.InsertManyAsync(operators);
+        }
 
         public async Task SeedBusClasses()
         {
@@ -257,6 +319,128 @@ namespace Bus_ticket.Data
 
             return layout;
         }
+        private static List<string> GetAllowedBranchIdsForBus(Bus bus)
+        {
+            if (bus.OperatorId == OperatorPhuongTrangId)
+            {
+                return new List<string>
+                {
+                    BranchSaigonId,
+                    BranchDanangId,
+                    BranchHanoiId
+                };
+            }
+
+            if (bus.OperatorId == OperatorThanhBuoiId)
+            {
+                return new List<string>
+                {
+                    BranchSaigonId,
+                    BranchDanangId
+                };
+            }
+
+            if (bus.OperatorId == OperatorHoangLongId)
+            {
+                return new List<string>
+                {
+                    BranchHanoiId,
+                    BranchDanangId
+                };
+            }
+
+            if (bus.OperatorId == OperatorHaiVanId)
+            {
+                return new List<string>
+                {
+                    BranchHanoiId,
+                    BranchDanangId,
+                    BranchSaigonId
+                };
+            }
+
+            return !string.IsNullOrWhiteSpace(bus.BranchId)
+                ? new List<string> { bus.BranchId }
+                : new List<string>();
+        }
+
+        private async Task EnsureBusOperatorIdsForExistingBusesAsync()
+        {
+            async Task SetOperatorByBusCode(string busCode, string operatorId)
+            {
+                var update = Builders<Bus>.Update.Set(bus => bus.OperatorId, operatorId);
+
+                await _context.Buses.UpdateOneAsync(
+                    bus => bus.BusCode == busCode,
+                    update
+                );
+            }
+
+            await SetOperatorByBusCode("BUS-HN-EXP01", OperatorHoangLongId);
+            await SetOperatorByBusCode("BUS-HN-LIMO02", OperatorHaiVanId);
+            await SetOperatorByBusCode("BUS-SG-EXP03", OperatorPhuongTrangId);
+            await SetOperatorByBusCode("BUS-SG-LIMO04", OperatorThanhBuoiId);
+
+            await SetOperatorByBusCode("BUS-HN-EXP05", OperatorHoangLongId);
+            await SetOperatorByBusCode("BUS-HN-LIMO06", OperatorHaiVanId);
+            await SetOperatorByBusCode("BUS-HN-EXP07", OperatorHoangLongId);
+            await SetOperatorByBusCode("BUS-HN-LIMO08", OperatorHaiVanId);
+
+            await SetOperatorByBusCode("BUS-DN-EXP10", OperatorHaiVanId);
+            await SetOperatorByBusCode("BUS-DN-LIMO11", OperatorHoangLongId);
+            await SetOperatorByBusCode("BUS-DN-EXP12", OperatorHaiVanId);
+
+            await SetOperatorByBusCode("BUS-SG-EXP15", OperatorPhuongTrangId);
+            await SetOperatorByBusCode("BUS-SG-LIMO16", OperatorThanhBuoiId);
+            await SetOperatorByBusCode("BUS-SG-EXP17", OperatorPhuongTrangId);
+        }
+
+        private async Task SeedBusBranchesAsync()
+        {
+            var existingBusBranches = await _context.BusBranches
+                .CountDocumentsAsync(_ => true);
+
+            if (existingBusBranches > 0)
+            {
+                return;
+            }
+
+            var buses = await _context.Buses
+                .Find(_ => true)
+                .ToListAsync();
+
+            if (!buses.Any())
+            {
+                return;
+            }
+
+            var busBranches = new List<BusBranch>();
+
+            foreach (var bus in buses)
+            {
+                var allowedBranchIds = GetAllowedBranchIdsForBus(bus);
+
+                foreach (var branchId in allowedBranchIds.Distinct())
+                {
+                    busBranches.Add(new BusBranch
+                    {
+                        Id = ObjectId.GenerateNewId().ToString(),
+                        BusId = bus.Id,
+                        BranchId = branchId,
+                        Status = "Active",
+                        RegisteredAt = DateTime.UtcNow,
+                        CreatedAt = DateTime.UtcNow,
+                        CreatedBy = "SystemSeeder",
+                        Note = "Seeded partner bus registration for SRC branch"
+                    });
+                }
+            }
+
+            if (busBranches.Any())
+            {
+                await _context.BusBranches.InsertManyAsync(busBranches);
+            }
+        }
 
         // ĐÃ SỬA: Loại bỏ các trường gây báo lỗi compile, chỉ giữ lại thuộc tính thực sự có trong Model Bus của bạn.
         public async Task SeedBusesAndRoutes()
@@ -269,26 +453,26 @@ namespace Bus_ticket.Data
                     new Bus
                     {
                         Id = BusHNExpressId, BusCode = "BUS-HN-EXP01", LicensePlate = "29B-555.11", Status = "Active",
-                        BranchId = BranchHanoiId, BusClassId = BusClassExpress45Id, CreatedBy = "SystemSeeder",
+                        BranchId = BranchHanoiId, OperatorId = OperatorHoangLongId, BusClassId = BusClassExpress45Id, CreatedBy = "SystemSeeder",
                         CreatedAt = DateTime.UtcNow, UpdatedBy = "SystemSeeder", UpdatedAt = DateTime.UtcNow
                     },
                     new Bus
                     {
                         Id = BusHNLimousineId, BusCode = "BUS-HN-LIMO02", LicensePlate = "29B-999.22",
-                        Status = "Active", BranchId = BranchHanoiId, BusClassId = BusClassLimousine22Id,
+                        Status = "Active", BranchId = BranchHanoiId, OperatorId = OperatorHaiVanId, BusClassId = BusClassLimousine22Id,
                         CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow, UpdatedBy = "SystemSeeder",
                         UpdatedAt = DateTime.UtcNow
                     },
                     new Bus
                     {
                         Id = BusSGExpressId, BusCode = "BUS-SG-EXP03", LicensePlate = "51B-111.33", Status = "Active",
-                        BranchId = BranchSaigonId, BusClassId = BusClassExpress45Id, CreatedBy = "SystemSeeder",
+                        BranchId = BranchSaigonId, OperatorId = OperatorPhuongTrangId, BusClassId = BusClassExpress45Id, CreatedBy = "SystemSeeder",
                         CreatedAt = DateTime.UtcNow, UpdatedBy = "SystemSeeder", UpdatedAt = DateTime.UtcNow
                     },
                     new Bus
                     {
                         Id = BusSGLimousineId, BusCode = "BUS-SG-LIMO04", LicensePlate = "51B-888.44",
-                        Status = "Active", BranchId = BranchSaigonId, BusClassId = BusClassLimousine22Id,
+                        Status = "Active", BranchId = BranchSaigonId, OperatorId = OperatorThanhBuoiId, BusClassId = BusClassLimousine22Id,
                         CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow, UpdatedBy = "SystemSeeder",
                         UpdatedAt = DateTime.UtcNow
                     },
@@ -296,63 +480,63 @@ namespace Bus_ticket.Data
                     new Bus
                     {
                         Id = "64f1a2b3c4d5e6f7a8b9c025", BusCode = "BUS-HN-EXP05", LicensePlate = "29B-123.45",
-                        Status = "Active", BranchId = BranchHanoiId, BusClassId = BusClassExpress45Id,
+                        Status = "Active", BranchId = BranchHanoiId, OperatorId = OperatorHoangLongId, BusClassId = BusClassExpress45Id,
                         CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow
                     },
                     new Bus
                     {
                         Id = "64f1a2b3c4d5e6f7a8b9c026", BusCode = "BUS-HN-LIMO06", LicensePlate = "29B-678.90",
-                        Status = "Active", BranchId = BranchHanoiId, BusClassId = BusClassLimousine22Id,
+                        Status = "Active", BranchId = BranchHanoiId, OperatorId = OperatorHaiVanId, BusClassId = BusClassLimousine22Id,
                         CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow
                     },
                     new Bus
                     {
                         Id = "64f1a2b3c4d5e6f7a8b9c027", BusCode = "BUS-HN-EXP07", LicensePlate = "29B-333.44",
-                        Status = "Active", BranchId = BranchHanoiId, BusClassId = BusClassExpress45Id,
+                        Status = "Active", BranchId = BranchHanoiId, OperatorId = OperatorHoangLongId, BusClassId = BusClassExpress45Id,
                         CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow
                     },
                     new Bus
                     {
                         Id = "64f1a2b3c4d5e6f7a8b9c028", BusCode = "BUS-HN-LIMO08", LicensePlate = "29B-777.88",
-                        Status = "Active", BranchId = BranchHanoiId, BusClassId = BusClassLimousine22Id,
+                        Status = "Active", BranchId = BranchHanoiId, OperatorId = OperatorHaiVanId, BusClassId = BusClassLimousine22Id,
                         CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow
                     },
 
                     new Bus
                     {
                         Id = "64f1a2b3c4d5e6f7a8b9c02a", BusCode = "BUS-DN-EXP10", LicensePlate = "43B-111.22",
-                        Status = "Active", BranchId = BranchDanangId, BusClassId = BusClassExpress45Id,
+                        Status = "Active", BranchId = BranchDanangId, OperatorId = OperatorHaiVanId, BusClassId = BusClassExpress45Id,
                         CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow
                     },
                     new Bus
                     {
                         Id = "64f1a2b3c4d5e6f7a8b9c02b", BusCode = "BUS-DN-LIMO11", LicensePlate = "43B-333.44",
-                        Status = "Active", BranchId = BranchDanangId, BusClassId = BusClassLimousine22Id,
+                        Status = "Active", BranchId = BranchDanangId, OperatorId = OperatorHoangLongId, BusClassId = BusClassLimousine22Id,
                         CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow
                     },
                     new Bus
                     {
                         Id = "64f1a2b3c4d5e6f7a8b9c02c", BusCode = "BUS-DN-EXP12", LicensePlate = "43B-555.66",
-                        Status = "Active", BranchId = BranchDanangId, BusClassId = BusClassExpress45Id,
+                        Status = "Active", BranchId = BranchDanangId, OperatorId = OperatorHaiVanId, BusClassId = BusClassExpress45Id,
                         CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow
                     },
 
                     new Bus
                     {
                         Id = "64f1a2b3c4d5e6f7a8b9c02f", BusCode = "BUS-SG-EXP15", LicensePlate = "51B-222.33",
-                        Status = "Active", BranchId = BranchSaigonId, BusClassId = BusClassExpress45Id,
+                        Status = "Active", BranchId = BranchSaigonId, OperatorId = OperatorPhuongTrangId, BusClassId = BusClassExpress45Id,
                         CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow
                     },
                     new Bus
                     {
                         Id = "64f1a2b3c4d5e6f7a8b9c03a", BusCode = "BUS-SG-LIMO16", LicensePlate = "51B-444.55",
-                        Status = "Active", BranchId = BranchSaigonId, BusClassId = BusClassLimousine22Id,
+                        Status = "Active", BranchId = BranchSaigonId, OperatorId = OperatorThanhBuoiId, BusClassId = BusClassLimousine22Id,
                         CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow
                     },
                     new Bus
                     {
                         Id = "64f1a2b3c4d5e6f7a8b9c03b", BusCode = "BUS-SG-EXP17", LicensePlate = "51B-666.77",
-                        Status = "Active", BranchId = BranchSaigonId, BusClassId = BusClassExpress45Id,
+                        Status = "Active", BranchId = BranchSaigonId, OperatorId = OperatorPhuongTrangId, BusClassId = BusClassExpress45Id,
                         CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow
                     }
                 };
@@ -485,7 +669,7 @@ namespace Bus_ticket.Data
                 new Trip
                 {
                     Id = TripHanoiSaigonExpressId, TripCode = "TRP-2026-HN-SG01", BusId = BusHNExpressId,
-                    RouteId = RouteHanoiSaigonId, BaseFare = 750000m, DepartureTime = tomorrow.AddHours(8),
+                    RouteId = RouteHanoiSaigonId, BranchId = BranchHanoiId, BaseFare = 750000m, DepartureTime = tomorrow.AddHours(8),
                     ArrivalTime = tomorrow.AddHours(38), Status = "Scheduled", RealtimeSeats = expressRealtimeSeats,
                     CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow, UpdatedBy = "SystemSeeder",
                     UpdatedAt = DateTime.UtcNow
@@ -493,7 +677,7 @@ namespace Bus_ticket.Data
                 new Trip
                 {
                     Id = TripHanoiSaigonLimoId, TripCode = "TRP-2026-HN-SG02", BusId = BusHNLimousineId,
-                    RouteId = RouteHanoiSaigonId, BaseFare = 1100000m, DepartureTime = tomorrow.AddHours(20),
+                    RouteId = RouteHanoiSaigonId, BranchId = BranchHanoiId, BaseFare = 1100000m, DepartureTime = tomorrow.AddHours(20),
                     ArrivalTime = tomorrow.AddHours(48), Status = "Scheduled", RealtimeSeats = limousineRealtimeSeats,
                     CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow, UpdatedBy = "SystemSeeder",
                     UpdatedAt = DateTime.UtcNow
@@ -818,6 +1002,11 @@ AddPermission("64f1a2b3c4d5e6f7a8b9ca27", "Update.Customer", "Sửa thông tin t
 
                         // Chọn xe ngẫu nhiên để phân bổ
                         var selectedBus = allBuses[random.Next(allBuses.Count)];
+                        var selectedBusAllowedBranchIds = GetAllowedBranchIdsForBus(selectedBus);
+                        var tripBranchId = selectedBusAllowedBranchIds.Any()
+                            ? selectedBusAllowedBranchIds[random.Next(selectedBusAllowedBranchIds.Count)]
+                            : selectedBus.BranchId;
+
                         var currentClass = selectedBus.BusClassId == BusClassExpress45Id
                             ? expressClass
                             : limousineClass;
@@ -850,6 +1039,7 @@ AddPermission("64f1a2b3c4d5e6f7a8b9ca27", "Update.Customer", "Sửa thông tin t
                             TripCode = $"TRP-{departureTime:yyyyMMdd}-{hour:D2}{tripCounter:D2}",
                             BusId = selectedBus.Id,
                             RouteId = route.Id,
+                            BranchId = tripBranchId,
                             BaseFare = baseFare,
                             DepartureTime = departureTime,
                             ArrivalTime = arrivalTime,
@@ -889,7 +1079,7 @@ AddPermission("64f1a2b3c4d5e6f7a8b9ca27", "Update.Customer", "Sửa thông tin t
                                 CustomerEmail = chosenCustomer.Email,
                                 TripId = tripId,
                                 UserId = null,
-                                BranchId = selectedBus.BranchId,
+                                BranchId = tripBranchId,
                                 BookingTime = departureTime.AddHours(-5),
                                 TotalPrice = totalPrice,
                                 TaxAmount = taxAmount,

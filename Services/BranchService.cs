@@ -191,13 +191,28 @@ public class BranchService
 
     private async Task<bool> IsBranchInUseAsync(string branchId)
     {
-        var isUsedByBus = await _dbContext.Buses.Find(bus => bus.BranchId == branchId).AnyAsync();
+        var isUsedByBusBranch = await _dbContext.BusBranches
+            .Find(busBranch => busBranch.BranchId == branchId && busBranch.Status == "Active")
+            .AnyAsync();
+
+        if (isUsedByBusBranch) return true;
+
+        var isUsedByBus = await _dbContext.Buses
+            .Find(bus => bus.BranchId == branchId)
+            .AnyAsync();
+
         if (isUsedByBus) return true;
 
-        var isUsedByUser = await _dbContext.Users.Find(user => user.BranchId == branchId).AnyAsync();
+        var isUsedByUser = await _dbContext.Users
+            .Find(user => user.BranchId == branchId)
+            .AnyAsync();
+
         if (isUsedByUser) return true;
 
-        var isUsedByBooking = await _dbContext.Bookings.Find(booking => booking.BranchId == branchId).AnyAsync();
+        var isUsedByBooking = await _dbContext.Bookings
+            .Find(booking => booking.BranchId == branchId)
+            .AnyAsync();
+
         return isUsedByBooking;
     }
 
