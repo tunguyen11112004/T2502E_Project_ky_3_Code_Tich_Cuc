@@ -9,13 +9,23 @@
 }
 
 <div class="p-4 sm:p-6 lg:p-8 space-y-6 max-w-full overflow-x-hidden">
-    <div>
-        <h1 class="text-2xl font-bold tracking-tight text-white">
-            Thống kê tỷ lệ hủy chuyến theo Nhà xe
-        </h1>
-        <p class="text-sm text-gray-400 mt-1">
-            Đánh giá uy tín vận hành dựa trên tỷ lệ chuyến xe bị hủy của từng nhà xe/chi nhánh.
-        </p>
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold tracking-tight text-white">
+                Thống kê tỷ lệ hủy chuyến theo Nhà xe
+            </h1>
+            <p class="text-sm text-gray-400 mt-1">
+                Đánh giá uy tín vận hành dựa trên tỷ lệ chuyến xe bị hủy của từng nhà xe thực tế trong hệ thống.
+            </p>
+        </div>
+
+        <a asp-controller="Dashboard"
+           asp-action="ExportBranchCancellation"
+           asp-route-fromDate="@fromDateValue"
+           asp-route-toDate="@toDateValue"
+           class="inline-flex items-center justify-center px-4 py-2.5 text-sm font-semibold text-gray-900 bg-emerald-400 hover:bg-emerald-500 rounded-lg transition-colors duration-200 shadow-sm whitespace-nowrap">
+            Xuất Excel
+        </a>
     </div>
 
     @if (TempData["ErrorMessage"] != null)
@@ -55,7 +65,6 @@
             <div class="space-y-4">
                 @foreach (var item in Model)
                 {
-                    // Đổi màu sắc cảnh báo: Hủy trên 10% là báo động đỏ, trên 5% màu vàng, dưới 5% an toàn xanh lá
                     string barColor = "bg-emerald-500";
                     if (item.CancellationRate >= 10) barColor = "bg-red-500";
                     else if (item.CancellationRate >= 5) barColor = "bg-amber-400";
@@ -85,7 +94,7 @@
                 <thead class="text-xs uppercase bg-[#141419] text-gray-400 border-b border-gray-700/60">
                     <tr>
                         <th class="w-16 px-6 py-4 font-semibold">STT</th>
-                        <th class="px-6 py-4 font-semibold">Tên Nhà Xe / Chi Nhánh</th>
+                        <th class="px-6 py-4 font-semibold">Tên Nhà Xe / Đối Tác</th>
                         <th class="w-40 px-6 py-4 font-semibold text-right">Tổng số chuyến</th>
                         <th class="w-40 px-6 py-4 font-semibold text-right">Số chuyến bị hủy</th>
                         <th class="w-40 px-6 py-4 font-semibold text-right">Tỷ lệ hủy chuyến</th>

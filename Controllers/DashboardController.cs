@@ -258,12 +258,12 @@ public class DashboardController : Controller
             fileName
         );
     }
-    
-    /*[HttpGet]
+
+    [HttpGet]
     [Authorize(Roles = "Admin,Employee")]
     public async Task<IActionResult> BranchCancellation(DateTime? fromDate, DateTime? toDate)
     {
-        var from = fromDate ?? DateTime.Today.AddDays(-30); // Mặc định xem hẳn 30 ngày cho dữ liệu hủy chuyến chuẩn xác hơn
+        var from = fromDate ?? DateTime.Today.AddDays(-30);
         var to = toDate ?? DateTime.Today;
 
         if (from > to)
@@ -280,5 +280,70 @@ public class DashboardController : Controller
         ViewBag.ToDateValue = to;
 
         return View(model);
-    }*/
+    }
+
+    [HttpGet]
+[Authorize(Roles = "Admin,Employee")]
+public async Task<IActionResult> ExportBranchCancellation(DateTime fromDate, DateTime toDate)
+{
+    if (fromDate > toDate)
+    {
+        var temp = fromDate;
+        fromDate = toDate;
+        toDate = temp;
+    }
+
+    var model = await _dashboardService.GetBranchCancellationReportAsync(fromDate, toDate);
+
+    using var workbook = new XLWorkbook();
+    var worksheet = workbook.Worksheets.Add("Hủy Vé");
+
+    worksheet.Cell(1, 1).Value = "BÁO CÁO THỐNG KÊ TỶ LỆ HỦY VÉ THEO NHÀ XE";
+    worksheet.Range(1, 1, 1, 5).Merge();
+    worksheet.Cell(1, 1).Style.Font.Bold = true;
+    worksheet.Cell(1, 1).Style.Font.FontSize = 16;
+    worksheet.Cell(1, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+    worksheet.Cell(3, 1).Value = "Từ ngày:";
+    worksheet.Cell(3, 2).Value = fromDate.ToString("dd/MM/yyyy");
+    worksheet.Cell(4, 1).Value = "Đến ngày:";
+    worksheet.Cell(4, 2).Value = toDate.ToString("dd/MM/yyyy");
+
+    var headerRow = 6;
+    worksheet.Cell(headerRow, 1).Value = "STT";
+    worksheet.Cell(headerRow, 2).Value = "Tên Nhà Xe (Đối Tác Vận Hành)"; // Đã đổi tên cột
+    worksheet.Cell(headerRow, 3).Value = "Tổng Số Vé Đặt";
+    worksheet.Cell(headerRow, 4).Value = "Số Vé Bị Hủy";
+    worksheet.Cell(headerRow, 5).Value = "Tỷ Lệ Hủy Vé";
+
+    var headerRange = worksheet.Range(headerRow, 1, headerRow, 5);
+    headerRange.Style.Font.Bold = true;
+    headerRange.Style.Fill.BackgroundColor = XLColor.LightGray;
+    headerRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+    headerRange.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+
+    var row = headerRow + 1;
+    var index = 1;
+
+    foreach (var item in model)
+    {
+        worksheet.Cell(row, 1).Value = index;
+        worksheet.Cell(row, 2).Value = item.BranchName; // Tên nhà xe lấy từ BusOperator
+        worksheet.Cell(row, 3).Value = item.TotalTrips;
+        worksheet.Cell(row, 4).Value = item.CanceledTrips;
+        worksheet.Cell(row, 5).Value = item.CancellationRate / 100;
+
+        row++;
+        index++;
+    }
+
+    worksheet.Column(5).Style.NumberFormat.Format = "0.00%";
+    worksheet.Columns().AdjustToContents();
+
+    using var stream = new MemoryStream();
+    workbook.SaveAs(stream);
+    var content = stream.ToArray();
+
+    return File(content, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"ThongKeHuyVe_NhaXe_{fromDate:yyyyMMdd}.xlsx");
+}
 }

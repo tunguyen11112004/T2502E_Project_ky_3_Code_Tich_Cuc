@@ -225,6 +225,17 @@
                                         </a>
                                     </li>
                                 }
+                                
+                                @if (canViewRouteRevenue)
+                                {
+                                    <li>
+                                        <a asp-controller="Dashboard"
+                                           asp-action="BranchCancellation"
+                                           class="@subMenuItemClass">
+                                            BranchCancellation
+                                        </a>
+                                    </li>
+                                }
                             </ul>
                         </li>
                     }
