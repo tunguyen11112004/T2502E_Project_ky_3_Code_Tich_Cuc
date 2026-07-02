@@ -1,0 +1,118 @@
+@model IEnumerable<Bus_ticket.ViewModels.BranchCancellationViewModel>
+
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Thống kê tỷ lệ hủy chuyến";
+
+    var fromDateValue = ViewBag.FromDateValue != null ? ((DateTime)ViewBag.FromDateValue).ToString("yyyy-MM-dd") : DateTime.Today.AddDays(-30).ToString("yyyy-MM-dd");
+    var toDateValue = ViewBag.ToDateValue != null ? ((DateTime)ViewBag.ToDateValue).ToString("yyyy-MM-dd") : DateTime.Today.ToString("yyyy-MM-dd");
+}
+
+<div class="p-4 sm:p-6 lg:p-8 space-y-6 max-w-full overflow-x-hidden">
+    <div>
+        <h1 class="text-2xl font-bold tracking-tight text-white">
+            Thống kê tỷ lệ hủy chuyến theo Nhà xe
+        </h1>
+        <p class="text-sm text-gray-400 mt-1">
+            Đánh giá uy tín vận hành dựa trên tỷ lệ chuyến xe bị hủy của từng nhà xe/chi nhánh.
+        </p>
+    </div>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="p-4 text-sm text-red-400 rounded-lg bg-gray-800 border border-red-800">
+            @TempData["ErrorMessage"]
+        </div>
+    }
+
+    <form method="get" asp-controller="Dashboard" asp-action="BranchCancellation" class="bg-[#1e1e24] border border-gray-700/50 rounded-xl p-4 shadow-xl">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Từ ngày</label>
+                <input type="date" name="fromDate" value="@fromDateValue" class="w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white focus:border-amber-400 focus:ring-2 focus:ring-amber-400" />
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Đến ngày</label>
+                <input type="date" name="toDate" value="@toDateValue" class="w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white focus:border-amber-400 focus:ring-2 focus:ring-amber-400" />
+            </div>
+            <div>
+                <button type="submit" class="w-full inline-flex items-center justify-center px-4 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg transition-colors duration-200">
+                    Lọc dữ liệu
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <div class="bg-[#1e1e24] border border-gray-700/50 rounded-xl p-5 shadow-xl">
+        <h2 class="text-lg font-semibold text-white mb-4">Biểu đồ tỷ lệ hủy chuyến</h2>
+        
+        @if (Model == null || !Model.Any())
+        {
+            <div class="py-10 text-center text-gray-500">Không có dữ liệu vận hành trong khoảng thời gian này.</div>
+        }
+        else
+        {
+            <div class="space-y-4">
+                @foreach (var item in Model)
+                {
+                    // Đổi màu sắc cảnh báo: Hủy trên 10% là báo động đỏ, trên 5% màu vàng, dưới 5% an toàn xanh lá
+                    string barColor = "bg-emerald-500";
+                    if (item.CancellationRate >= 10) barColor = "bg-red-500";
+                    else if (item.CancellationRate >= 5) barColor = "bg-amber-400";
+
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-sm font-medium text-gray-200">@item.BranchName</span>
+                            <span class="text-sm font-semibold text-gray-400">
+                                Hủy <span class="text-red-400">@item.CanceledTrips</span> / @item.TotalTrips chuyến (@item.CancellationRate.ToString("N2")%)
+                            </span>
+                        </div>
+                        <div class="w-full h-3 rounded-full bg-gray-800 overflow-hidden">
+                            <div class="h-3 rounded-full @barColor transition-all duration-500" style="width: @(item.CancellationRate > 0 ? item.CancellationRate : 1)%"></div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    <div class="w-full max-w-full overflow-hidden bg-[#1e1e24] border border-gray-700/50 rounded-xl shadow-xl">
+        <div class="p-5 border-b border-gray-700/60">
+            <h2 class="text-lg font-semibold text-white">Bảng xếp hạng chi tiết tỷ lệ hủy</h2>
+        </div>
+        <div class="w-full overflow-x-auto">
+            <table class="w-full min-w-[700px] text-sm text-left text-gray-300">
+                <thead class="text-xs uppercase bg-[#141419] text-gray-400 border-b border-gray-700/60">
+                    <tr>
+                        <th class="w-16 px-6 py-4 font-semibold">STT</th>
+                        <th class="px-6 py-4 font-semibold">Tên Nhà Xe / Chi Nhánh</th>
+                        <th class="w-40 px-6 py-4 font-semibold text-right">Tổng số chuyến</th>
+                        <th class="w-40 px-6 py-4 font-semibold text-right">Số chuyến bị hủy</th>
+                        <th class="w-40 px-6 py-4 font-semibold text-right">Tỷ lệ hủy chuyến</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-700/50">
+                    @if (Model == null || !Model.Any())
+                    {
+                        <tr><td colspan="5" class="px-6 py-10 text-center text-gray-500">Không có dữ liệu hiển thị.</td></tr>
+                    }
+                    else
+                    {
+                        var index = 1;
+                        foreach (var item in Model)
+                        {
+                            <tr class="hover:bg-gray-800/30 transition-colors duration-150">
+                                <td class="px-6 py-4 text-gray-400">@index</td>
+                                <td class="px-6 py-4 font-semibold text-amber-400">@item.BranchName</td>
+                                <td class="px-6 py-4 text-right">@item.TotalTrips</td>
+                                <td class="px-6 py-4 text-right text-red-400 font-medium">@item.CanceledTrips</td>
+                                <td class="px-6 py-4 text-right font-bold text-white">@item.CancellationRate.ToString("N2")%</td>
+                            </tr>
+                            index++;
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
