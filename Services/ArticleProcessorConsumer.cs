@@ -101,9 +101,12 @@ namespace Bus_ticket.Services
                 
                 news.Content += $"<p class='text-right text-xs italic mt-6 text-gray-400'>Theo {news.SourceSite} / Nguồn gốc: <a class='text-blue-500 hover:underline' href='{url}' target='_blank' rel='nofollow'>Xem bài viết gốc</a></p>";
                 
+                // 🎯 ĐÃ THÊM DÒNG NÀY: Gán trạng thái 2 (Chờ duyệt) cho bài viết mới cào về
+                news.Status = 2;
+                
                 // Lưu vào Mongo
                 await newsCollection.InsertOneAsync(news);
-                Console.WriteLine($"[CONSUMER SUCCESS] Đã cào và lưu thành công: {news.Title}");
+                Console.WriteLine($"[CONSUMER SUCCESS] Đã cào và lưu thành công (Trạng thái: Chờ duyệt): {news.Title}");
             }
         }
     }

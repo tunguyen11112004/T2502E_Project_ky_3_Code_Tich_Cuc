@@ -3,12 +3,11 @@ using Bus_ticket.Models;
 using Microsoft.AspNetCore.Authorization;
 using Bus_ticket.Services;
 using Microsoft.AspNetCore.Mvc;
-using Bus_ticket.Models;
 using MongoDB.Driver;
 using System.Net.Http;
-using MongoDB.Driver;
 using System;
 using System.Linq;
+using System.Threading.Tasks; // 🎯 Đã thêm thư viện này để dùng async Task
 
 namespace Bus_ticket.Controllers
 {
@@ -54,6 +53,55 @@ namespace Bus_ticket.Controllers
             return View(newsList);
         }
         
+        // ====================================================================
+        // 🎯 ĐÃ THÊM: HÀM DUYỆT TIN TỨC (STATUS = 1)
+        // ====================================================================
+        [HttpPost]
+        public async Task<IActionResult> ApproveNews(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return BadRequest();
+
+            try
+            {
+                var filter = Builders<News>.Filter.Eq(n => n.Id, id);
+                var update = Builders<News>.Update.Set(n => n.Status, 1);
+                
+                await _dbContext.News.UpdateOneAsync(filter, update);
+                
+                TempData["SuccessMessage"] = "Đã duyệt bài viết! Bài này sẽ lập tức hiển thị trên trang chủ.";
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = "Lỗi khi duyệt bài: " + ex.Message;
+            }
+
+            return RedirectToAction("ManageNews");
+        }
+
+        // ====================================================================
+        // 🎯 ĐÃ THÊM: HÀM XÓA BÀI VIẾT RÁC
+        // ====================================================================
+        [HttpPost]
+        public async Task<IActionResult> DeleteNews(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return BadRequest();
+
+            try
+            {
+                var filter = Builders<News>.Filter.Eq(n => n.Id, id);
+                await _dbContext.News.DeleteOneAsync(filter);
+                
+                TempData["SuccessMessage"] = "Đã xóa bản tin rác thành công!";
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = "Lỗi khi xóa: " + ex.Message;
+            }
+
+            return RedirectToAction("ManageNews");
+        }
+        // ====================================================================
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(string licensePlate, string vehicleClass, string route, decimal distanceKm)
