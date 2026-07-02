@@ -23,12 +23,14 @@ namespace Bus_ticket.Controllers
         private readonly ApplicationDbContext _dbContext;
         private readonly IConfiguration _config;
         private readonly IMomoService _momoService;
+        private readonly IRabbitMQService _rabbitMqService;
 
-        public BookingController(ApplicationDbContext dbContext, IConfiguration config, IMomoService momoService)
+        public BookingController(ApplicationDbContext dbContext, IConfiguration config, IMomoService momoService, IRabbitMQService rabbitMqService)
         {
             _dbContext = dbContext;
             _config = config;
             _momoService = momoService;
+            _rabbitMqService = rabbitMqService;
         }
 
         // GET: /Booking
@@ -621,6 +623,8 @@ namespace Bus_ticket.Controllers
 
                 await MarkHeldSeatsAsBookedAsync(tripId, seatNumbers, bookingCode);
 
+                await _rabbitMqService.PublishOrderAsync(newBooking.BookingCode);
+                
                 TempData["NewBookingCode"] = newBooking.BookingCode;
                 return Json(new
                 {
@@ -712,6 +716,8 @@ namespace Bus_ticket.Controllers
                     // Chuyển trạng thái ghế từ "Đang giữ" sang "Đã đặt chính thức"
                     await MarkHeldSeatsAsBookedAsync(pending.tripId, pending.seatNumbers, orderId);
 
+                    await _rabbitMqService.PublishOrderAsync(newBooking.BookingCode);
+                    
                     // Xóa session tạm sau khi đã lưu DB thành công
                     HttpContext.Session.Remove("PendingBooking");
 
@@ -842,6 +848,8 @@ namespace Bus_ticket.Controllers
                 await ResetUnpaidCountAsync(data.passengerPhone);
 
                 await MarkHeldSeatsAsBookedAsync(data.tripId, seatNumbers, holdCode);
+                
+                await _rabbitMqService.PublishOrderAsync(newBooking.BookingCode);
 
                 HttpContext.Session.Remove("PendingBooking");
 
@@ -905,13 +913,12 @@ namespace Bus_ticket.Controllers
             var bus = await _dbContext.Buses
                 .Find(b => b.Id == trip.BusId)
                 .FirstOrDefaultAsync();
-
             return Json(new
             {
                 success = true,
                 bookingCode = booking.BookingCode,
                 busInfo = bus != null
-                    ? $"{bus.BusCode} - {bus.LicensePlate}"
+                    ? $"{bus.BusCode} - Biển: {bus.LicensePlate}"
                     : "Xe không xác định",
                 departureTime = trip.DepartureTime.ToString("HH:mm dd/MM/yyyy"),
                 passengerName = booking.Passengers.FirstOrDefault()?.Name,
