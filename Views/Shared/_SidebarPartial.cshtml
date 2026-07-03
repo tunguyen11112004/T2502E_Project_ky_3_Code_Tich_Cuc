@@ -129,7 +129,21 @@
                                   "RouteRevenue",
                                   "/Dashboard/RouteRevenue"
                               );
-    var showDashboardMenu = isAdmin || canViewRouteRevenue;
+    
+    var canViewVehicleRevenue = isAdmin
+                                || SidebarPermissionService.HasPermission(
+                                    permissionNames,
+                                    "Dashboard",
+                                    "Report",
+                                    "Revenue",
+                                    "Vehicle",
+                                    "Bus",
+                                    "BusRevenue",
+                                    "VehicleRevenue",
+                                    "/Dashboard/VehicleRevenueStatistics"
+                                );
+    
+    var showDashboardMenu = isAdmin || canViewRouteRevenue || canViewVehicleRevenue;
 
     var showCrudMenu = canViewBooking
                        || canViewBranches
@@ -211,6 +225,16 @@
                                            asp-action="RouteRevenue"
                                            class="@subMenuItemClass">
                                             Route Revenue
+                                        </a>
+                                    </li>
+                                }
+                                @if (canViewVehicleRevenue)
+                                {
+                                    <li>
+                                        <a asp-controller="Dashboard"
+                                           asp-action="VehicleRevenueStatistics"
+                                           class="@subMenuItemClass">
+                                            Vehicle Revenue
                                         </a>
                                     </li>
                                 }

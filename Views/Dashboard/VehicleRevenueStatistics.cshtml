@@ -1,0 +1,337 @@
+@model Bus_ticket.ViewModels.VehicleRevenueStatisticsViewModel
+@using System.Text.Json
+
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Vehicle Revenue Statistics";
+
+    var fromDateValue = Model.FromDate.ToString("yyyy-MM-dd");
+    var toDateValue = Model.ToDate.ToString("yyyy-MM-dd");
+
+    var typeChartCategories = JsonSerializer.Serialize(
+        Model.BusTypeRevenueItems.Select(x => string.IsNullOrWhiteSpace(x.BusClassName) ? x.BusType : x.BusClassName)
+    );
+
+    var typeChartSeries = JsonSerializer.Serialize(
+        Model.BusTypeRevenueItems.Select(x => x.TotalRevenue)
+    );
+}
+
+<div class="p-4 sm:p-6 lg:p-8 space-y-6 max-w-full overflow-x-hidden">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold tracking-tight text-white">
+                Vehicle Revenue Statistics
+            </h1>
+            <p class="text-sm text-gray-400 mt-1">
+                Track revenue by each bus and by bus type such as seat bus, sleeper, and limousine.
+            </p>
+        </div>
+
+        <a asp-controller="Dashboard"
+           asp-action="ExportVehicleRevenueStatistics"
+           asp-route-fromDate="@fromDateValue"
+           asp-route-toDate="@toDateValue"
+           class="inline-flex items-center justify-center px-4 py-2.5 text-sm font-semibold text-gray-900 bg-emerald-400 hover:bg-emerald-500 rounded-lg transition-colors duration-200 shadow-sm">
+            Export Excel
+        </a>
+    </div>
+
+    <form method="get"
+          asp-controller="Dashboard"
+          asp-action="VehicleRevenueStatistics"
+          class="bg-[#1e1e24] border border-gray-700/50 rounded-xl p-4 shadow-xl">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">
+                    From Date
+                </label>
+                <input type="date"
+                       name="fromDate"
+                       value="@fromDateValue"
+                       class="w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white focus:border-amber-400 focus:ring-2 focus:ring-amber-400" />
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">
+                    To Date
+                </label>
+                <input type="date"
+                       name="toDate"
+                       value="@toDateValue"
+                       class="w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white focus:border-amber-400 focus:ring-2 focus:ring-amber-400" />
+            </div>
+
+            <div>
+                <button type="submit"
+                        class="w-full inline-flex items-center justify-center px-4 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg transition-colors duration-200">
+                    Filter Data
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div class="bg-[#1e1e24] border border-gray-700/50 rounded-xl p-5 shadow-xl">
+            <p class="text-sm text-gray-400">Total Revenue</p>
+            <p class="text-2xl font-bold text-emerald-400 mt-2">
+                @Model.GrandTotalRevenue.ToString("N0") đ
+            </p>
+            <p class="text-xs text-gray-500 mt-2">
+                Completed and paid bookings only
+            </p>
+        </div>
+
+        <div class="bg-[#1e1e24] border border-gray-700/50 rounded-xl p-5 shadow-xl">
+            <p class="text-sm text-gray-400">Successful Bookings</p>
+            <p class="text-2xl font-bold text-white mt-2">
+                @Model.GrandTotalBookings.ToString("N0")
+            </p>
+            <p class="text-xs text-gray-500 mt-2">
+                Booking status = Completed
+            </p>
+        </div>
+
+        <div class="bg-[#1e1e24] border border-gray-700/50 rounded-xl p-5 shadow-xl">
+            <p class="text-sm text-gray-400">Tickets Sold</p>
+            <p class="text-2xl font-bold text-amber-400 mt-2">
+                @Model.GrandTotalTickets.ToString("N0")
+            </p>
+            <p class="text-xs text-gray-500 mt-2">
+                Counted from passengers
+            </p>
+        </div>
+
+        <div class="bg-[#1e1e24] border border-gray-700/50 rounded-xl p-5 shadow-xl">
+            <p class="text-sm text-gray-400">Buses With Revenue</p>
+            <p class="text-2xl font-bold text-blue-400 mt-2">
+                @Model.TotalBusesWithRevenue.ToString("N0")
+            </p>
+            <p class="text-xs text-gray-500 mt-2">
+                @Model.TotalBusTypesWithRevenue.ToString("N0") bus types
+            </p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div class="xl:col-span-1 bg-[#1e1e24] border border-gray-700/50 rounded-xl p-5 shadow-xl">
+            <h2 class="text-lg font-semibold text-white">
+                Revenue By Bus Type
+            </h2>
+            <p class="text-sm text-gray-400 mt-1">
+                Revenue comparison by bus type.
+            </p>
+
+            @if (Model.GrandTotalRevenue <= 0)
+            {
+                <div class="py-16 text-center text-gray-500">
+                    No vehicle revenue data in this date range.
+                </div>
+            }
+            else
+            {
+                <div id="bus-type-revenue-chart" class="mt-6"></div>
+            }
+        </div>
+
+        <div class="xl:col-span-2 w-full max-w-full overflow-hidden bg-[#1e1e24] border border-gray-700/50 rounded-xl shadow-xl">
+            <div class="p-5 border-b border-gray-700/60">
+                <h2 class="text-lg font-semibold text-white">
+                    Revenue Summary By Bus Type
+                </h2>
+                <p class="text-sm text-gray-400 mt-1">
+                    Data is grouped from MongoDB bookings, trips, buses, and busclasses.
+                </p>
+            </div>
+
+            <div class="w-full overflow-x-auto">
+                <table class="w-full min-w-[860px] table-fixed text-sm text-left text-gray-300">
+                    <thead class="text-xs uppercase bg-[#141419] text-gray-400 border-b border-gray-700/60">
+                        <tr>
+                            <th class="w-16 px-4 py-4">No.</th>
+                            <th class="px-4 py-4">Bus Type</th>
+                            <th class="px-4 py-4">Bus Class</th>
+                            <th class="w-36 px-4 py-4 text-right">Bookings</th>
+                            <th class="w-36 px-4 py-4 text-right">Tickets</th>
+                            <th class="w-44 px-4 py-4 text-right">Revenue</th>
+                            <th class="w-36 px-4 py-4 text-right">Percentage</th>
+                        </tr>
+                    </thead>
+
+                    <tbody class="divide-y divide-gray-700/50">
+                        @if (Model.BusTypeRevenueItems.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="7" class="px-4 py-8 text-center text-gray-500">
+                                    No data available in this date range.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @for (var i = 0; i < Model.BusTypeRevenueItems.Count; i++)
+                            {
+                                var item = Model.BusTypeRevenueItems[i];
+
+                                <tr class="hover:bg-gray-800/30 transition-colors duration-150">
+                                    <td class="px-4 py-4 text-gray-400">@(i + 1)</td>
+                                    <td class="px-4 py-4 font-semibold text-white">@item.BusType</td>
+                                    <td class="px-4 py-4">@item.BusClassName</td>
+                                    <td class="px-4 py-4 text-right">@item.TotalBookings.ToString("N0")</td>
+                                    <td class="px-4 py-4 text-right">@item.TotalTickets.ToString("N0")</td>
+                                    <td class="px-4 py-4 text-right font-semibold text-emerald-400">
+                                        @item.TotalRevenue.ToString("N0") đ
+                                    </td>
+                                    <td class="px-4 py-4 text-right">@item.Percentage.ToString("N2")%</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+
+                    <tfoot class="bg-[#141419] border-t border-gray-700/60">
+                        <tr>
+                            <td colspan="3" class="px-4 py-4 font-bold text-white">Total</td>
+                            <td class="px-4 py-4 text-right font-bold text-white">@Model.GrandTotalBookings.ToString("N0")</td>
+                            <td class="px-4 py-4 text-right font-bold text-white">@Model.GrandTotalTickets.ToString("N0")</td>
+                            <td class="px-4 py-4 text-right font-bold text-amber-400">@Model.GrandTotalRevenue.ToString("N0") đ</td>
+                            <td class="px-4 py-4 text-right font-bold text-white">
+                                @(Model.GrandTotalRevenue > 0 ? "100.00%" : "0.00%")
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="w-full max-w-full overflow-hidden bg-[#1e1e24] border border-gray-700/50 rounded-xl shadow-xl">
+        <div class="p-5 border-b border-gray-700/60">
+            <h2 class="text-lg font-semibold text-white">
+                Revenue Ranking By Bus
+            </h2>
+            <p class="text-sm text-gray-400 mt-1">
+                Ranking each bus by completed paid revenue.
+            </p>
+        </div>
+
+        <div class="w-full overflow-x-auto">
+            <table class="w-full min-w-[980px] table-fixed text-sm text-left text-gray-300">
+                <thead class="text-xs uppercase bg-[#141419] text-gray-400 border-b border-gray-700/60">
+                    <tr>
+                        <th class="w-16 px-4 py-4">No.</th>
+                        <th class="px-4 py-4">Bus Code</th>
+                        <th class="px-4 py-4">License Plate</th>
+                        <th class="px-4 py-4">Bus Type</th>
+                        <th class="px-4 py-4">Bus Class</th>
+                        <th class="w-36 px-4 py-4 text-right">Bookings</th>
+                        <th class="w-36 px-4 py-4 text-right">Tickets</th>
+                        <th class="w-44 px-4 py-4 text-right">Revenue</th>
+                        <th class="w-36 px-4 py-4 text-right">Percentage</th>
+                    </tr>
+                </thead>
+
+                <tbody class="divide-y divide-gray-700/50">
+                    @if (Model.BusRevenueItems.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="9" class="px-4 py-8 text-center text-gray-500">
+                                No bus revenue data in this date range.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @for (var i = 0; i < Model.BusRevenueItems.Count; i++)
+                        {
+                            var item = Model.BusRevenueItems[i];
+
+                            <tr class="hover:bg-gray-800/30 transition-colors duration-150">
+                                <td class="px-4 py-4 text-gray-400">@(i + 1)</td>
+                                <td class="px-4 py-4 font-semibold text-white">@item.BusCode</td>
+                                <td class="px-4 py-4">@item.LicensePlate</td>
+                                <td class="px-4 py-4">@item.BusType</td>
+                                <td class="px-4 py-4">@item.BusClassName</td>
+                                <td class="px-4 py-4 text-right">@item.TotalBookings.ToString("N0")</td>
+                                <td class="px-4 py-4 text-right">@item.TotalTickets.ToString("N0")</td>
+                                <td class="px-4 py-4 text-right font-semibold text-emerald-400">
+                                    @item.TotalRevenue.ToString("N0") đ
+                                </td>
+                                <td class="px-4 py-4 text-right">@item.Percentage.ToString("N2")%</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+
+                <tfoot class="bg-[#141419] border-t border-gray-700/60">
+                    <tr>
+                        <td colspan="5" class="px-4 py-4 font-bold text-white">Total</td>
+                        <td class="px-4 py-4 text-right font-bold text-white">@Model.GrandTotalBookings.ToString("N0")</td>
+                        <td class="px-4 py-4 text-right font-bold text-white">@Model.GrandTotalTickets.ToString("N0")</td>
+                        <td class="px-4 py-4 text-right font-bold text-amber-400">@Model.GrandTotalRevenue.ToString("N0") đ</td>
+                        <td class="px-4 py-4 text-right font-bold text-white">
+                            @(Model.GrandTotalRevenue > 0 ? "100.00%" : "0.00%")
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const chartElement = document.getElementById("bus-type-revenue-chart");
+
+            if (!chartElement) {
+                return;
+            }
+
+            const options = {
+                chart: {
+                    type: "bar",
+                    height: 360,
+                    background: "transparent",
+                    foreColor: "#d1d5db",
+                    toolbar: {
+                        show: false
+                    }
+                },
+                series: [
+                    {
+                        name: "Revenue",
+                        data: @Html.Raw(typeChartSeries)
+                    }
+                ],
+                xaxis: {
+                    categories: @Html.Raw(typeChartCategories),
+                    labels: {
+                        style: {
+                            colors: "#d1d5db"
+                        }
+                    }
+                },
+                yaxis: {
+                    labels: {
+                        formatter: function (value) {
+                            return value.toLocaleString() + " đ";
+                        }
+                    }
+                },
+                dataLabels: {
+                    enabled: false
+                },
+                tooltip: {
+                    y: {
+                        formatter: function (value) {
+                            return value.toLocaleString() + " đ";
+                        }
+                    }
+                }
+            };
+
+            const chart = new ApexCharts(chartElement, options);
+            chart.render();
+        });
+    </script>
+}
