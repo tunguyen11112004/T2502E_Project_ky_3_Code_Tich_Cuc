@@ -16,6 +16,28 @@ public class RealtimeSeat
 
     [BsonElement("heldByCustomerId")] public string HeldByCustomerId { get; set; }
 }
+[BsonIgnoreExtraElements]
+public class PriceConfig
+{
+    [BsonId]
+    [BsonRepresentation(BsonType.ObjectId)]
+    public string Id { get; set; }
+
+    [BsonElement("busType")]
+    public string BusType { get; set; } // Lớp xe: Ghế ngồi, Giường nằm, Luxury
+
+    [BsonElement("departurePoint")]
+    public string DeparturePoint { get; set; } // Điểm đi (Ví dụ: Hà Nội)
+
+    [BsonElement("destinationPoint")]
+    public string DestinationPoint { get; set; } // Điểm đến (Ví dụ: Hải Phòng)
+
+    [BsonElement("basePrice")]
+    public decimal BasePrice { get; set; } // Giá vé cấu hình gốc
+
+    [BsonElement("updatedAt")]
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+}
 
 [BsonIgnoreExtraElements]
 public class Trip
@@ -34,6 +56,10 @@ public class Trip
     [BsonElement("routeId")]
     [BsonRepresentation(BsonType.ObjectId)]
     public string RouteId { get; set; }
+    
+    [BsonElement("branchId")]
+    [BsonRepresentation(BsonType.ObjectId)]
+    public string? BranchId { get; set; }
 
     [BsonElement("baseFare")] public decimal BaseFare { get; set; }
 

@@ -27,6 +27,11 @@ public class Bus
     [BsonElement("branchId")]
     [BsonRepresentation(BsonType.ObjectId)]
     public string? BranchId { get; set; }
+    
+    // Nhà xe/đối tác sở hữu xe này
+    [BsonElement("operatorId")]
+    [BsonRepresentation(BsonType.ObjectId)]
+    public string? OperatorId { get; set; }
 
     [BsonElement("busClassId")]
     [BsonRepresentation(BsonType.ObjectId)]
@@ -53,4 +58,5 @@ public class Bus
 
     [BsonElement("updatedBy")]
     public string UpdatedBy { get; set; }
+    
 }

@@ -4,9 +4,10 @@ using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 using Bus_ticket.Data;
 using Bus_ticket.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Bus_ticket.Controllers
-{
+{   [Authorize(Roles = "Admin,Employee")]
     public class PermissionsController : Controller
     {
         private readonly ApplicationDbContext _context;
