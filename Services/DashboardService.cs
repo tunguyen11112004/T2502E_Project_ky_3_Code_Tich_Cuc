@@ -194,77 +194,100 @@ public class DashboardService
         };
     }
 
-    public async Task<List<BranchCancellationViewModel>> GetBranchCancellationReportAsync(DateTime fromDate, DateTime toDate)
+    public async Task<List<BranchCancellationViewModel>> GetBranchCancellationReportAsync(DateTime fromDate,
+        DateTime toDate)
+    {
+        var from = fromDate.Date.ToUniversalTime();
+        var to = toDate.Date.AddDays(1).AddTicks(-1).ToUniversalTime();
+
+        // 1. Lấy toàn bộ dữ liệu cần thiết
+        var operators = await _dbContext.BusOperators.Find(_ => true).ToListAsync();
+        var allBuses = await _dbContext.Buses.Find(_ => true).ToListAsync();
+
+        // Lấy các chuyến đi trong khoảng thời gian, lọc luôn trạng thái (ví dụ: 'Cancelled' hoặc 'Canceled')
+        var allTrips = await _dbContext.Trips
+            .Find(t => t.DepartureTime >= from && t.DepartureTime <= to)
+            .ToListAsync();
+
+        // 2. Nhóm dữ liệu theo Nhà xe
+        return operators.Select(op =>
+            {
+                // Lấy danh sách ID xe thuộc nhà xe này
+                var opBusIds = allBuses.Where(b => b.OperatorId == op.Id).Select(b => b.Id).ToList();
+
+                // Lọc các chuyến đi thuộc nhà xe này
+                var opTrips = allTrips.Where(t => opBusIds.Contains(t.BusId)).ToList();
+
+                return new BranchCancellationViewModel
+                {
+                    BranchId = op.Id,
+                    BranchName = op.OperatorName,
+                    TotalTrips = opTrips.Count,
+                    // Đếm các chuyến có status là "Cancelled" (Hãy kiểm tra chính xác chữ trong DB của bạn)
+                    CanceledTrips = opTrips.Count(t => t.Status == "Cancelled")
+                };
+            })
+            .Where(r => r.TotalTrips > 0)
+            .ToList();
+    }
+
+
+    public async Task<List<OperatorRevenueViewModel>> GetOperatorRevenueReportAsync(DateTime fromDate, DateTime toDate, string? currentOperatorId = null)
 {
-    // Cấu hình múi giờ UTC để truy vấn chuẩn xác trên MongoDB
-    var fromLocal = DateTime.SpecifyKind(fromDate.Date, DateTimeKind.Local);
-    var toLocal = DateTime.SpecifyKind(toDate.Date.AddDays(1).AddTicks(-1), DateTimeKind.Local);
+    var fromUtc = fromDate.Date.ToUniversalTime();
+    var toUtc = toDate.Date.AddDays(1).AddTicks(-1).ToUniversalTime();
 
-    var fromUtc = fromLocal.ToUniversalTime();
-    var toUtc = toLocal.ToUniversalTime();
+    // 1. Lấy danh sách Nhà xe cần tính toán
+    var operatorQuery = _dbContext.BusOperators.Find(_ => true);
+    if (!string.IsNullOrEmpty(currentOperatorId))
+    {
+        operatorQuery = _dbContext.BusOperators.Find(o => o.Id == currentOperatorId);
+    }
+    var operators = await operatorQuery.ToListAsync();
+    var operatorIds = operators.Select(o => o.Id).ToList();
 
-    // 1. Lấy dữ liệu từ các collection trong ApplicationDbContext
+    // 2. Lấy danh sách Xe thuộc các Nhà xe này (Giả định trường liên kết trong class Bus của bạn tên là OperatorId)
+    // Bạn hãy check lại nếu class Bus đặt tên trường này khác (ví dụ: BusOperatorId) thì sửa lại nhé!
+    var buses = await _dbContext.Buses
+        .Find(b => operatorIds.Contains(b.OperatorId))
+        .ToListAsync();
+    var busIds = buses.Select(b => b.Id).ToList();
+
+    // 3. Lấy danh sách đăng ký chi nhánh ứng với các xe trên
+    var busBranches = await _dbContext.BusBranches
+        .Find(bb => busIds.Contains(bb.BusId))
+        .ToListAsync();
+    var validBranchIds = busBranches.Select(bb => bb.BranchId).Distinct().ToList();
+
+    // 4. Tải danh sách Booking hợp lệ dựa trên chi nhánh và thời gian
     var bookings = await _dbContext.Bookings
-        .Find(b => b.BookingTime >= fromUtc && b.BookingTime <= toUtc)
+        .Find(b => b.BookingTime >= fromUtc && 
+                   b.BookingTime <= toUtc && 
+                   b.PaymentStatus == "Paid" && 
+                   validBranchIds.Contains(b.BranchId))
         .ToListAsync();
 
-    var busBranches = await _dbContext.BusBranches.Find(_ => true).ToListAsync();
-    var operators = await _dbContext.BusOperators.Find(_ => true).ToListAsync();
-
-    // 2. Gom nhóm thống kê theo từng Nhà Xe (BusOperator)
-    var report = operators.Select(op =>
-    {
-        // Lấy tất cả các BranchId (Chi nhánh) thuộc quyền quản lý của Nhà xe này
-        var assignedBranchIds = busBranches
-            .Where(bb => bb.BranchId == op.Id || bb.BranchId == op.Id) // Đảm bảo map đúng Id nhà xe trong bảng mapping
-            .Select(bb => bb.BranchId) 
-            .ToList();
-            
-        // Nếu bảng BusBranch lưu mapping ngược lại, ta lấy danh sách BranchId liên kết
-        var branchIdsForOperator = busBranches
-            .Where(bb => bb.BranchId == op.Id) 
-            .Select(bb => bb.BranchId) // Thay đổi tùy thuộc vào cấu trúc dữ liệu nếu BusBranch map busId/branchId
-            .ToList();
-
-        // Cách chuẩn nhất từ hình ảnh Booking: lấy các booking thuộc các chi nhánh của nhà xe này
-        // Để tránh rắc rối mapping từ Bus, ta lấy danh sách booking dựa trên mối quan hệ hệ thống:
-        var operatorBookings = bookings.Where(b => busBranches.Any(bb => bb.BranchId == b.BranchId && bb.Status == "Active")).ToList();
-        
-        // Thống kê chính xác dựa trên cấu trúc collection thực tế:
-        // Tìm các branchId thuộc nhà xe
-        var myBranches = busBranches.Where(bb => bb.BranchId == op.Id).Select(bb => bb.BranchId).ToList();
-        
-        // Lọc vé
-        var finalBookings = bookings.Where(b => b.BranchId != null).ToList(); 
-        // Để linh hoạt tối đa, chúng ta group booking theo nhà xe thông qua việc so khớp gián tiếp hoặc trực tiếp
-
-        // LUỒNG CHUẨN: Lọc các booking có BranchId nằm trong danh sách chi nhánh của Nhà xe này
-        var operatorFinalBookings = bookings.Where(b => busBranches.Any(bb => bb.BranchId == b.BranchId)).ToList();
-        
-        // Do dữ liệu test có thể linh hoạt, ta đếm cụ thể:
-        int totalBookings = bookings.Count(b => busBranches.Any(bb => bb.BranchId == b.BranchId && bb.Id == op.Id)); 
-        
-        // Đoạn code LINQ map chuẩn xác theo DB của bạn:
-        var currentOperatorBranchIds = busBranches.Where(bb => bb.BranchId == op.Id).Select(bb => bb.BranchId).ToList();
-        
-        // Nếu BusBranch lưu branchId chính là Id của bảng Branches, ta lấy:
-        var totalOpsBookings = bookings.Where(b => b.BranchId == op.Id).ToList(); // Dự phòng nếu branchId lưu thẳng mã nhà xe
-
-        int total = bookings.Count; // Tổng số vé của nhà xe
-        int canceled = bookings.Count(b => b.BookingStatus == "Canceled");
-
-        return new BranchCancellationViewModel
+    // 5. Tính tổng doanh thu nhóm theo từng Nhà xe
+    return operators.Select(op =>
         {
-            BranchId = op.Id,
-            BranchName = op.OperatorName, // Hiển thị chuẩn Tên Nhà Xe (ví dụ: SRC Travel, Phương Trang...)
-            TotalTrips = bookings.Count, // Tổng số đơn đặt vé
-            CanceledTrips = bookings.Count(b => b.BookingStatus != null && b.BookingStatus.ToLower().Contains("cancel"))
-        };
-    })
-    .Where(b => b.TotalTrips > 0)
-    .OrderByDescending(b => b.CancellationRate)
-    .ToList();
+            // Tìm các xe thuộc về nhà xe này
+            var opBusIds = buses.Where(b => b.OperatorId == op.Id).Select(b => b.Id).ToList();
 
-    return report;
+            // Tìm các chi nhánh liên kết với các xe đó
+            var opBranchIds = busBranches.Where(bb => opBusIds.Contains(bb.BusId)).Select(bb => bb.BranchId).ToList();
+    
+            // Lọc ra các booking thuộc về các chi nhánh của nhà xe này
+            var opBookings = bookings.Where(b => opBranchIds.Contains(b.BranchId)).ToList();
+
+            return new OperatorRevenueViewModel
+            {
+                OperatorId = op.Id,
+                OperatorName = op.OperatorName,
+                TotalRevenue = opBookings.Sum(b => b.FinalAmount),
+                TotalBookings = opBookings.Count
+            };
+        })
+        .OrderByDescending(r => r.TotalRevenue)
+        .ToList();
 }
 }

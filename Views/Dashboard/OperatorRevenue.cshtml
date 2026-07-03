@@ -1,0 +1,62 @@
+@model IEnumerable<Bus_ticket.ViewModels.OperatorRevenueViewModel>
+
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Doanh thu nhà xe";
+}
+
+<div class="p-6 space-y-6">
+    <div class="flex justify-between items-center">
+        <h1 class="text-2xl font-bold text-white">Xếp hạng Doanh thu Nhà xe</h1>
+        <a asp-action="ExportOperatorRevenue" 
+           class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">
+            Xuất Excel
+        </a>
+    </div>
+
+    <div class="bg-[#1e1e24] p-6 rounded-xl border border-gray-700">
+        <canvas id="revenueChart" height="80"></canvas>
+    </div>
+
+    <div class="bg-[#1e1e24] rounded-xl border border-gray-700 overflow-hidden">
+        <table class="w-full text-left text-sm text-gray-300">
+            <thead class="bg-[#2a2a35] text-gray-400 uppercase">
+                <tr>
+                    <th class="px-6 py-4">Hạng</th>
+                    <th class="px-6 py-4">Nhà xe</th>
+                    <th class="px-6 py-4 text-right">Tổng đơn</th>
+                    <th class="px-6 py-4 text-right">Doanh thu</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{ int rank = 1; }
+                @foreach (var item in Model) {
+                    <tr class="border-b border-gray-700 hover:bg-gray-800">
+                        <td class="px-6 py-4 font-bold text-amber-400">#@rank</td>
+                        <td class="px-6 py-4">@item.OperatorName</td>
+                        <td class="px-6 py-4 text-right">@item.TotalBookings</td>
+                        <td class="px-6 py-4 text-right text-emerald-400 font-bold">@item.TotalRevenue.ToString("N0") VNĐ</td>
+                    </tr>
+                    rank++;
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const ctx = document.getElementById('revenueChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: @Html.Raw(Json.Serialize(Model.Select(m => m.OperatorName))),
+            datasets: [{
+                label: 'Doanh thu (VNĐ)',
+                data: @Html.Raw(Json.Serialize(Model.Select(m => m.TotalRevenue))),
+                backgroundColor: '#34d399',
+            }]
+        },
+        options: { responsive: true }
+    });
+</script>

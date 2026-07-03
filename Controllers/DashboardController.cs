@@ -278,72 +278,134 @@ public class DashboardController : Controller
 
         ViewBag.FromDateValue = from;
         ViewBag.ToDateValue = to;
+        ViewBag.HighestCancellation = model.OrderByDescending(m => m.CancellationRate).FirstOrDefault();
+        ViewBag.LowestCancellation = model.OrderBy(m => m.CancellationRate).FirstOrDefault();
 
         return View(model);
     }
 
+
     [HttpGet]
-[Authorize(Roles = "Admin,Employee")]
-public async Task<IActionResult> ExportBranchCancellation(DateTime fromDate, DateTime toDate)
-{
-    if (fromDate > toDate)
+    [Authorize(Roles = "Admin,Employee")]
+    public async Task<IActionResult> ExportBranchCancellation(DateTime fromDate, DateTime toDate)
     {
-        var temp = fromDate;
-        fromDate = toDate;
-        toDate = temp;
+        if (fromDate > toDate)
+        {
+            var temp = fromDate;
+            fromDate = toDate;
+            toDate = temp;
+        }
+
+        var model = await _dashboardService.GetBranchCancellationReportAsync(fromDate, toDate);
+
+        using var workbook = new XLWorkbook();
+        var worksheet = workbook.Worksheets.Add("Hủy Vé");
+
+        worksheet.Cell(1, 1).Value = "BÁO CÁO THỐNG KÊ TỶ LỆ HỦY VÉ THEO NHÀ XE";
+        worksheet.Range(1, 1, 1, 5).Merge();
+        worksheet.Cell(1, 1).Style.Font.Bold = true;
+        worksheet.Cell(1, 1).Style.Font.FontSize = 16;
+        worksheet.Cell(1, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+        worksheet.Cell(3, 1).Value = "Từ ngày:";
+        worksheet.Cell(3, 2).Value = fromDate.ToString("dd/MM/yyyy");
+        worksheet.Cell(4, 1).Value = "Đến ngày:";
+        worksheet.Cell(4, 2).Value = toDate.ToString("dd/MM/yyyy");
+
+        var headerRow = 6;
+        worksheet.Cell(headerRow, 1).Value = "STT";
+        worksheet.Cell(headerRow, 2).Value = "Tên Nhà Xe (Đối Tác Vận Hành)"; // Đã đổi tên cột
+        worksheet.Cell(headerRow, 3).Value = "Tổng Số Vé Đặt";
+        worksheet.Cell(headerRow, 4).Value = "Số Vé Bị Hủy";
+        worksheet.Cell(headerRow, 5).Value = "Tỷ Lệ Hủy Vé";
+
+        var headerRange = worksheet.Range(headerRow, 1, headerRow, 5);
+        headerRange.Style.Font.Bold = true;
+        headerRange.Style.Fill.BackgroundColor = XLColor.LightGray;
+        headerRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+        headerRange.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+
+        var row = headerRow + 1;
+        var index = 1;
+
+        foreach (var item in model)
+        {
+            worksheet.Cell(row, 1).Value = index;
+            worksheet.Cell(row, 2).Value = item.BranchName; // Tên nhà xe lấy từ BusOperator
+            worksheet.Cell(row, 3).Value = item.TotalTrips;
+            worksheet.Cell(row, 4).Value = item.CanceledTrips;
+            worksheet.Cell(row, 5).Value = item.CancellationRate / 100;
+
+            row++;
+            index++;
+        }
+
+        worksheet.Column(5).Style.NumberFormat.Format = "0.00%";
+        worksheet.Columns().AdjustToContents();
+
+        using var stream = new MemoryStream();
+        workbook.SaveAs(stream);
+        var content = stream.ToArray();
+        var debugData = model.Select(m => $"{m.BranchName}: {m.TotalTrips} - {m.CanceledTrips}");
+        return File(content, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            $"ThongKeHuyVe_NhaXe_{fromDate:yyyyMMdd}.xlsx");
     }
 
-    var model = await _dashboardService.GetBranchCancellationReportAsync(fromDate, toDate);
-
-    using var workbook = new XLWorkbook();
-    var worksheet = workbook.Worksheets.Add("Hủy Vé");
-
-    worksheet.Cell(1, 1).Value = "BÁO CÁO THỐNG KÊ TỶ LỆ HỦY VÉ THEO NHÀ XE";
-    worksheet.Range(1, 1, 1, 5).Merge();
-    worksheet.Cell(1, 1).Style.Font.Bold = true;
-    worksheet.Cell(1, 1).Style.Font.FontSize = 16;
-    worksheet.Cell(1, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-
-    worksheet.Cell(3, 1).Value = "Từ ngày:";
-    worksheet.Cell(3, 2).Value = fromDate.ToString("dd/MM/yyyy");
-    worksheet.Cell(4, 1).Value = "Đến ngày:";
-    worksheet.Cell(4, 2).Value = toDate.ToString("dd/MM/yyyy");
-
-    var headerRow = 6;
-    worksheet.Cell(headerRow, 1).Value = "STT";
-    worksheet.Cell(headerRow, 2).Value = "Tên Nhà Xe (Đối Tác Vận Hành)"; // Đã đổi tên cột
-    worksheet.Cell(headerRow, 3).Value = "Tổng Số Vé Đặt";
-    worksheet.Cell(headerRow, 4).Value = "Số Vé Bị Hủy";
-    worksheet.Cell(headerRow, 5).Value = "Tỷ Lệ Hủy Vé";
-
-    var headerRange = worksheet.Range(headerRow, 1, headerRow, 5);
-    headerRange.Style.Font.Bold = true;
-    headerRange.Style.Fill.BackgroundColor = XLColor.LightGray;
-    headerRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
-    headerRange.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
-
-    var row = headerRow + 1;
-    var index = 1;
-
-    foreach (var item in model)
+    [HttpGet]
+    [Authorize(Roles = "Admin,Employee,Operator")]
+    public async Task<IActionResult> OperatorRevenue(DateTime? fromDate, DateTime? toDate)
     {
-        worksheet.Cell(row, 1).Value = index;
-        worksheet.Cell(row, 2).Value = item.BranchName; // Tên nhà xe lấy từ BusOperator
-        worksheet.Cell(row, 3).Value = item.TotalTrips;
-        worksheet.Cell(row, 4).Value = item.CanceledTrips;
-        worksheet.Cell(row, 5).Value = item.CancellationRate / 100;
+        // Xác định ID nếu người dùng là Nhà xe
+        string? operatorId = null;
+        if (User.IsInRole("Operator"))
+        {
+            // Giả sử bạn lưu OperatorId trong Claim của User khi đăng nhập
+            operatorId = User.FindFirst("OperatorId")?.Value;
+        }
 
-        row++;
-        index++;
+        var from = fromDate ?? DateTime.Today.AddMonths(-1);
+        var to = toDate ?? DateTime.Today;
+
+        var model = await _dashboardService.GetOperatorRevenueReportAsync(from, to, operatorId);
+
+        ViewBag.From = from;
+        ViewBag.To = to;
+        return View(model);
     }
 
-    worksheet.Column(5).Style.NumberFormat.Format = "0.00%";
-    worksheet.Columns().AdjustToContents();
+    [HttpGet]
+    public async Task<IActionResult> ExportOperatorRevenue(DateTime? fromDate, DateTime? toDate)
+    {
+        var from = fromDate ?? DateTime.Today.AddMonths(-1);
+        var to = toDate ?? DateTime.Today;
+        var model = await _dashboardService.GetOperatorRevenueReportAsync(from, to);
 
-    using var stream = new MemoryStream();
-    workbook.SaveAs(stream);
-    var content = stream.ToArray();
+        using var workbook = new XLWorkbook();
+        var ws = workbook.Worksheets.Add("DoanhThuNhaXe");
 
-    return File(content, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"ThongKeHuyVe_NhaXe_{fromDate:yyyyMMdd}.xlsx");
-}
+        ws.Cell(1, 1).Value = "BÁO CÁO DOANH THU NHÀ XE";
+        ws.Range(1, 1, 1, 4).Merge().Style.Font.Bold = true;
+
+        ws.Cell(2, 1).Value = "STT";
+        ws.Cell(2, 2).Value = "Tên Nhà Xe";
+        ws.Cell(2, 3).Value = "Tổng Đơn";
+        ws.Cell(2, 4).Value = "Doanh Thu";
+
+        int row = 3;
+        foreach (var item in model)
+        {
+            ws.Cell(row, 1).Value = row - 2;
+            ws.Cell(row, 2).Value = item.OperatorName;
+            ws.Cell(row, 3).Value = item.TotalBookings;
+            ws.Cell(row, 4).Value = item.TotalRevenue;
+            row++;
+        }
+
+        ws.Columns().AdjustToContents();
+
+        using var ms = new MemoryStream();
+        workbook.SaveAs(ms);
+        return File(ms.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "DoanhThuNhaXe.xlsx");
+    }
 }

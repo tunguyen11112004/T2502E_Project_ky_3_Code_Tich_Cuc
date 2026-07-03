@@ -1176,7 +1176,7 @@ namespace Bus_ticket.Data
 
             var random = new Random();
 
-            // 2. SEED KHỦNG 200 CUSTOMERS (Xoay vòng đặt vé cho đẹp thống kê)
+            // 2. SEED ĐỦ 200 CUSTOMERS
             var customers = new List<Customer>();
             string[] firstNames = { "Nguyễn", "Trần", "Lê", "Phạm", "Vũ", "Đặng", "Hoàng", "Bùi", "Đỗ", "Hồ", "Ngô" };
             string[] middleNames = { "Văn", "Thị", "Minh", "Hoàng", "Ngọc", "Tuấn", "Anh", "Đức", "Khánh", "Thúy" };
@@ -1189,11 +1189,11 @@ namespace Bus_ticket.Data
             {
                 var fullName =
                     $"{firstNames[random.Next(firstNames.Length)]} {middleNames[random.Next(middleNames.Length)]} {lastNames[random.Next(lastNames.Length)]}";
+                bool isBlocked = (i % 45 == 0);
                 var rank = ranks[random.Next(ranks.Length)];
                 int points = rank == "Standard" ? random.Next(0, 100) :
                     rank == "Silver" ? random.Next(101, 500) :
                     rank == "Gold" ? random.Next(501, 1500) : random.Next(1501, 5000);
-                bool isBlocked = (i % 45 == 0); // Giả lập vài khách hàng bị block do bùng vé
 
                 customers.Add(new Customer
                 {
@@ -1209,70 +1209,53 @@ namespace Bus_ticket.Data
                     TotalPoints = points,
                     IsBlocked = isBlocked,
                     ConsecutiveUnpaidCount = isBlocked ? 3 : 0,
-                    BlockReason = isBlocked ? "Hủy chuyến không hoàn tiền quá số lần quy định" : null,
-                    BlockedAt = isBlocked ? DateTime.UtcNow.AddDays(-5) : null,
-                    CustomerNotes = "Hội viên tạo tự động bằng hệ thống dữ liệu lớn",
+                    BlockReason = isBlocked ? "Hủy chuyến liên tiếp không thanh toán" : null,
                     Status = isBlocked ? "Blocked" : "Active",
-                    CreatedAt = DateTime.UtcNow.AddMonths(-3),
                     CreatedBy = "SystemSeeder",
-                    UpdatedAt = DateTime.UtcNow,
                     UpdatedBy = "SystemSeeder"
                 });
             }
 
             await _context.Customers.InsertManyAsync(customers);
-            var activeCustomers = customers.Where(c => !c.IsBlocked).ToList();
+            var activeCustomers = customers.Where(c => c.Status == "Active").ToList();
 
-
-            // 3. TẠO TRIP TRẢI DÀI TỪ 20/06 ĐẾN 01/09 (MỖI NGÀY ĐỦ 3 CHUYẾN SÁNG - TRƯA - TỐI)
+            // 3. TẠO TRIP VÀ BOOKING TRẢI DÀI (20/06 -> 01/09)
             var generatedTrips = new List<Trip>();
             var generatedBookings = new List<Booking>();
 
             DateTime dateStart = new DateTime(2026, 6, 20, 0, 0, 0, DateTimeKind.Utc);
             DateTime dateEnd = new DateTime(2026, 9, 1, 0, 0, 0, DateTimeKind.Utc);
-            int totalDays = (int)(dateEnd - dateStart).TotalDays;
-
+            int[] tripHours = { 6, 12, 19 }; // Đủ 3 chuyến Sáng - Trưa - Tối
             int tripCounter = 1;
             int bookingCounter = 1;
-
-            // Định nghĩa 3 khung giờ cố định mỗi ngày
-            // Chuyến Sáng: 06:00 | Chuyến Trưa: 12:00 | Chuyến Tối: 19:00
-            int[] tripHours = { 6, 12, 19 };
 
             foreach (var route in routes)
             {
                 var suitableBuses = buses.Where(b => b.Status == "Active").ToList();
                 if (!suitableBuses.Any()) continue;
 
-                for (int day = 0; day <= totalDays; day++)
+                for (var currentDay = dateStart; currentDay <= dateEnd; currentDay = currentDay.AddDays(1))
                 {
-                    var currentDay = dateStart.AddDays(day);
-
                     foreach (var hour in tripHours)
                     {
                         var bus = suitableBuses[random.Next(suitableBuses.Count)];
                         var busClass = busClasses.FirstOrDefault(bc => bc.Id == bus.BusClassId);
-                        if (busClass == null) continue;
-
-                        var fareConfig = route.FareConfigs.FirstOrDefault(f => f.BusType == busClass.BusType) ??
-                                         route.FareConfigs.FirstOrDefault();
-                        decimal baseFare = fareConfig?.FlatPrice ?? 200000m;
 
                         var departureTime = new DateTime(currentDay.Year, currentDay.Month, currentDay.Day, hour, 0, 0,
                             DateTimeKind.Utc);
+
+                        // Lấy giá vé từ FareConfig của tuyến đường, mặc định nếu không có là 200000
+                        var fareConfig = route.FareConfigs.FirstOrDefault(f => f.BusType == busClass?.BusType) ??
+                                         route.FareConfigs.FirstOrDefault();
+                        decimal baseFare = fareConfig?.FlatPrice ?? 200000m;
                         double durationHours = route.DistanceKm / 60.0;
-                        var arrivalTime = departureTime.AddHours(durationHours);
 
-                        // Khởi tạo sơ đồ ghế trống nguyên bản
-                        var realtimeSeats = busClass.DefaultLayout.Select(seat => new RealtimeSeat
-                        {
-                            SeatNumber = seat.SeatNumber,
-                            Status = "Available",
-                            HeldUntil = null,
-                            HeldByCustomerId = null
-                        }).ToList();
+                        // --- 🎭 LOGIC HỦY CHUYẾN VẬN HÀNH (10% chuyến bị nhà xe hủy) ---
+                        bool isCancelledByOperator = (random.Next(1, 11) == 1);
+                        string tripStatus = isCancelledByOperator
+                            ? "Cancelled"
+                            : (departureTime < DateTime.UtcNow ? "Completed" : "Scheduled");
 
-                        // Tạo đối tượng Trip trước khi phân bổ vé theo kịch bản thống kê công bằng
                         var trip = new Trip
                         {
                             Id = ObjectId.GenerateNewId().ToString(),
@@ -1282,172 +1265,172 @@ namespace Bus_ticket.Data
                             BranchId = bus.BranchId,
                             BaseFare = baseFare,
                             DepartureTime = departureTime,
-                            ArrivalTime = arrivalTime,
-                            Status = departureTime < DateTime.UtcNow ? "Completed" : "Scheduled",
-                            RealtimeSeats = realtimeSeats,
-                            CreatedAt = DateTime.UtcNow,
+                            ArrivalTime = departureTime.AddHours(durationHours),
+                            Status = tripStatus,
+                            RealtimeSeats = busClass?.DefaultLayout.Select(s => new RealtimeSeat
+                            {
+                                SeatNumber = s.SeatNumber,
+                                Status = "Available"
+                            }).ToList() ?? new List<RealtimeSeat>(),
                             CreatedBy = "SystemSeeder",
-                            UpdatedAt = DateTime.UtcNow,
                             UpdatedBy = "SystemSeeder"
                         };
 
-                        // --- 🎭 KỊCH BẢN ĐỔ PHÂN PHỐI VÉ (CHO ĐỒ THỊ THỐNG KÊ ĐẸP MẮT) ---
-                        int seatsToFill = 0;
-                        bool isFuture = departureTime > DateTime.UtcNow;
+                        generatedTrips.Add(trip);
+                        tripCounter++;
 
-                        if (!isFuture) // CHUYẾN TRONG QUÁ KHỨ (Đã chạy)
+                        // Chỉ sinh Booking khi chuyến xe KHÔNG bị hủy vận hành và có cấu hình ghế
+                        if (!isCancelledByOperator && trip.RealtimeSeats.Any())
                         {
-                            int scenario = random.Next(1, 4);
-                            if (scenario == 1) // Kịch bản 1: Xe FULL 100% sạch ghế
-                            {
-                                seatsToFill = realtimeSeats.Count;
-                            }
-                            else if (scenario == 2) // Kịch bản 2: Xe vừa đủ tầm (50% - 80% công suất)
-                            {
-                                seatsToFill = (int)(realtimeSeats.Count * (random.Next(50, 81) / 100.0));
-                            }
-                            else // Kịch bản 3: Chuyến vắng khách ít chạy (15% - 30%)
-                            {
-                                seatsToFill = (int)(realtimeSeats.Count * (random.Next(15, 31) / 100.0));
-                            }
-                        }
-                        else // CHUYẾN TRONG TƯƠNG LAI
-                        {
-                            int scenario = random.Next(1, 4);
-                            if (scenario == 1) // Kịch bản 1: TRỐNG NGUYÊN (0% chưa ai đặt)
-                            {
-                                seatsToFill = 0;
-                            }
-                            else // Kịch bản 2: Đang mở bán trước lác đác vài ghế (5% - 15%)
-                            {
-                                seatsToFill = (int)(realtimeSeats.Count * (random.Next(5, 16) / 100.0));
-                            }
-                        }
+                            int seatsToFill = 0;
+                            bool isFuture = departureTime > DateTime.UtcNow;
 
-                        // Thực hiện tạo Booking dựa theo lượng ghế cần lấp đầy
-                        int filledCounter = 0;
-                        while (filledCounter < seatsToFill)
-                        {
-                            var availableSeats = trip.RealtimeSeats.Where(s => s.Status == "Available").ToList();
-                            if (!availableSeats.Any()) break;
-
-                            int partySize = random.Next(1, 3); // Đặt theo nhóm lẻ 1 hoặc 2 người
-                            if (partySize > availableSeats.Count) partySize = availableSeats.Count;
-                            if (filledCounter + partySize > seatsToFill) partySize = seatsToFill - filledCounter;
-
-                            var bookedSeats = availableSeats.Take(partySize).ToList();
-                            foreach (var seat in bookedSeats) seat.Status = "Booked";
-
-                            var buyer = activeCustomers[random.Next(activeCustomers.Count)];
-                            decimal totalPrice = baseFare * partySize;
-                            decimal taxAmount = totalPrice * 0.1m;
-                            decimal discountAmount = (random.Next(1, 11) > 8) ? 30000m : 0m; // Có mã giảm giá
-                            decimal finalAmount = totalPrice + taxAmount - discountAmount;
-
-                            var passengers = bookedSeats.Select(seat => new PassengerDetail
+                            if (!isFuture) // CHUYẾN TRONG QUÁ KHỨ (Đã chạy)
                             {
-                                SeatNumber = seat.SeatNumber,
-                                Name = buyer.FullName,
-                                PhoneNumber = buyer.PhoneNumber,
-                                Email = buyer.Email,
-                                Dob = new DateTime(1996, 5, 15, 0, 0, 0, DateTimeKind.Utc),
-                                FinalSeatPrice = baseFare
-                            }).ToList();
-
-                            string bookingStatus = "Completed";
-                            string paymentStatus = "Paid";
-                            var cancellationInfo = (CancellationInfo)null;
-                            var paymentInfo = new PaymentInfo
-                            {
-                                PaymentMethod = random.Next(0, 2) == 0 ? "Banking" : "Cash",
-                                AmountPaid = finalAmount,
-                                TransactionCode = $"TXN-{DateTime.UtcNow.Ticks}-{bookingCounter}"
-                            };
-
-                            // Nếu chuyến nằm trong quá khứ, cấu hình tỷ lệ Hủy Vé (Tạo dữ liệu Booking hủy)
-                            if (!isFuture && random.Next(1, 101) <= 12) // 12% Tỷ lệ đơn hủy ngẫu nhiên
-                            {
-                                bookingStatus = "Canceled";
-                                paymentStatus = "Refunded";
-                                decimal penalty = 10m; // Thu phí hủy 10%
-                                decimal refund = finalAmount * (1 - (penalty / 100m));
-
-                                cancellationInfo = new CancellationInfo
+                                int scenario = random.Next(1, 4);
+                                if (scenario == 1) // Kịch bản 1: Xe FULL 100% sạch ghế
                                 {
-                                    CanceledAt = departureTime.AddHours(-random.Next(3, 12)),
-                                    Reason = "Thay đổi kế hoạch di chuyển mùa hè",
-                                    PenaltyPercentage = penalty,
-                                    RefundAmount = refund
-                                };
-                                paymentInfo.AmountPaid = 0; // Thực thu hóa đơn về 0 khi hủy
-
-                                // Nhả lại ghế sang trạng thái Available do đơn bị hủy
-                                foreach (var seat in bookedSeats) seat.Status = "Available";
-                            }
-                            else if (isFuture) // Đơn tương lai thì mặc định thành công hoặc chờ giữ chỗ
-                            {
-                                if (random.Next(1, 11) > 8)
+                                    seatsToFill = trip.RealtimeSeats.Count;
+                                }
+                                else if (scenario == 2) // Kịch bản 2: Xe vừa đủ tầm (50% - 80% công suất)
                                 {
-                                    bookingStatus = "Reserved";
-                                    paymentStatus = "Pending";
-                                    paymentInfo = null;
-                                    foreach (var seat in bookedSeats) seat.Status = "Holding";
+                                    seatsToFill = (int)(trip.RealtimeSeats.Count * (random.Next(50, 81) / 100.0));
+                                }
+                                else // Kịch bản 3: Chuyến vắng khách ít chạy (15% - 30%)
+                                {
+                                    seatsToFill = (int)(trip.RealtimeSeats.Count * (random.Next(15, 31) / 100.0));
+                                }
+                            }
+                            else // CHUYẾN TRONG TƯƠNG LAI (Mô tả đặt chỗ trước)
+                            {
+                                int scenario = random.Next(1, 4);
+                                if (scenario == 1) // Kịch bản 1: TRỐNG NGUYÊN HOÀN TOÀN (0%)
+                                {
+                                    seatsToFill = 0;
+                                }
+                                else // Kịch bản 2: Đang mở bán trước lác đác vài ghế (5% - 15%)
+                                {
+                                    seatsToFill = (int)(trip.RealtimeSeats.Count * (random.Next(5, 16) / 100.0));
                                 }
                             }
 
-                            var booking = new Booking
+                            // Thực hiện tạo Booking dựa theo lượng ghế cần lấp đầy
+                            int filledCounter = 0;
+                            while (filledCounter < seatsToFill)
                             {
-                                Id = ObjectId.GenerateNewId().ToString(),
-                                BookingCode = $"BKG-{departureTime:yyyyMMdd}-{bookingCounter:D6}",
-                                CustomerId = buyer.Id,
-                                CustomerPhone = buyer.PhoneNumber,
-                                CustomerEmail = buyer.Email,
-                                TripId = trip.Id,
-                                UserId = "64f1a2b3c4d5e6f7a8b9c999", // Hệ thống tự động duyệt
-                                BranchId = trip.BranchId ?? "64f1a2b3c4d5e6f7a8b9c001",
-                                BookingTime = departureTime.AddDays(-random.Next(1, 7)),
-                                TotalPrice = totalPrice,
-                                TaxAmount = taxAmount,
-                                DiscountAmount = discountAmount,
-                                FinalAmount = finalAmount,
-                                BookingStatus = bookingStatus,
-                                PaymentStatus = paymentStatus,
-                                Passengers = passengers,
-                                Payment = paymentInfo,
-                                Cancellation = cancellationInfo,
-                                CreatedAt = DateTime.UtcNow,
-                                CreatedBy = "SystemSeeder",
-                                UpdatedAt = DateTime.UtcNow,
-                                UpdatedBy = "SystemSeeder"
-                            };
+                                var availableSeats = trip.RealtimeSeats.Where(s => s.Status == "Available").ToList();
+                                if (!availableSeats.Any()) break;
 
-                            generatedBookings.Add(booking);
-                            bookingCounter++;
-                            filledCounter += partySize;
+                                int partySize = random.Next(1, 3); // Đặt theo nhóm lẻ 1 hoặc 2 người
+                                if (partySize > availableSeats.Count) partySize = availableSeats.Count;
+                                if (filledCounter + partySize > seatsToFill) partySize = seatsToFill - filledCounter;
+
+                                var bookedSeats = availableSeats.Take(partySize).ToList();
+                                foreach (var seat in bookedSeats) seat.Status = "Booked";
+
+                                var buyer = activeCustomers[random.Next(activeCustomers.Count)];
+                                decimal totalPrice = baseFare * partySize;
+                                decimal taxAmount = totalPrice * 0.1m;
+                                decimal discountAmount = (random.Next(1, 11) > 8) ? 30000m : 0m;
+                                decimal finalAmount = totalPrice + taxAmount - discountAmount;
+
+                                var passengers = bookedSeats.Select(seat => new PassengerDetail
+                                {
+                                    SeatNumber = seat.SeatNumber,
+                                    Name = buyer.FullName,
+                                    PhoneNumber = buyer.PhoneNumber,
+                                    Email = buyer.Email,
+                                    Dob = new DateTime(1996, 5, 15, 0, 0, 0, DateTimeKind.Utc),
+                                    FinalSeatPrice = baseFare
+                                }).ToList();
+
+                                string bookingStatus = "Completed";
+                                string paymentStatus = "Paid";
+                                var cancellationInfo = (CancellationInfo)null;
+                                var paymentInfo = new PaymentInfo
+                                {
+                                    PaymentMethod = random.Next(0, 2) == 0 ? "Banking" : "Cash",
+                                    AmountPaid = finalAmount,
+                                    TransactionCode = $"TXN-{DateTime.UtcNow.Ticks}-{bookingCounter}"
+                                };
+
+                                // Nếu chuyến nằm trong quá khứ, cấu hình tỷ lệ Hủy Vé 15% ngẫu nhiên
+                                if (!isFuture && random.Next(1, 101) <= 15)
+                                {
+                                    bookingStatus = "Canceled";
+                                    paymentStatus = "Refunded";
+                                    decimal penalty = 10m; // Thu phí hủy 10%
+                                    decimal refund = finalAmount * (1 - (penalty / 100m));
+
+                                    cancellationInfo = new CancellationInfo
+                                    {
+                                        CanceledAt = departureTime.AddHours(-random.Next(3, 12)),
+                                        Reason = "Thay đổi kế hoạch di chuyển mùa hè",
+                                        PenaltyPercentage = penalty,
+                                        RefundAmount = refund
+                                    };
+                                    paymentInfo.AmountPaid = 0;
+
+                                    // Đơn hủy -> Nhả lại ghế trống
+                                    foreach (var seat in bookedSeats) seat.Status = "Available";
+                                }
+                                else if (isFuture) // Đơn tương lai: Thành công hoặc tạm Giữ chỗ (Reserved)
+                                {
+                                    if (random.Next(1, 11) > 8)
+                                    {
+                                        bookingStatus = "Reserved";
+                                        paymentStatus = "Pending";
+                                        paymentInfo = null;
+                                        foreach (var seat in bookedSeats) seat.Status = "Holding";
+                                    }
+                                }
+
+                                var booking = new Booking
+                                {
+                                    Id = ObjectId.GenerateNewId().ToString(),
+                                    BookingCode = $"BKG-{departureTime:yyyyMMdd}-{bookingCounter:D6}",
+                                    CustomerId = buyer.Id,
+                                    CustomerPhone = buyer.PhoneNumber,
+                                    CustomerEmail = buyer.Email,
+                                    TripId = trip.Id,
+                                    UserId = "64f1a2b3c4d5e6f7a8b9c999",
+                                    BranchId = trip.BranchId ?? "64f1a2b3c4d5e6f7a8b9c001",
+                                    BookingTime = departureTime.AddDays(-random.Next(1, 7)),
+                                    TotalPrice = totalPrice,
+                                    TaxAmount = taxAmount,
+                                    DiscountAmount = discountAmount,
+                                    FinalAmount = finalAmount,
+                                    BookingStatus = bookingStatus,
+                                    PaymentStatus = paymentStatus,
+                                    Passengers = passengers,
+                                    Payment = paymentInfo,
+                                    Cancellation = cancellationInfo,
+                                    CreatedAt = DateTime.UtcNow,
+                                    CreatedBy = "SystemSeeder",
+                                    UpdatedAt = DateTime.UtcNow,
+                                    UpdatedBy = "SystemSeeder"
+                                };
+
+                                generatedBookings.Add(booking);
+                                bookingCounter++;
+                                filledCounter += partySize;
+                            }
                         }
-
-                        generatedTrips.Add(trip);
-                        tripCounter++;
                     }
                 }
             }
 
-            // 4. LƯU HÀNG LOẠT VÀO MONGODB (SỬ DỤNG BATCH CHẠY SIÊU TỐC)
+            // 4. LƯU HÀNG LOẠT VÀO MONGODB
             if (generatedTrips.Any())
-            {
                 await _context.Trips.InsertManyAsync(generatedTrips);
-            }
 
             if (generatedBookings.Any())
-            {
                 await _context.Bookings.InsertManyAsync(generatedBookings);
-            }
 
-            Console.WriteLine($"--- KẾT QUẢ SEEDING HOÀN HẢO ---");
+            Console.WriteLine($"--- SEEDING HOÀN TẤT VỚI BIỂU ĐỒ SIÊU ĐẸP ---");
             Console.WriteLine($"* Khách hàng: {customers.Count} Customers");
-            Console.WriteLine($"* Lịch trình (20/06 -> 01/09): {generatedTrips.Count} Trips (Đều đặn 3 chuyến/ngày)");
-            Console.WriteLine(
-                $"* Hóa đơn vé sinh ra: {generatedBookings.Count} Bookings (Full, Đầy, Trống, Hủy đan xen)");
+            Console.WriteLine($"* Chuyến xe vận hành: {generatedTrips.Count} Trips (Bao gồm cả các chuyến Cancelled)");
+            Console.WriteLine($"* Tổng số vé bán ra: {generatedBookings.Count} Bookings");
         }
 
 // Hàm Helper đóng gói tạo dữ liệu thực thể Booking

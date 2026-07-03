@@ -203,6 +203,17 @@
                                         </a>
                                     </li>
                                 }
+                                
+                                @if (canViewRouteRevenue)
+                                {
+                                    <li>
+                                        <a asp-controller="Dashboard"
+                                           asp-action="OperatorRevenue"
+                                           class="@subMenuItemClass">
+                                            OperatorRevenue
+                                        </a>
+                                    </li>
+                                }
 
                                 @if (canViewRouteRevenue)
                                 {
