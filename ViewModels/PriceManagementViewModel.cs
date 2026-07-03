@@ -28,6 +28,13 @@ public class RouteOptionViewModel
     public string DeparturePoint { get; set; } = string.Empty;
     public string DestinationPoint { get; set; } = string.Empty;
     public double DistanceKm { get; set; }
+    public List<RouteFareOptionViewModel> FareConfigs { get; set; } = new();
+}
+
+public class RouteFareOptionViewModel
+{
+    public string BusType { get; set; } = string.Empty;
+    public decimal FlatPrice { get; set; }
 }
 
 public class BusOptionViewModel

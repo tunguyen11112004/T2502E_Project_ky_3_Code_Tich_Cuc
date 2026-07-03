@@ -1,21 +1,22 @@
 @model Bus_ticket.ViewModels.TripFormViewModel
+@using System.Globalization
 @{
     Layout = "_AdminLayout";
     ViewData["Title"] = Model.IsEdit ? "Sửa chuyến xe" : "Thêm chuyến xe";
-    var depValue = Model.DepartureTime.ToString("yyyy-MM-ddTHH:mm");
-    var arrValue = Model.ArrivalTime.ToString("yyyy-MM-ddTHH:mm");
+    var depValue = Model.DepartureTime.ToString("yyyy-MM-ddTHH:mm", CultureInfo.InvariantCulture);
+    var arrValue = Model.ArrivalTime.ToString("yyyy-MM-ddTHH:mm", CultureInfo.InvariantCulture);
 }
 
 <div class="p-6 sm:p-8 space-y-6 max-w-3xl mx-auto">
     <div class="border-b border-gray-700/50 pb-4">
-        <a asp-action="PriceConfig" class="inline-flex items-center text-sm font-medium text-gray-400 hover:text-amber-400 mb-2">
-            ← Quay lại danh sách chuyến
+        <a asp-controller="Admin" asp-action="PriceConfig" class="inline-flex items-center text-sm font-medium text-gray-400 hover:text-amber-400 mb-2">
+            Quay lại danh sách chuyến
         </a>
-        <h1 class="text-2xl font-bold tracking-tight text-white">
+        <h1 class="text-2xl font-bold text-white">
             @(Model.IsEdit ? "Sửa chuyến xe & giá vé" : "Thêm tuyến đường cho xe chạy")
         </h1>
         <p class="text-sm text-gray-400 mt-1">
-            Cấu hình tuyến, biển số xe, giá vé và lịch chạy. Sau khi lưu, tra trên Booking cùng tuyến và ngày đi.
+            Chọn tuyến từ database <strong class="text-gray-300">busroutes</strong>, gán xe và lịch chạy. Giá vé gợi ý từ <strong class="text-gray-300">fareConfigs</strong> của tuyến.
         </p>
     </div>
 
@@ -26,21 +27,28 @@
         </div>
     }
 
-    <form asp-action="SaveTrip" method="post" id="formTrip" class="space-y-4">
+    @if (!Model.Routes.Any())
+    {
+        <div class="p-4 text-sm text-amber-300 rounded-lg bg-gray-800 border border-amber-700">
+            Chưa có tuyến đường trong collection <strong>busroutes</strong>. Hãy seed dữ liệu hoặc thêm tuyến trong MongoDB trước.
+        </div>
+    }
+
+    <form asp-controller="Admin" asp-action="SaveTrip" method="post" id="formTrip" class="space-y-4">
         @Html.AntiForgeryToken()
         <input type="hidden" name="tripId" value="@Model.TripId"/>
 
         <div class="p-6 bg-[#1e1e24] border border-gray-700/50 rounded-xl space-y-4 shadow-xl">
-            <p class="text-[10px] uppercase font-bold text-gray-500">Hành trình & xe</p>
+            <p class="text-xs font-bold text-gray-500">Hành trình & xe</p>
 
             <div>
-                <label class="block mb-1 text-xs font-semibold text-gray-400 uppercase">Tuyến đường (busroutes)</label>
+                <label class="block mb-1 text-sm font-semibold text-gray-300">Tuyến đường</label>
                 <select name="routeId" id="ddlRoute" required
                         class="bg-gray-900 border border-gray-700 text-white text-sm rounded-lg block w-full p-2.5 focus:ring-2 focus:ring-amber-400">
                     <option value="">-- Chọn tuyến đường --</option>
                     @foreach (var route in Model.Routes)
                     {
-                        var routeLabel = $"{route.DeparturePoint} → {route.DestinationPoint}";
+                        var routeLabel = $"{route.DeparturePoint} -> {route.DestinationPoint}";
                         if (route.DistanceKm > 0)
                         {
                             routeLabel += $" ({route.DistanceKm:N0} km)";
@@ -48,28 +56,18 @@
 
                         if (route.Id == Model.RouteId)
                         {
-                            <option value="@route.Id"
-                                    data-from="@route.DeparturePoint"
-                                    data-to="@route.DestinationPoint"
-                                    selected="selected">
-                                @routeLabel
-                            </option>
+                            <option value="@route.Id" selected="selected">@routeLabel</option>
                         }
                         else
                         {
-                            <option value="@route.Id"
-                                    data-from="@route.DeparturePoint"
-                                    data-to="@route.DestinationPoint">
-                                @routeLabel
-                            </option>
+                            <option value="@route.Id">@routeLabel</option>
                         }
                     }
                 </select>
-                <p class="text-[10px] text-gray-500 mt-1">Danh sách lấy từ collection <strong class="text-gray-400">busroutes</strong> trong MongoDB</p>
             </div>
 
             <div>
-                <label class="block mb-1 text-xs font-semibold text-gray-400 uppercase">Biển số xe</label>
+                <label class="block mb-1 text-sm font-semibold text-gray-300">Biển số xe</label>
                 <select name="busId" id="ddlBus" required
                         class="bg-gray-900 border border-gray-700 text-white text-sm rounded-lg block w-full p-2.5 focus:ring-2 focus:ring-amber-400">
                     <option value="">-- Chọn biển số --</option>
@@ -77,14 +75,19 @@
                     {
                         if (bus.Id == Model.BusId)
                         {
-                            <option value="@bus.Id" data-class="@bus.BusClassName" selected="selected">
-                                @bus.LicensePlate — @bus.BusClassName
+                            <option value="@bus.Id"
+                                    data-class="@bus.BusClassName"
+                                    data-type="@bus.BusType"
+                                    selected="selected">
+                                @bus.LicensePlate - @bus.BusClassName
                             </option>
                         }
                         else
                         {
-                            <option value="@bus.Id" data-class="@bus.BusClassName">
-                                @bus.LicensePlate — @bus.BusClassName
+                            <option value="@bus.Id"
+                                    data-class="@bus.BusClassName"
+                                    data-type="@bus.BusType">
+                                @bus.LicensePlate - @bus.BusClassName
                             </option>
                         }
                     }
@@ -93,37 +96,38 @@
         </div>
 
         <div class="p-6 bg-[#1e1e24] border border-gray-700/50 rounded-xl space-y-4 shadow-xl">
-            <p class="text-[10px] uppercase font-bold text-gray-500">Giá vé nền</p>
+            <p class="text-xs font-bold text-gray-500">Giá vé nền</p>
             <div>
-                <label class="block mb-1 text-xs font-semibold text-gray-400 uppercase">Giá vé (VND)</label>
-                <input type="number" name="baseFare" id="txtBaseFare" min="1000" max="50000000" step="1000" required placeholder="150000" value="@(Model.BaseFare > 0 ? Model.BaseFare : "")"
+                <label class="block mb-1 text-sm font-semibold text-gray-300">Giá vé (VND)</label>
+                <input type="number" name="baseFare" id="txtBaseFare" min="1000" max="50000000" step="1000" required placeholder="750000"
+                       value="@(Model.BaseFare > 0 ? Model.BaseFare.ToString(CultureInfo.InvariantCulture) : "")"
                        class="block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 font-semibold text-amber-400"/>
-                <p class="text-[10px] text-gray-500 mt-1">Tự lưu cấu hình giá theo tuyến + loại xe</p>
+                <p class="text-xs text-gray-500 mt-1">Tự gợi ý từ <strong class="text-gray-400">fareConfigs</strong> của tuyến + loại xe</p>
             </div>
         </div>
 
         <div class="p-6 bg-[#1e1e24] border border-gray-700/50 rounded-xl space-y-4 shadow-xl">
-            <p class="text-[10px] uppercase font-bold text-gray-500">Lịch chạy</p>
+            <p class="text-xs font-bold text-gray-500">Lịch chạy</p>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label class="block mb-1 text-xs font-semibold text-gray-400 uppercase">Giờ đi</label>
+                    <label class="block mb-1 text-sm font-semibold text-gray-300">Giờ đi</label>
                     <input type="datetime-local" name="departureTime" id="txtDepartureTime" required value="@depValue"
                            class="block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400"/>
                 </div>
                 <div>
-                    <label class="block mb-1 text-xs font-semibold text-gray-400 uppercase">Giờ đến</label>
+                    <label class="block mb-1 text-sm font-semibold text-gray-300">Giờ đến</label>
                     <input type="datetime-local" name="arrivalTime" id="txtArrivalTime" required value="@arrValue"
                            class="block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400"/>
                 </div>
             </div>
             <div>
-                <label class="block mb-1 text-xs font-semibold text-gray-400 uppercase">Trạng thái</label>
+                <label class="block mb-1 text-sm font-semibold text-gray-300">Trạng thái</label>
                 <select name="status" id="ddlTripStatus" class="bg-gray-900 border border-gray-700 text-white text-sm rounded-lg block w-full p-2.5 focus:ring-2 focus:ring-amber-400">
                     @{
                         var statuses = new[] { "Scheduled", "Active", "Completed", "Cancelled" };
                         var statusLabels = new Dictionary<string, string>
                         {
-                            ["Scheduled"] = "Scheduled — Sẵn sàng đặt vé",
+                            ["Scheduled"] = "Scheduled - Sẵn sàng đặt vé",
                             ["Active"] = "Active",
                             ["Completed"] = "Completed",
                             ["Cancelled"] = "Cancelled"
@@ -148,7 +152,7 @@
             <button type="submit" class="px-6 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg transition-colors">
                 @(Model.IsEdit ? "Cập nhật chuyến & giá vé" : "Lưu chuyến & giá vé")
             </button>
-            <a asp-action="PriceConfig" class="px-6 py-2.5 text-sm font-semibold text-gray-300 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors text-center">
+            <a asp-controller="Admin" asp-action="PriceConfig" class="px-6 py-2.5 text-sm font-semibold text-gray-300 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors text-center">
                 Hủy
             </a>
         </div>
@@ -156,24 +160,75 @@
 </div>
 
 <script>
+    const routeOptions = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+        Model.Routes.Select(r => new
+        {
+            id = r.Id,
+            departurePoint = r.DeparturePoint ?? string.Empty,
+            destinationPoint = r.DestinationPoint ?? string.Empty,
+            fareConfigs = r.FareConfigs.Select(f => new
+            {
+                busType = f.BusType ?? string.Empty,
+                flatPrice = f.FlatPrice
+            })
+        })));
+
     const priceConfigs = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
-        Model.PriceConfigs.Select(p => new { busType = p.BusType, departurePoint = p.DeparturePoint, destinationPoint = p.DestinationPoint, basePrice = p.BasePrice })));
+        Model.PriceConfigs.Select(p => new
+        {
+            busType = p.BusType ?? string.Empty,
+            departurePoint = p.DeparturePoint ?? string.Empty,
+            destinationPoint = p.DestinationPoint ?? string.Empty,
+            basePrice = p.BasePrice
+        })));
 
     document.getElementById('ddlRoute')?.addEventListener('change', suggestFare);
     document.getElementById('ddlBus')?.addEventListener('change', suggestFare);
 
-    function suggestFare() {
-        const route = document.getElementById('ddlRoute').selectedOptions[0];
-        const bus = document.getElementById('ddlBus').selectedOptions[0];
-        if (!route?.value || !bus?.value) return;
+    function normalizeType(value) {
+        return (value || '')
+            .trim()
+            .toLowerCase()
+            .replace(/[_\-()]/g, ' ')
+            .replace(/\s+/g, ' ');
+    }
 
-        const from = route.dataset.from;
-        const to = route.dataset.to;
-        const match = priceConfigs.find(p =>
-            p.departurePoint === from &&
-            p.destinationPoint === to &&
-            (p.busType === bus.dataset.class || (bus.dataset.class || '').includes(p.busType) || p.busType.includes(bus.dataset.class || '')));
-        if (match) document.getElementById('txtBaseFare').value = match.basePrice;
+    function busTypeMatches(configType, busClassName, busType) {
+        const key = normalizeType(configType);
+        const className = normalizeType(busClassName);
+        const type = normalizeType(busType);
+        if (!key) return false;
+        if (key === className || key === type) return true;
+        if (className && (key.includes(className) || className.includes(key))) return true;
+        if (type && (key.includes(type) || type.includes(key))) return true;
+        return false;
+    }
+
+    function suggestFare() {
+        const routeId = document.getElementById('ddlRoute')?.value;
+        const bus = document.getElementById('ddlBus')?.selectedOptions[0];
+        if (!routeId || !bus?.value) return;
+
+        const route = routeOptions.find(r => r.id === routeId);
+        if (!route) return;
+
+        const className = bus.dataset.class || '';
+        const busType = bus.dataset.type || '';
+
+        const routeFare = (route.fareConfigs || []).find(f =>
+            busTypeMatches(f.busType, className, busType));
+        if (routeFare) {
+            document.getElementById('txtBaseFare').value = routeFare.flatPrice;
+            return;
+        }
+
+        const priceMatch = priceConfigs.find(p =>
+            p.departurePoint === route.departurePoint &&
+            p.destinationPoint === route.destinationPoint &&
+            busTypeMatches(p.busType, className, busType));
+        if (priceMatch) {
+            document.getElementById('txtBaseFare').value = priceMatch.basePrice;
+        }
     }
 
     if (document.getElementById('ddlRoute')?.value && document.getElementById('ddlBus')?.value) {

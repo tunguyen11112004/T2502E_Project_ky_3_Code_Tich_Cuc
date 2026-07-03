@@ -296,11 +296,7 @@ namespace Bus_ticket.Controllers
             var busClasses = await _dbContext.BusClasses.Find(_ => true).ToListAsync();
             var busClassMap = busClasses.ToDictionary(c => c.Id, c => c);
             var priceList = await _dbContext.PriceConfigs.Find(_ => true).ToListAsync();
-            var routes = await _dbContext.BusRoutes
-                .Find(_ => true)
-                .SortBy(r => r.DeparturePoint)
-                .ThenBy(r => r.DestinationPoint)
-                .ToListAsync();
+            var routes = await _dbContext.BusRoutes.Find(_ => true).ToListAsync();
             var routeOptions = MapRouteOptions(routes);
 
             var defaultDeparture = DateTime.Now.Date.AddDays(1).AddHours(8);
@@ -339,13 +335,38 @@ namespace Bus_ticket.Controllers
 
         private static List<RouteOptionViewModel> MapRouteOptions(List<BusRoute> routes)
         {
-            return routes.Select(r => new RouteOptionViewModel
-            {
-                Id = r.Id,
-                DeparturePoint = r.DeparturePoint,
-                DestinationPoint = r.DestinationPoint,
-                DistanceKm = r.DistanceKm
-            }).ToList();
+            return routes
+                .GroupBy(r =>
+                    $"{r.DeparturePoint?.Trim().ToLowerInvariant()}|{r.DestinationPoint?.Trim().ToLowerInvariant()}")
+                .Select(group => group
+                    .OrderByDescending(r => r.FareConfigs?.Count ?? 0)
+                    .ThenBy(r => r.DeparturePoint)
+                    .First())
+                .OrderBy(r => r.DeparturePoint)
+                .ThenBy(r => r.DestinationPoint)
+                .Select(r => new RouteOptionViewModel
+                {
+                    Id = r.Id,
+                    DeparturePoint = r.DeparturePoint,
+                    DestinationPoint = r.DestinationPoint,
+                    DistanceKm = r.DistanceKm,
+                    FareConfigs = (r.FareConfigs ?? new List<FareConfig>())
+                        .Select(f => new RouteFareOptionViewModel
+                        {
+                            BusType = f.BusType ?? string.Empty,
+                            FlatPrice = f.FlatPrice
+                        })
+                        .ToList()
+                })
+                .ToList();
+        }
+
+        private IActionResult RedirectTripFormError(string? tripId, string message)
+        {
+            TempData["ErrorMessage"] = message;
+            return string.IsNullOrWhiteSpace(tripId)
+                ? RedirectToAction(nameof(CreateTrip))
+                : RedirectToAction(nameof(EditTrip), new { id = tripId });
         }
 
         private static List<BusOptionViewModel> MapBusOptions(
@@ -441,27 +462,23 @@ namespace Bus_ticket.Controllers
                 || string.IsNullOrWhiteSpace(busId)
                 || baseFare <= 0)
             {
-                TempData["ErrorMessage"] = "Tuyến đường, biển số xe và giá vé là bắt buộc.";
-                return RedirectToAction(nameof(PriceConfig));
+                return RedirectTripFormError(tripId, "Tuyến đường, biển số xe và giá vé là bắt buộc.");
             }
 
             if (baseFare > 50_000_000)
             {
-                TempData["ErrorMessage"] = "Giá vé không hợp lệ (tối đa 50.000.000đ).";
-                return RedirectToAction(nameof(PriceConfig));
+                return RedirectTripFormError(tripId, "Giá vé không hợp lệ (tối đa 50.000.000đ).");
             }
 
             if (arrivalTime <= departureTime)
             {
-                TempData["ErrorMessage"] = "Giờ đến phải sau giờ đi.";
-                return RedirectToAction(nameof(PriceConfig));
+                return RedirectTripFormError(tripId, "Giờ đến phải sau giờ đi.");
             }
 
             var route = await _dbContext.BusRoutes.Find(r => r.Id == routeId).FirstOrDefaultAsync();
             if (route == null)
             {
-                TempData["ErrorMessage"] = "Tuyến đường không tồn tại trong hệ thống.";
-                return RedirectToAction(nameof(PriceConfig));
+                return RedirectTripFormError(tripId, "Tuyến đường không tồn tại trong hệ thống.");
             }
 
             var departurePoint = route.DeparturePoint;
@@ -470,8 +487,7 @@ namespace Bus_ticket.Controllers
             var bus = await _dbContext.Buses.Find(b => b.Id == busId).FirstOrDefaultAsync();
             if (bus == null)
             {
-                TempData["ErrorMessage"] = "Xe không tồn tại trong hệ thống.";
-                return RedirectToAction(nameof(PriceConfig));
+                return RedirectTripFormError(tripId, "Xe không tồn tại trong hệ thống.");
             }
 
             var userName = User.Identity?.Name ?? "Admin";
@@ -491,8 +507,7 @@ namespace Bus_ticket.Controllers
                 var realtimeSeats = await BuildRealtimeSeatsForBusAsync(bus);
                 if (realtimeSeats.Count == 0)
                 {
-                    TempData["ErrorMessage"] = "Xe chưa có sơ đồ ghế. Cấu hình layout trong BusClasses trước.";
-                    return RedirectToAction(nameof(PriceConfig));
+                    return RedirectTripFormError(tripId, "Xe chưa có sơ đồ ghế. Cấu hình layout trong BusClasses trước.");
                 }
 
                 var trip = new Trip
@@ -521,8 +536,7 @@ namespace Bus_ticket.Controllers
                 var existing = await _dbContext.Trips.Find(t => t.Id == tripId).FirstOrDefaultAsync();
                 if (existing == null)
                 {
-                    TempData["ErrorMessage"] = "Chuyến xe không tồn tại.";
-                    return RedirectToAction(nameof(PriceConfig));
+                    return RedirectTripFormError(tripId, "Chuyến xe không tồn tại.");
                 }
 
                 var update = Builders<Trip>.Update
@@ -540,8 +554,7 @@ namespace Bus_ticket.Controllers
                     var hasReservedSeats = existing.RealtimeSeats?.Any(s => s.Status is "Booked" or "Holding") ?? false;
                     if (hasReservedSeats)
                     {
-                        TempData["ErrorMessage"] = "Không thể đổi xe vì chuyến đã có ghế đặt hoặc giữ chỗ.";
-                        return RedirectToAction(nameof(PriceConfig));
+                        return RedirectTripFormError(tripId, "Không thể đổi xe vì chuyến đã có ghế đặt hoặc giữ chỗ.");
                     }
 
                     update = update.Set(t => t.RealtimeSeats, await BuildRealtimeSeatsForBusAsync(bus));
