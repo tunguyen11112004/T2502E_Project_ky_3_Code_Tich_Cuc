@@ -129,7 +129,19 @@
                                   "RouteRevenue",
                                   "/Dashboard/RouteRevenue"
                               );
-    var showDashboardMenu = isAdmin || canViewRouteRevenue;
+    var canViewLowOccupancyTrips = isAdmin
+                                   || SidebarPermissionService.HasPermission(
+                                       permissionNames,
+                                       "Dashboard",
+                                       "Report",
+                                       "LowOccupancy",
+                                       "LowOccupancyTrips",
+                                       "TripOccupancy",
+                                       "/Dashboard/LowOccupancyTrips"
+                                   );
+    var showDashboardMenu = isAdmin
+                            || canViewRouteRevenue
+                            || canViewLowOccupancyTrips;
 
     var showCrudMenu = canViewBooking
                        || canViewBranches
@@ -211,6 +223,16 @@
                                            asp-action="RouteRevenue"
                                            class="@subMenuItemClass">
                                             Route Revenue
+                                        </a>
+                                    </li>
+                                }
+                                @if (canViewLowOccupancyTrips)
+                                {
+                                    <li>
+                                        <a asp-controller="Dashboard"
+                                           asp-action="LowOccupancyTrips"
+                                           class="@subMenuItemClass">
+                                            Low Occupancy Trips
                                         </a>
                                     </li>
                                 }
