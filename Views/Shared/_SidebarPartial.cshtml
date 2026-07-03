@@ -129,7 +129,16 @@
                                   "RouteRevenue",
                                   "/Dashboard/RouteRevenue"
                               );
-    var showDashboardMenu = isAdmin || canViewRouteRevenue;
+    
+    // Phân quyền cho trang Tổng Quan mới (Cho phép Admin và Employee truy cập)
+    var canViewOverview = isAdmin || isEmployee || SidebarPermissionService.HasPermission(
+                                  permissionNames,
+                                  "Dashboard",
+                                  "Total Revenue",
+                                  "/Dashboard/Index"
+                              );
+
+    var showDashboardMenu = isAdmin || canViewRouteRevenue || canViewOverview;
 
     var showCrudMenu = canViewBooking
                        || canViewBranches
@@ -195,11 +204,22 @@
                             </button>
 
                             <ul id="dropdown-dashboard" class="hidden py-2 space-y-2">
-                                @if (isAdmin)
+
+                                @* ================= ĐÃ GỘP CHỨC NĂNG 7 & 12 VÀO ĐÂY ================= *@
+                                @if (canViewOverview)
                                 {
                                     <li>
-                                        <a href="/Admin" class="@subMenuItemClass">
-                                            Overview
+                                        <a asp-controller="Dashboard"
+                                           asp-action="Index"
+                                           class="@subMenuItemClass">
+                                            Total Revenue
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a asp-controller="Dashboard"
+                                           asp-action="SoldOutStats"
+                                           class="@subMenuItemClass">
+                                            Sold Out Times
                                         </a>
                                     </li>
                                 }
@@ -486,7 +506,7 @@
                         }
                     }
 
-                    @if (!isAdmin && !canViewRouteRevenue && !showCrudMenu && !showSrcAdminFlow && !showEmployeeMenu)
+                    @if (!isAdmin && !canViewRouteRevenue && !canViewOverview && !showCrudMenu && !showSrcAdminFlow && !showEmployeeMenu)
                     {
                         <li>
                             <div class="p-3 text-sm text-gray-500 rounded-lg bg-gray-50 dark:bg-gray-700 dark:text-gray-300">
@@ -520,4 +540,3 @@
 
     <div class="fixed inset-0 z-10 hidden bg-gray-900/50 dark:bg-gray-900/90" id="sidebarBackdrop"></div>
 </aside>
-

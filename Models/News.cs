@@ -4,6 +4,7 @@ using System;
 
 namespace Bus_ticket.Models
 {
+    [BsonIgnoreExtraElements]
     public class News
     {
         [BsonId]
