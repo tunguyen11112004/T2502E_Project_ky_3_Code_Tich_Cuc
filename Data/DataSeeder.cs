@@ -72,6 +72,8 @@ namespace Bus_ticket.Data
             // Chạy bulk sinh chuyến xe toàn quốc sạch lỗi compile
             await SeedBulkTripsAndBookings(200);
 
+            await EnsureCancelledBookingsForStatisticsAsync();
+
             Console.WriteLine("--> Hoàn tất khởi tạo dữ liệu hệ thống!");
         }
 
@@ -752,6 +754,106 @@ namespace Bus_ticket.Data
             }
         }
 
+        private async Task EnsureCancelledBookingsForStatisticsAsync()
+        {
+            var cancelledStatuses = new[] { "Cancelled", "Canceled", "Cancel", "Refunded" };
+
+            var existingCancelledBookings = await _context.Bookings
+                .CountDocumentsAsync(booking => cancelledStatuses.Contains(booking.BookingStatus));
+
+            if (existingCancelledBookings > 0)
+            {
+                return;
+            }
+
+            var trips = await _context.Trips
+                .Find(_ => true)
+                .Limit(6)
+                .ToListAsync();
+
+            if (!trips.Any())
+            {
+                return;
+            }
+
+            var customers = await _context.Customers
+                .Find(_ => true)
+                .ToListAsync();
+
+            var customer = customers.FirstOrDefault();
+            if (customer == null)
+            {
+                return;
+            }
+
+            var cancelledBookings = new List<Booking>();
+            var index = 1;
+
+            foreach (var trip in trips)
+            {
+                var ticketCount = index % 2 == 0 ? 2 : 1;
+                var seatPrice = trip.BaseFare > 0 ? trip.BaseFare : 500000m;
+                var totalPrice = seatPrice * ticketCount;
+                var taxAmount = totalPrice * 0.1m;
+                var finalAmount = totalPrice + taxAmount;
+                var bookingTime = trip.DepartureTime.AddHours(-10);
+
+                cancelledBookings.Add(new Booking
+                {
+                    Id = ObjectId.GenerateNewId().ToString(),
+                    BookingCode = $"BKG-CANCEL-{bookingTime:yyyyMMdd}-{index:D3}",
+                    CustomerId = customer.Id,
+                    CustomerPhone = customer.PhoneNumber,
+                    CustomerEmail = customer.Email,
+                    TripId = trip.Id,
+                    UserId = null,
+                    BranchId = !string.IsNullOrWhiteSpace(trip.BranchId) ? trip.BranchId : BranchHanoiId,
+                    BookingTime = bookingTime,
+                    TotalPrice = totalPrice,
+                    TaxAmount = taxAmount,
+                    DiscountAmount = 0m,
+                    FinalAmount = finalAmount,
+                    BookingStatus = "Cancelled",
+                    PaymentStatus = "Refunded",
+                    Passengers = Enumerable.Range(1, ticketCount)
+                        .Select(passengerIndex => new PassengerDetail
+                        {
+                            SeatNumber = $"C{passengerIndex:D2}",
+                            Name = $"Cancelled Passenger {index}-{passengerIndex}",
+                            PhoneNumber = customer.PhoneNumber,
+                            Email = customer.Email,
+                            Dob = DateTime.UtcNow.AddYears(-25),
+                            FinalSeatPrice = seatPrice
+                        })
+                        .ToList(),
+                    Payment = new PaymentInfo
+                    {
+                        PaymentMethod = "Banking",
+                        AmountPaid = finalAmount,
+                        TransactionCode = $"REFUND{bookingTime:yyyyMMdd}{index:D3}"
+                    },
+                    Cancellation = new CancellationInfo
+                    {
+                        CanceledAt = bookingTime.AddHours(2),
+                        Reason = "Seeded cancelled booking for ticket status statistics",
+                        PenaltyPercentage = 10m,
+                        RefundAmount = finalAmount * 0.9m
+                    },
+                    CreatedBy = "SystemSeeder",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedBy = "SystemSeeder",
+                    UpdatedAt = DateTime.UtcNow
+                });
+
+                index++;
+            }
+
+            if (cancelledBookings.Any())
+            {
+                await _context.Bookings.InsertManyAsync(cancelledBookings);
+            }
+        }
+
         public async Task SeedSystemConfigs()
         {
             var config = await _context.SystemConfigs.Find(c => c.Id == "global_system_configuration")
@@ -901,6 +1003,11 @@ AddPermission("64f1a2b3c4d5e6f7a8b9ca27", "Update.Customer", "Sửa thông tin t
 
             AddPermission("64f1a2b3c4d5e6f7a8b9ca37", "View.Permission", "Xem danh sách quyền hệ thống có phân trang",
                 "Permissions/Index", "GET");
+
+            AddPermission("64f1a2b3c4d5e6f7a8b9ca38", "View.TicketStatusStatistics",
+                "Xem thống kê vé đặt thành công và vé bị hủy", "/Dashboard/TicketStatusStatistics", "GET");
+            AddPermission("64f1a2b3c4d5e6f7a8b9ca39", "Export.TicketStatusStatistics",
+                "Xuất Excel thống kê vé đặt thành công và vé bị hủy", "/Dashboard/ExportTicketStatusStatistics", "GET");
 
             await _context.Permissions.InsertManyAsync(permissions);
             Console.WriteLine($"--> Đã seeding thành công trọn bộ {permissions.Count} quyền hệ thống!");

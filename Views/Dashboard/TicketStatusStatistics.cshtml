@@ -1,0 +1,290 @@
+@model Bus_ticket.ViewModels.TicketStatusStatisticsViewModel
+@using System.Text.Json
+
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Ticket Status Statistics";
+
+    var fromDateValue = Model.FromDate.ToString("yyyy-MM-dd");
+    var toDateValue = Model.ToDate.ToString("yyyy-MM-dd");
+
+    var chartSeries = JsonSerializer.Serialize(new[]
+    {
+        Model.SuccessfulTickets,
+        Model.CancelledTickets
+    });
+
+    var chartLabels = JsonSerializer.Serialize(new[]
+    {
+        "Successful Tickets",
+        "Cancelled Tickets"
+    });
+
+    var totalTicketsText = Model.TotalTickets.ToString("N0");
+}
+
+<div class="p-4 sm:p-6 lg:p-8 space-y-6 max-w-full overflow-x-hidden">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold tracking-tight text-white">
+                Ticket Status Statistics
+            </h1>
+            <p class="text-sm text-gray-400 mt-1">
+                Compare successful tickets and cancelled tickets by selected date range.
+            </p>
+        </div>
+
+        <a asp-controller="Dashboard"
+           asp-action="ExportTicketStatusStatistics"
+           asp-route-fromDate="@fromDateValue"
+           asp-route-toDate="@toDateValue"
+           class="inline-flex items-center justify-center px-4 py-2.5 text-sm font-semibold text-gray-900 bg-emerald-400 hover:bg-emerald-500 rounded-lg transition-colors duration-200 shadow-sm">
+            Export Excel
+        </a>
+    </div>
+
+    <form method="get"
+          asp-controller="Dashboard"
+          asp-action="TicketStatusStatistics"
+          class="bg-[#1e1e24] border border-gray-700/50 rounded-xl p-4 shadow-xl">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">
+                    From Date
+                </label>
+                <input type="date"
+                       name="fromDate"
+                       value="@fromDateValue"
+                       class="w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white focus:border-amber-400 focus:ring-2 focus:ring-amber-400" />
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">
+                    To Date
+                </label>
+                <input type="date"
+                       name="toDate"
+                       value="@toDateValue"
+                       class="w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white focus:border-amber-400 focus:ring-2 focus:ring-amber-400" />
+            </div>
+
+            <div>
+                <button type="submit"
+                        class="w-full inline-flex items-center justify-center px-4 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg transition-colors duration-200">
+                    Filter Data
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div class="bg-[#1e1e24] border border-gray-700/50 rounded-xl p-5 shadow-xl">
+            <p class="text-sm text-gray-400">Successful Tickets</p>
+            <p class="text-2xl font-bold text-emerald-400 mt-2">
+                @Model.SuccessfulTickets.ToString("N0")
+            </p>
+            <p class="text-xs text-gray-500 mt-2">
+                @Model.SuccessfulBookings.ToString("N0") successful bookings
+            </p>
+        </div>
+
+        <div class="bg-[#1e1e24] border border-gray-700/50 rounded-xl p-5 shadow-xl">
+            <p class="text-sm text-gray-400">Cancelled Tickets</p>
+            <p class="text-2xl font-bold text-red-400 mt-2">
+                @Model.CancelledTickets.ToString("N0")
+            </p>
+            <p class="text-xs text-gray-500 mt-2">
+                @Model.CancelledBookings.ToString("N0") cancelled bookings
+            </p>
+        </div>
+
+        <div class="bg-[#1e1e24] border border-gray-700/50 rounded-xl p-5 shadow-xl">
+            <p class="text-sm text-gray-400">Total Tickets</p>
+            <p class="text-2xl font-bold text-white mt-2">
+                @Model.TotalTickets.ToString("N0")
+            </p>
+            <p class="text-xs text-gray-500 mt-2">
+                Successful + cancelled tickets
+            </p>
+        </div>
+
+        <div class="bg-[#1e1e24] border border-gray-700/50 rounded-xl p-5 shadow-xl">
+            <p class="text-sm text-gray-400">Cancellation Rate</p>
+            <p class="text-2xl font-bold text-amber-400 mt-2">
+                @Model.CancelledPercentage.ToString("N2")%
+            </p>
+            <p class="text-xs text-gray-500 mt-2">
+                Based on ticket count
+            </p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div class="xl:col-span-1 bg-[#1e1e24] border border-gray-700/50 rounded-xl p-5 shadow-xl">
+            <h2 class="text-lg font-semibold text-white">
+                Ticket Status Ratio
+            </h2>
+            <p class="text-sm text-gray-400 mt-1">
+                Donut chart by ticket count.
+            </p>
+
+            @if (Model.TotalTickets <= 0)
+            {
+                <div class="py-16 text-center text-gray-500">
+                    No ticket status data in this date range.
+                </div>
+            }
+            else
+            {
+                <div id="ticket-status-chart" class="mt-6"></div>
+            }
+        </div>
+
+        <div class="xl:col-span-2 w-full max-w-full overflow-hidden bg-[#1e1e24] border border-gray-700/50 rounded-xl shadow-xl">
+            <div class="p-5 border-b border-gray-700/60">
+                <h2 class="text-lg font-semibold text-white">
+                    Status Summary
+                </h2>
+                <p class="text-sm text-gray-400 mt-1">
+                    Data is grouped from MongoDB bookings by bookingStatus using $match and $group.
+                </p>
+            </div>
+
+            <div class="w-full overflow-x-auto">
+                <table class="w-full min-w-[760px] table-fixed text-sm text-left text-gray-300">
+                    <thead class="text-xs uppercase bg-[#141419] text-gray-400 border-b border-gray-700/60">
+                        <tr>
+                            <th class="w-16 px-4 py-4 font-semibold tracking-wider">No.</th>
+                            <th class="px-4 py-4 font-semibold tracking-wider">Status</th>
+                            <th class="w-44 px-4 py-4 font-semibold tracking-wider text-right">Bookings</th>
+                            <th class="w-44 px-4 py-4 font-semibold tracking-wider text-right">Tickets</th>
+                            <th class="w-36 px-4 py-4 font-semibold tracking-wider text-right">Percentage</th>
+                        </tr>
+                    </thead>
+
+                    <tbody class="divide-y divide-gray-700/50">
+                        @if (Model.Items.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="5" class="px-4 py-8 text-center text-gray-500">
+                                    No data available in this date range.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @for (var i = 0; i < Model.Items.Count; i++)
+                            {
+                                var item = Model.Items[i];
+                                var ticketColorClass = item.StatusKey == "successful"
+                                    ? "text-emerald-400"
+                                    : "text-red-400";
+
+                                <tr class="hover:bg-gray-800/30 transition-colors duration-150">
+                                    <td class="px-4 py-4 text-gray-400">
+                                        @(i + 1)
+                                    </td>
+                                    <td class="px-4 py-4 font-semibold text-white">
+                                        @item.StatusLabel
+                                    </td>
+                                    <td class="px-4 py-4 text-right">
+                                        @item.BookingCount.ToString("N0")
+                                    </td>
+                                    <td class="px-4 py-4 text-right font-semibold @ticketColorClass">
+                                        @item.TicketCount.ToString("N0")
+                                    </td>
+                                    <td class="px-4 py-4 text-right">
+                                        @item.Percentage.ToString("N2")%
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+
+                    <tfoot class="bg-[#141419] border-t border-gray-700/60">
+                        <tr>
+                            <td colspan="2" class="px-4 py-4 font-bold text-white">
+                                Total
+                            </td>
+                            <td class="px-4 py-4 text-right font-bold text-white">
+                                @Model.TotalBookings.ToString("N0")
+                            </td>
+                            <td class="px-4 py-4 text-right font-bold text-amber-400">
+                                @Model.TotalTickets.ToString("N0")
+                            </td>
+                            <td class="px-4 py-4 text-right font-bold text-white">
+                                @(Model.TotalTickets > 0 ? "100.00%" : "0.00%")
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const chartElement = document.getElementById("ticket-status-chart");
+
+        if (!chartElement) {
+            return;
+        }
+
+        if (typeof ApexCharts === "undefined") {
+            chartElement.innerHTML = "<div class='py-16 text-center text-red-400'>ApexCharts library is not loaded.</div>";
+            return;
+        }
+
+        const options = {
+            chart: {
+                type: "donut",
+                height: 360,
+                background: "transparent",
+                foreColor: "#d1d5db"
+            },
+            series: @Html.Raw(chartSeries),
+            labels: @Html.Raw(chartLabels),
+            legend: {
+                position: "bottom",
+                labels: {
+                    colors: "#d1d5db"
+                }
+            },
+            dataLabels: {
+                enabled: true,
+                formatter: function (value) {
+                    return value.toFixed(2) + "%";
+                }
+            },
+            tooltip: {
+                y: {
+                    formatter: function (value) {
+                        return value.toLocaleString() + " tickets";
+                    }
+                }
+            },
+            plotOptions: {
+                pie: {
+                    donut: {
+                        labels: {
+                            show: true,
+                            total: {
+                                show: true,
+                                label: "Total Tickets",
+                                formatter: function () {
+                                    return "@totalTicketsText";
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        const chart = new ApexCharts(chartElement, options);
+        chart.render();
+    });
+</script>

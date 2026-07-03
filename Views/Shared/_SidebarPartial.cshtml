@@ -129,7 +129,23 @@
                                   "RouteRevenue",
                                   "/Dashboard/RouteRevenue"
                               );
-    var showDashboardMenu = isAdmin || canViewRouteRevenue;
+
+    var canViewTicketStatusStatistics = isAdmin
+                                        || SidebarPermissionService.HasPermission(
+                                            permissionNames,
+                                            "Dashboard",
+                                            "Report",
+                                            "Statistic",
+                                            "Statistics",
+                                            "Ticket",
+                                            "Booking",
+                                            "Cancel",
+                                            "Cancellation",
+                                            "TicketStatusStatistics",
+                                            "/Dashboard/TicketStatusStatistics"
+                                        );
+
+    var showDashboardMenu = isAdmin || canViewRouteRevenue || canViewTicketStatusStatistics;
 
     var showCrudMenu = canViewBooking
                        || canViewBranches
@@ -211,6 +227,17 @@
                                            asp-action="RouteRevenue"
                                            class="@subMenuItemClass">
                                             Route Revenue
+                                        </a>
+                                    </li>
+                                }
+
+                                @if (canViewTicketStatusStatistics)
+                                {
+                                    <li>
+                                        <a asp-controller="Dashboard"
+                                           asp-action="TicketStatusStatistics"
+                                           class="@subMenuItemClass">
+                                            Ticket Status Statistics
                                         </a>
                                     </li>
                                 }
@@ -486,7 +513,7 @@
                         }
                     }
 
-                    @if (!isAdmin && !canViewRouteRevenue && !showCrudMenu && !showSrcAdminFlow && !showEmployeeMenu)
+                    @if (!isAdmin && !showDashboardMenu && !showCrudMenu && !showSrcAdminFlow && !showEmployeeMenu)
                     {
                         <li>
                             <div class="p-3 text-sm text-gray-500 rounded-lg bg-gray-50 dark:bg-gray-700 dark:text-gray-300">
