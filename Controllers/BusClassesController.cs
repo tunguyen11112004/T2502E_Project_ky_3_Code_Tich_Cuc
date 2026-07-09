@@ -1,6 +1,7 @@
 using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Bus_ticket.Data;
 using Bus_ticket.Helpers;
@@ -17,6 +18,9 @@ namespace Bus_ticket.Controllers;
 [Authorize(Roles = "Admin,Employee")]
 public class BusClassesController : Controller
 {
+    private const string ActiveFormTokenSessionKey = "BusClass_ActiveFormToken";
+    private static readonly ConcurrentDictionary<string, SemaphoreSlim> ClassNameCreateLocks = new();
+
     private readonly ApplicationDbContext _context;
     private readonly ICloudinaryService _cloudinaryService;
 
@@ -28,12 +32,13 @@ public class BusClassesController : Controller
 
     public async Task<IActionResult> Index(string? searchTerm, int page = 1, int pageSize = 10)
     {
-        var filter = Builders<BusClass>.Filter.Empty;
+        var filter = BusClassFilters.NotDeleted;
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {
+            var keyword = searchTerm.Trim();
             filter &= Builders<BusClass>.Filter.Regex(
                 bc => bc.ClassName,
-                new BsonRegularExpression(searchTerm.Trim(), "i"));
+                new BsonRegularExpression(keyword, "i"));
         }
 
         long totalItems = await _context.BusClasses.CountDocumentsAsync(filter);
@@ -48,27 +53,16 @@ public class BusClassesController : Controller
             .Limit(pageSize)
             .ToListAsync();
 
-        var classIds = classes.Select(c => c.Id).ToList();
-        var buses = classIds.Count > 0
-            ? await _context.Buses.Find(Builders<Bus>.Filter.In(b => b.BusClassId, classIds)).ToListAsync()
-            : new List<Bus>();
-
-        var busMap = buses
-            .Where(b => !string.IsNullOrEmpty(b.BusClassId))
-            .GroupBy(b => b.BusClassId!)
-            .ToDictionary(g => g.Key, g => g.Select(b => b.LicensePlate).ToList());
-
         var items = classes.Select(c => new BusClassListItemViewModel
         {
             Id = c.Id,
             ClassName = c.ClassName,
-            BusType = c.BusType,
             ImageUrl = c.ImageUrl,
             TotalRows = c.TotalRows,
             TotalColumns = c.TotalColumns,
+            TotalFloors = c.TotalFloors,
             TotalSeats = c.TotalSeats,
-            Status = string.IsNullOrWhiteSpace(c.Status) ? "Active" : c.Status,
-            LicensePlates = busMap.GetValueOrDefault(c.Id, new List<string>())
+            Status = NormalizeClassStatus(c.Status)
         }).ToList();
 
         ViewBag.SearchTerm = searchTerm ?? string.Empty;
@@ -82,47 +76,68 @@ public class BusClassesController : Controller
 
     public IActionResult Create()
     {
+        var token = FormSubmissionGuard.CreateToken();
+        HttpContext.Session.SetString(ActiveFormTokenSessionKey, token);
+        ViewBag.FormToken = token;
         return View(new BusClassFormViewModel());
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(BusClassFormViewModel model)
+    public async Task<IActionResult> Create(BusClassFormViewModel model, string? formToken)
     {
+        var sessionToken = HttpContext.Session.GetString(ActiveFormTokenSessionKey);
+        if (string.IsNullOrWhiteSpace(sessionToken) ||
+            !string.Equals(sessionToken, formToken?.Trim(), StringComparison.Ordinal))
+        {
+            TempData["ErrorMessage"] =
+                "Form không còn hợp lệ (có thể do bạn mở nhiều tab Thêm mới). Vui lòng bấm Thêm loại xe một lần.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        if (!FormSubmissionGuard.TryAcquire(formToken))
+        {
+            TempData[FormSubmissionGuard.IsCompleted(formToken) ? "SuccessMessage" : "ErrorMessage"] =
+                FormSubmissionGuard.IsCompleted(formToken)
+                    ? "Cấu hình loại xe đã được lưu trước đó."
+                    : "Yêu cầu đang được xử lý. Mỗi form chỉ lưu một lần.";
+            return RedirectToAction(nameof(Index));
+        }
+
         ModelState.Remove(nameof(model.Id));
         ModelState.Remove(nameof(model.ImageUrl));
         ModelState.Remove(nameof(model.ImagePublicId));
-        ModelState.Remove(nameof(model.ImageFile));
-        ModelState.Remove(nameof(model.LinkedBuses));
+
+        ValidateImage(model, isEdit: false);
 
         if (!ModelState.IsValid)
         {
-            return View(model);
+            return CreateViewWithToken(model, formToken);
         }
 
-        var duplicate = await _context.BusClasses
-            .Find(bc => bc.ClassName.ToLower() == model.ClassName.Trim().ToLower())
-            .AnyAsync();
-        if (duplicate)
+        if (await IsDuplicateClassNameAsync(model.ClassName))
         {
-            ModelState.AddModelError(nameof(model.ClassName), "Tên hạng xe này đã tồn tại.");
-            return View(model);
+            ModelState.AddModelError(nameof(model.ClassName), "Tên loại xe này đã tồn tại.");
+            return CreateViewWithToken(model, formToken);
         }
 
-        if (!string.IsNullOrWhiteSpace(model.LicensePlate))
-        {
-            var plateExists = await _context.Buses
-                .Find(b => b.LicensePlate == model.LicensePlate.Trim())
-                .AnyAsync();
-            if (plateExists)
-            {
-                ModelState.AddModelError(nameof(model.LicensePlate), "Biển số xe này đã tồn tại.");
-                return View(model);
-            }
-        }
+        var classNameLock = ClassNameCreateLocks.GetOrAdd(
+            BusClassNameHelper.NormalizeKey(model.ClassName),
+            _ => new SemaphoreSlim(1, 1));
 
+        await classNameLock.WaitAsync();
         try
         {
+            if (await IsDuplicateClassNameAsync(model.ClassName))
+            {
+                ModelState.AddModelError(nameof(model.ClassName), "Tên loại xe này đã tồn tại.");
+                return CreateViewWithToken(model, formToken);
+            }
+
+            var busType = ResolveBusType(model.TotalFloors, model.ClassName);
+            var layout = BusSeatLayoutGenerator.Generate(
+                model.TotalRows, model.TotalColumns, model.TotalFloors, busType);
+
             string imageUrl = string.Empty;
             string imagePublicId = string.Empty;
             if (model.ImageFile != null && model.ImageFile.Length > 0)
@@ -131,13 +146,18 @@ public class BusClassesController : Controller
                 (imageUrl, imagePublicId) = await _cloudinaryService.UploadImageAsync(stream, model.ImageFile.FileName);
             }
 
-            var layout = BusSeatLayoutGenerator.Generate(
-                model.TotalRows, model.TotalColumns, model.TotalFloors, model.BusType);
+            if (string.IsNullOrWhiteSpace(imageUrl))
+            {
+                ModelState.AddModelError(nameof(model.ImageFile), "Ảnh loại xe không được để trống.");
+                return CreateViewWithToken(model, formToken);
+            }
 
             var busClass = new BusClass
             {
+                Id = ObjectId.GenerateNewId().ToString(),
                 ClassName = model.ClassName.Trim(),
-                BusType = model.BusType,
+                ClassNameKey = BusClassNameHelper.NormalizeKey(model.ClassName),
+                BusType = busType,
                 ImageUrl = imageUrl,
                 ImagePublicId = imagePublicId,
                 TotalRows = model.TotalRows,
@@ -145,7 +165,7 @@ public class BusClassesController : Controller
                 TotalFloors = model.TotalFloors,
                 DefaultLayout = layout,
                 TotalSeats = layout.Count,
-                Status = model.Status,
+                Status = NormalizeClassStatus(model.Status),
                 CreatedAt = DateTime.UtcNow,
                 CreatedBy = User.Identity?.Name ?? "Admin",
                 UpdatedAt = DateTime.UtcNow,
@@ -154,19 +174,32 @@ public class BusClassesController : Controller
 
             await _context.BusClasses.InsertOneAsync(busClass);
 
-            if (!string.IsNullOrWhiteSpace(model.LicensePlate))
-            {
-                await CreateBusForClassAsync(busClass.Id, model.LicensePlate.Trim(), model.Status);
-            }
-
-            TempData["SuccessMessage"] = "Thêm hạng xe thành công.";
+            HttpContext.Session.Remove(ActiveFormTokenSessionKey);
+            FormSubmissionGuard.MarkCompleted(formToken);
+            TempData["SuccessMessage"] = "Thêm cấu hình loại xe thành công.";
             return RedirectToAction(nameof(Index));
+        }
+        catch (MongoWriteException ex) when (ex.WriteError?.Category == ServerErrorCategory.DuplicateKey)
+        {
+            ModelState.AddModelError(nameof(model.ClassName), "Tên loại xe này đã tồn tại.");
+            return CreateViewWithToken(model, formToken);
         }
         catch (Exception ex)
         {
             ModelState.AddModelError(string.Empty, "Lỗi khi lưu: " + ex.Message);
-            return View(model);
+            return CreateViewWithToken(model, formToken);
         }
+        finally
+        {
+            classNameLock.Release();
+        }
+    }
+
+    private IActionResult CreateViewWithToken(BusClassFormViewModel model, string? formToken)
+    {
+        ViewBag.FormToken = formToken;
+        FormSubmissionGuard.Release(formToken);
+        return View(model);
     }
 
     public async Task<IActionResult> Edit(string id)
@@ -174,32 +207,9 @@ public class BusClassesController : Controller
         if (string.IsNullOrEmpty(id)) return NotFound();
 
         var busClass = await _context.BusClasses.Find(bc => bc.Id == id).FirstOrDefaultAsync();
-        if (busClass == null) return NotFound();
+        if (busClass == null || busClass.DeletedAt.HasValue) return NotFound();
 
-        var linkedBuses = await _context.Buses
-            .Find(b => b.BusClassId == id)
-            .ToListAsync();
-
-        var model = new BusClassFormViewModel
-        {
-            Id = busClass.Id,
-            ClassName = busClass.ClassName,
-            BusType = busClass.BusType,
-            TotalRows = busClass.TotalRows,
-            TotalColumns = busClass.TotalColumns,
-            TotalFloors = busClass.TotalFloors,
-            Status = string.IsNullOrWhiteSpace(busClass.Status) ? "Active" : busClass.Status,
-            ImageUrl = busClass.ImageUrl,
-            ImagePublicId = busClass.ImagePublicId,
-            LinkedBuses = linkedBuses.Select(b => new BusSummaryViewModel
-            {
-                Id = b.Id,
-                LicensePlate = b.LicensePlate,
-                Status = b.Status
-            }).ToList()
-        };
-
-        return View(model);
+        return View(MapToFormViewModel(busClass));
     }
 
     [HttpPost]
@@ -208,23 +218,24 @@ public class BusClassesController : Controller
     {
         if (id != model.Id) return NotFound();
 
-        ModelState.Remove(nameof(model.LinkedBuses));
-        ModelState.Remove(nameof(model.LicensePlate));
-        ModelState.Remove(nameof(model.ImageFile));
         ModelState.Remove(nameof(model.ImageUrl));
         ModelState.Remove(nameof(model.ImagePublicId));
 
+        var existing = await _context.BusClasses.Find(bc => bc.Id == id).FirstOrDefaultAsync();
+        if (existing == null || existing.DeletedAt.HasValue) return NotFound();
+
+        ValidateImage(model, isEdit: true, existing.ImageUrl);
+
         if (!ModelState.IsValid)
         {
-            model.LinkedBuses = await LoadLinkedBusesAsync(id);
             return View(model);
         }
 
-        var normalizedStatus = model.Status == "Inactive" ? "Inactive" : "Active";
-        model.Status = normalizedStatus;
-
-        var existing = await _context.BusClasses.Find(bc => bc.Id == id).FirstOrDefaultAsync();
-        if (existing == null) return NotFound();
+        if (await IsDuplicateClassNameAsync(model.ClassName, id))
+        {
+            ModelState.AddModelError(nameof(model.ClassName), "Tên loại xe này đã tồn tại.");
+            return View(model);
+        }
 
         try
         {
@@ -238,12 +249,21 @@ public class BusClassesController : Controller
                 (imageUrl, imagePublicId) = await _cloudinaryService.UploadImageAsync(stream, model.ImageFile.FileName);
             }
 
+            if (string.IsNullOrWhiteSpace(imageUrl))
+            {
+                ModelState.AddModelError(nameof(model.ImageFile), "Ảnh loại xe không được để trống.");
+                return View(model);
+            }
+
+            var busType = ResolveBusType(model.TotalFloors, model.ClassName);
             var layout = BusSeatLayoutGenerator.Generate(
-                model.TotalRows, model.TotalColumns, model.TotalFloors, model.BusType);
+                model.TotalRows, model.TotalColumns, model.TotalFloors, busType);
+            var normalizedStatus = NormalizeClassStatus(model.Status);
 
             var update = Builders<BusClass>.Update
                 .Set(bc => bc.ClassName, model.ClassName.Trim())
-                .Set(bc => bc.BusType, model.BusType)
+                .Set(bc => bc.ClassNameKey, BusClassNameHelper.NormalizeKey(model.ClassName))
+                .Set(bc => bc.BusType, busType)
                 .Set(bc => bc.ImageUrl, imageUrl)
                 .Set(bc => bc.ImagePublicId, imagePublicId)
                 .Set(bc => bc.TotalRows, model.TotalRows)
@@ -257,67 +277,14 @@ public class BusClassesController : Controller
 
             await _context.BusClasses.UpdateOneAsync(bc => bc.Id == id, update);
 
-            var busStatus = normalizedStatus == "Inactive" ? "Inactive" : "Active";
-            await _context.Buses.UpdateManyAsync(
-                b => b.BusClassId == id,
-                Builders<Bus>.Update
-                    .Set(b => b.Status, busStatus)
-                    .Set(b => b.UpdatedAt, DateTime.UtcNow)
-                    .Set(b => b.UpdatedBy, User.Identity?.Name ?? "Admin"));
-
-            TempData["SuccessMessage"] = "Cập nhật hạng xe thành công.";
+            TempData["SuccessMessage"] = "Cập nhật cấu hình loại xe thành công.";
             return RedirectToAction(nameof(Index));
         }
         catch (Exception ex)
         {
             ModelState.AddModelError(string.Empty, "Lỗi khi cập nhật: " + ex.Message);
-            model.LinkedBuses = await LoadLinkedBusesAsync(id);
             return View(model);
         }
-    }
-
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> AddBus(string busClassId, string licensePlate)
-    {
-        if (string.IsNullOrEmpty(busClassId) || string.IsNullOrWhiteSpace(licensePlate))
-        {
-            TempData["ErrorMessage"] = "Biển số xe không hợp lệ.";
-            return RedirectToAction(nameof(Edit), new { id = busClassId });
-        }
-
-        var plate = licensePlate.Trim();
-        var exists = await _context.Buses.Find(b => b.LicensePlate == plate).AnyAsync();
-        if (exists)
-        {
-            TempData["ErrorMessage"] = "Biển số xe đã tồn tại trong hệ thống.";
-            return RedirectToAction(nameof(Edit), new { id = busClassId });
-        }
-
-        await CreateBusForClassAsync(busClassId, plate, await GetBusClassStatusAsync(busClassId));
-        TempData["SuccessMessage"] = "Thêm xe thành công.";
-        return RedirectToAction(nameof(Edit), new { id = busClassId });
-    }
-
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> DeleteBus(string busClassId, string busId)
-    {
-        if (string.IsNullOrEmpty(busId))
-        {
-            return RedirectToAction(nameof(Edit), new { id = busClassId });
-        }
-
-        var inUse = await _context.Trips.Find(t => t.BusId == busId).AnyAsync();
-        if (inUse)
-        {
-            TempData["ErrorMessage"] = "Không thể xóa xe! Xe đang được gán cho chuyến đi.";
-            return RedirectToAction(nameof(Edit), new { id = busClassId });
-        }
-
-        await _context.Buses.DeleteOneAsync(b => b.Id == busId);
-        TempData["SuccessMessage"] = "Xóa xe thành công.";
-        return RedirectToAction(nameof(Edit), new { id = busClassId });
     }
 
     [HttpPost]
@@ -326,69 +293,101 @@ public class BusClassesController : Controller
     {
         if (string.IsNullOrEmpty(id)) return NotFound();
 
-        var buses = await _context.Buses.Find(b => b.BusClassId == id).ToListAsync();
-        foreach (var bus in buses)
-        {
-            var inTrip = await _context.Trips.Find(t => t.BusId == bus.Id).AnyAsync();
-            if (inTrip)
-            {
-                TempData["ErrorMessage"] = "Không thể xóa! Có xe trong hạng này đang được gán chuyến đi.";
-                return RedirectToAction(nameof(Index));
-            }
-        }
-
         var busClass = await _context.BusClasses.Find(bc => bc.Id == id).FirstOrDefaultAsync();
-        if (busClass != null)
+        if (busClass == null) return NotFound();
+
+        if (busClass.DeletedAt.HasValue)
         {
-            await _cloudinaryService.DeleteImageAsync(busClass.ImagePublicId);
+            TempData["ErrorMessage"] = "Loại xe này đã được xóa trước đó.";
+            return RedirectToAction(nameof(Index));
         }
 
-        await _context.Buses.DeleteManyAsync(b => b.BusClassId == id);
-        await _context.BusClasses.DeleteOneAsync(bc => bc.Id == id);
+        var update = Builders<BusClass>.Update
+            .Set(bc => bc.Status, "Inactive")
+            .Set(bc => bc.DeletedAt, DateTime.UtcNow)
+            .Set(bc => bc.DeletedBy, User.Identity?.Name ?? "Admin")
+            .Set(bc => bc.UpdatedAt, DateTime.UtcNow)
+            .Set(bc => bc.UpdatedBy, User.Identity?.Name ?? "Admin");
 
-        TempData["SuccessMessage"] = "Xóa hạng xe và các xe liên kết thành công.";
+        await _context.BusClasses.UpdateOneAsync(bc => bc.Id == id, update);
+
+        TempData["SuccessMessage"] =
+            "Đã xóa loại xe. Xe, chuyến đi và dữ liệu liên kết vẫn được giữ nguyên.";
         return RedirectToAction(nameof(Index));
     }
 
-    private async Task<string> GetBusClassStatusAsync(string busClassId)
+    private void ValidateImage(BusClassFormViewModel model, bool isEdit, string? existingImageUrl = null)
     {
-        var busClass = await _context.BusClasses.Find(bc => bc.Id == busClassId).FirstOrDefaultAsync();
-        if (busClass == null || string.IsNullOrWhiteSpace(busClass.Status))
+        var hasNewImage = model.ImageFile != null && model.ImageFile.Length > 0;
+        var hasExistingImage = !string.IsNullOrWhiteSpace(existingImageUrl);
+
+        if (!hasNewImage && (!isEdit || !hasExistingImage))
         {
-            return "Active";
+            ModelState.AddModelError(nameof(model.ImageFile), "Ảnh loại xe không được để trống.");
+            return;
         }
 
-        return busClass.Status == "Inactive" ? "Inactive" : "Active";
+        if (!hasNewImage)
+        {
+            return;
+        }
+
+        if (!model.ImageFile!.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+        {
+            ModelState.AddModelError(nameof(model.ImageFile), "File tải lên phải là ảnh (image/*).");
+        }
     }
 
-    private async Task CreateBusForClassAsync(string busClassId, string licensePlate, string? classStatus = null)
-    {
-        var busStatus = classStatus == "Inactive" ? "Inactive" : "Active";
+    private static string NormalizeClassStatus(string? status) =>
+        string.Equals(status, "Inactive", StringComparison.OrdinalIgnoreCase) ? "Inactive" : "Active";
 
-        var bus = new Bus
+    private async Task<bool> IsDuplicateClassNameAsync(string className, string? excludeId = null)
+    {
+        var key = BusClassNameHelper.NormalizeKey(className);
+        var filter = Builders<BusClass>.Filter.And(
+            BusClassFilters.NotDeleted,
+            Builders<BusClass>.Filter.Eq(bc => bc.ClassNameKey, key));
+
+        if (!string.IsNullOrWhiteSpace(excludeId))
         {
-            BusCode = "BUS-" + Guid.NewGuid().ToString("N").Substring(0, 6).ToUpper(),
-            LicensePlate = licensePlate,
-            BusClassId = busClassId,
-            BranchId = DataSeeder.BranchHanoiId,
-            Status = busStatus,
-            CreatedAt = DateTime.UtcNow,
-            CreatedBy = User.Identity?.Name ?? "Admin",
-            UpdatedAt = DateTime.UtcNow,
-            UpdatedBy = User.Identity?.Name ?? "Admin"
+            filter = Builders<BusClass>.Filter.And(
+                filter,
+                Builders<BusClass>.Filter.Ne(bc => bc.Id, excludeId));
+        }
+
+        return await _context.BusClasses.Find(filter).AnyAsync();
+    }
+
+    private static string ResolveBusType(int totalFloors, string className)
+    {
+        var name = className.Trim().ToLowerInvariant();
+
+        if (name.Contains("limousine"))
+        {
+            return "Limousine_Sleeper";
+        }
+
+        if (totalFloors >= 2
+            || name.Contains("giường")
+            || name.Contains("sleeper")
+            || name.Contains("luxury"))
+        {
+            return "Luxury_Sleeper";
+        }
+
+        return "Express_Seat";
+    }
+
+    private static BusClassFormViewModel MapToFormViewModel(BusClass busClass) =>
+        new()
+        {
+            Id = busClass.Id,
+            ClassName = busClass.ClassName,
+            TotalRows = busClass.TotalRows,
+            TotalColumns = busClass.TotalColumns,
+            TotalFloors = busClass.TotalFloors,
+            Status = NormalizeClassStatus(busClass.Status),
+            ImageUrl = busClass.ImageUrl,
+            ImagePublicId = busClass.ImagePublicId
         };
-
-        await _context.Buses.InsertOneAsync(bus);
-    }
-
-    private async Task<List<BusSummaryViewModel>> LoadLinkedBusesAsync(string busClassId)
-    {
-        var buses = await _context.Buses.Find(b => b.BusClassId == busClassId).ToListAsync();
-        return buses.Select(b => new BusSummaryViewModel
-        {
-            Id = b.Id,
-            LicensePlate = b.LicensePlate,
-            Status = b.Status
-        }).ToList();
-    }
 }

@@ -1,4 +1,5 @@
 using Bus_ticket.Data;
+using Bus_ticket.Helpers;
 using Bus_ticket.Interfaces;
 using Bus_ticket.Middlewares;
 using Bus_ticket.Models;
@@ -64,6 +65,9 @@ using (var scope = app.Services.CreateScope())
 {
     var seeder = scope.ServiceProvider.GetRequiredService<IDbSeeder>();
     await seeder.SeedAllAsync();
+
+    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    await BusClassIndexInitializer.EnsureIndexesAsync(dbContext.BusClasses);
 }
 
 // Configure HTTP request pipeline

@@ -1,0 +1,60 @@
+@model Bus_ticket.ViewModels.BusClassFormViewModel
+@{
+    var isEdit = ViewData["IsEdit"] as bool? ?? false;
+    var requireImage = !isEdit || string.IsNullOrWhiteSpace(Model.ImageUrl);
+}
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div>
+        <label asp-for="ClassName" class="block mb-2 text-sm font-medium text-gray-300"></label>
+        <input asp-for="ClassName" required class="w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400"/>
+        <span asp-validation-for="ClassName" class="text-xs text-red-400"></span>
+    </div>
+    <div>
+        <label asp-for="TotalRows" class="block mb-2 text-sm font-medium text-gray-300"></label>
+        <input asp-for="TotalRows" type="number" min="1" max="20" id="totalRows" required
+               class="w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400"/>
+        <span asp-validation-for="TotalRows" class="text-xs text-red-400"></span>
+    </div>
+    <div>
+        <label asp-for="TotalColumns" class="block mb-2 text-sm font-medium text-gray-300"></label>
+        <input asp-for="TotalColumns" type="number" min="1" max="10" id="totalColumns" required
+               class="w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400"/>
+        <span asp-validation-for="TotalColumns" class="text-xs text-red-400"></span>
+    </div>
+    <div>
+        <label asp-for="TotalFloors" class="block mb-2 text-sm font-medium text-gray-300"></label>
+        <input asp-for="TotalFloors" type="number" min="1" max="2" id="totalFloors" required
+               class="w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400"/>
+        <span asp-validation-for="TotalFloors" class="text-xs text-red-400"></span>
+    </div>
+    <div>
+        <label asp-for="Status" class="block mb-2 text-sm font-medium text-gray-300"></label>
+        <select asp-for="Status" required class="w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400">
+            <option value="">-- Chọn trạng thái --</option>
+            <option value="Active">Hoạt động</option>
+            <option value="Inactive">Ngưng hoạt động</option>
+        </select>
+        <span asp-validation-for="Status" class="text-xs text-red-400"></span>
+    </div>
+    <div class="@(isEdit ? "md:col-span-2" : "")">
+        <label class="block mb-2 text-sm font-medium text-gray-300">
+            Ảnh loại xe @if (requireImage) { <span class="text-red-400">*</span> }
+        </label>
+        @if (isEdit && !string.IsNullOrEmpty(Model.ImageUrl))
+        {
+            <img src="@Model.ImageUrl" alt="Ảnh loại xe" class="w-32 h-24 object-cover rounded border border-gray-600 mb-2"/>
+            <p class="text-xs text-gray-500 mb-2">Chọn ảnh mới nếu muốn thay thế ảnh hiện tại.</p>
+        }
+        <input asp-for="ImageFile" type="file" accept="image/*" required="@requireImage"
+               class="w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-amber-400 file:text-gray-900"/>
+        <span asp-validation-for="ImageFile" class="text-xs text-red-400"></span>
+    </div>
+</div>
+
+<div class="mt-4">
+    <p class="text-xs text-gray-400 mb-2">Xem trước sơ đồ ghế (tổng: <span id="seatPreviewCount">0</span> ghế)</p>
+    <div id="seatPreview" class="grid gap-1 p-3 bg-[#141419] rounded-lg border border-gray-700/50 max-w-md"></div>
+</div>
+
+<p class="text-xs text-gray-500 mt-3"><span class="text-red-400">*</span> Tất cả các trường đều bắt buộc.</p>
