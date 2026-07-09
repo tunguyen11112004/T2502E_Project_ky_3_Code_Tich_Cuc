@@ -46,39 +46,58 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", function () {
-        const currentUrl = window.location.pathname.toLowerCase();
+        const currentUrl = window.location.pathname.toLowerCase().replace(/\/$/, "") || "/";
+
+        const navGroups = {
+            trips: ["/admin/priceconfig", "/admin/createtrip", "/admin/edittrip"]
+        };
+
+        function isNavLinkActive(link) {
+            const linkUrl = (link.getAttribute("href") || "").toLowerCase().replace(/\/$/, "");
+            if (!linkUrl || linkUrl === "#") return false;
+
+            const navGroup = link.getAttribute("data-nav-group");
+            if (navGroup && navGroups[navGroup]) {
+                return navGroups[navGroup].some(prefix =>
+                    currentUrl === prefix || currentUrl.startsWith(prefix + "/"));
+            }
+
+            if (currentUrl === linkUrl) return true;
+
+            // Dashboard (/Admin) chỉ active khi đúng trang chủ admin
+            if (linkUrl === "/admin") return false;
+
+            return currentUrl.startsWith(linkUrl + "/") || currentUrl.startsWith(linkUrl + "?");
+        }
+
         const navLinks = document.querySelectorAll(".nav-link-item");
 
         navLinks.forEach(link => {
-            const linkUrl = link.getAttribute("href")?.toLowerCase();
-            if (!linkUrl || linkUrl === "#" || linkUrl === "/") return;
+            if (!isNavLinkActive(link)) return;
 
-            if (currentUrl === linkUrl || currentUrl.startsWith(linkUrl + "/") || currentUrl.startsWith(linkUrl + "?")) {
-                
-                link.classList.remove("text-gray-900", "dark:text-gray-200", "hover:bg-gray-100", "dark:hover:bg-gray-700");
-                link.classList.add(
-                    "bg-amber-500/10", 
-                    "text-amber-600", 
-                    "dark:text-amber-400", 
-                    "font-bold", 
-                    "border-l-4", 
-                    "border-amber-500", 
-                    "dark:border-amber-400", 
-                    "rounded-r-lg", 
-                    "rounded-l-none"
-                );
+            link.classList.remove("text-gray-900", "dark:text-gray-200", "hover:bg-gray-100", "dark:hover:bg-gray-700");
+            link.classList.add(
+                "bg-amber-500/10",
+                "text-amber-600",
+                "dark:text-amber-400",
+                "font-bold",
+                "border-l-4",
+                "border-amber-500",
+                "dark:border-amber-400",
+                "rounded-r-lg",
+                "rounded-l-none"
+            );
 
-                const parentUl = link.closest("ul");
-                if (parentUl && parentUl.id && parentUl.id.startsWith("dropdown-")) {
-                    parentUl.classList.remove("hidden");
+            const parentUl = link.closest("ul");
+            if (parentUl && parentUl.id && parentUl.id.startsWith("dropdown-")) {
+                parentUl.classList.remove("hidden");
 
-                    const toggleButton = document.querySelector(`[aria-controls="${parentUl.id}"]`);
-                    if (toggleButton) {
-                        toggleButton.classList.add("text-gray-900", "dark:text-white", "bg-gray-100", "dark:bg-gray-700");
-                        const arrowIcon = toggleButton.querySelector("svg[sidebar-toggle-item]");
-                        if (arrowIcon) {
-                            arrowIcon.classList.add("rotate-180");
-                        }
+                const toggleButton = document.querySelector(`[aria-controls="${parentUl.id}"]`);
+                if (toggleButton) {
+                    toggleButton.classList.add("text-gray-900", "dark:text-white", "bg-gray-100", "dark:bg-gray-700");
+                    const arrowIcon = toggleButton.querySelector("svg[sidebar-toggle-item]");
+                    if (arrowIcon) {
+                        arrowIcon.classList.add("rotate-180");
                     }
                 }
             }

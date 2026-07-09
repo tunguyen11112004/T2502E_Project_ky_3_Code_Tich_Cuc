@@ -178,25 +178,30 @@ namespace Bus_ticket.Controllers
         }
         
         [HttpGet]
-        public async Task<IActionResult> PriceConfig(int page = 1, string searchDate = "", string searchText = "")
+        public async Task<IActionResult> PriceConfig(int page = 1, string? searchDate = null, string searchText = "")
         {
             const int pageSize = 10;
             if (page < 1) page = 1;
 
-            var filter = Builders<Trip>.Filter.Empty;
-            if (!string.IsNullOrEmpty(searchDate) && DateTime.TryParse(searchDate, out DateTime parsedDate))
+            if (string.IsNullOrWhiteSpace(searchDate))
             {
-                var startOfDay = parsedDate.Date.ToUniversalTime();
-                var endOfDay = parsedDate.Date.AddDays(1).AddTicks(-1).ToUniversalTime();
-                filter = Builders<Trip>.Filter.And(
-                    Builders<Trip>.Filter.Gte(t => t.DepartureTime, startOfDay),
-                    Builders<Trip>.Filter.Lte(t => t.DepartureTime, endOfDay));
+                searchDate = DateTime.Now.ToString("yyyy-MM-dd");
             }
 
-            var trips = await _dbContext.Trips
-                .Find(filter)
-                .SortByDescending(t => t.DepartureTime)
-                .ToListAsync();
+            if (!DateTime.TryParse(searchDate, out DateTime parsedDate))
+            {
+                parsedDate = DateTime.Now.Date;
+                searchDate = parsedDate.ToString("yyyy-MM-dd");
+            }
+
+            var searchDateOnly = parsedDate.Date;
+
+            var trips = (await _dbContext.Trips
+                    .Find(_ => true)
+                    .SortByDescending(t => t.DepartureTime)
+                    .ToListAsync())
+                .Where(t => t.DepartureTime.ToLocalTime().Date == searchDateOnly)
+                .ToList();
 
             var routes = await _dbContext.BusRoutes.Find(_ => true).ToListAsync();
             var buses = await _dbContext.Buses.Find(_ => true).ToListAsync();
@@ -490,6 +495,13 @@ namespace Bus_ticket.Controllers
                 return RedirectTripFormError(tripId, "Xe không tồn tại trong hệ thống.");
             }
 
+            var scheduleError = await ValidateBusScheduleAsync(
+                busId, tripId, routeId, departureTime, arrivalTime, route);
+            if (scheduleError != null)
+            {
+                return RedirectTripFormError(tripId, scheduleError);
+            }
+
             var userName = User.Identity?.Name ?? "Admin";
 
             var busClass = !string.IsNullOrWhiteSpace(bus.BusClassId)
@@ -701,6 +713,161 @@ namespace Bus_ticket.Controllers
                 Builders<Trip>.Update
                     .Set(t => t.BaseFare, basePrice)
                     .Set(t => t.UpdatedAt, DateTime.UtcNow));
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> CheckBusSchedule(
+            string busId,
+            string routeId,
+            DateTime departureTime,
+            DateTime arrivalTime,
+            string? tripId = null)
+        {
+            if (string.IsNullOrWhiteSpace(busId) || string.IsNullOrWhiteSpace(routeId))
+            {
+                return Json(new { valid = true });
+            }
+
+            var route = await _dbContext.BusRoutes.Find(r => r.Id == routeId).FirstOrDefaultAsync();
+            if (route == null)
+            {
+                return Json(new { valid = true });
+            }
+
+            if (arrivalTime <= departureTime)
+            {
+                return Json(new { valid = false, message = "Giờ đến phải sau giờ đi." });
+            }
+
+            var error = await ValidateBusScheduleAsync(busId, tripId, routeId, departureTime, arrivalTime, route);
+            return Json(new { valid = error == null, message = error ?? string.Empty });
+        }
+
+        private async Task<string?> ValidateBusScheduleAsync(
+            string busId,
+            string? excludeTripId,
+            string routeId,
+            DateTime departureTime,
+            DateTime arrivalTime,
+            BusRoute newRoute)
+        {
+            var filter = Builders<Trip>.Filter.And(
+                Builders<Trip>.Filter.Eq(t => t.BusId, busId),
+                Builders<Trip>.Filter.Ne(t => t.Status, "Cancelled"));
+
+            if (!string.IsNullOrWhiteSpace(excludeTripId))
+            {
+                filter = Builders<Trip>.Filter.And(
+                    filter,
+                    Builders<Trip>.Filter.Ne(t => t.Id, excludeTripId));
+            }
+
+            var busTrips = await _dbContext.Trips.Find(filter).ToListAsync();
+            if (busTrips.Count == 0)
+            {
+                return null;
+            }
+
+            var routeIds = busTrips.Select(t => t.RouteId).Append(routeId).Distinct().ToList();
+            var routes = await _dbContext.BusRoutes
+                .Find(r => routeIds.Contains(r.Id))
+                .ToListAsync();
+            var routeMap = routes.ToDictionary(r => r.Id, r => r);
+
+            var newDeparturePoint = newRoute.DeparturePoint;
+            var newReturnDuration = GetReturnDuration(newRoute, routes);
+
+            foreach (var existing in busTrips)
+            {
+                var existingRoute = routeMap.GetValueOrDefault(existing.RouteId);
+                var tripCode = string.IsNullOrWhiteSpace(existing.TripCode) ? "—" : existing.TripCode;
+
+                // 1. Trùng khung giờ — xe không thể chạy 2 chuyến cùng lúc
+                if (departureTime < existing.ArrivalTime && arrivalTime > existing.DepartureTime)
+                {
+                    var routeLabel = existingRoute != null
+                        ? $"{existingRoute.DeparturePoint} → {existingRoute.DestinationPoint}"
+                        : "khác";
+                    return
+                        $"Xe đã có chuyến {tripCode} ({routeLabel}) trong khoảng {existing.DepartureTime:dd/MM/yyyy HH:mm} – {existing.ArrivalTime:dd/MM/yyyy HH:mm}. Không thể trùng lịch cùng xe.";
+                }
+
+                // 2. Chuyến cũ đang về đúng điểm đi mới (chỉ khi chuyến cũ đã bắt đầu)
+                if (existingRoute != null
+                    && PointsMatch(existingRoute.DestinationPoint, newDeparturePoint)
+                    && departureTime >= existing.DepartureTime
+                    && departureTime < existing.ArrivalTime)
+                {
+                    return
+                        $"Xe đang trên đường về {newDeparturePoint} (chuyến {tripCode}, đến lúc {existing.ArrivalTime:dd/MM/yyyy HH:mm}). Chưa thể xuất phát từ {newDeparturePoint} lúc {departureTime:dd/MM/yyyy HH:mm}.";
+                }
+
+                // 3. Chuyến cũ xuất phát TRƯỚC từ cùng điểm đi — phải đủ thời gian khứ hồi
+                if (existingRoute != null
+                    && PointsMatch(existingRoute.DeparturePoint, newDeparturePoint)
+                    && existing.DepartureTime < departureTime)
+                {
+                    var returnDuration = GetReturnDuration(existingRoute, routes);
+                    var availableAfter = existing.ArrivalTime + returnDuration;
+
+                    if (departureTime < availableAfter)
+                    {
+                        return
+                            $"Xe chưa kịp khứ hồi về {newDeparturePoint}. Chuyến {tripCode} kết thúc lúc {existing.ArrivalTime:dd/MM/yyyy HH:mm}, cần thêm ~{FormatTravelDuration(returnDuration)} để về. Chỉ có thể đặt chuyến mới từ {newDeparturePoint} sau {availableAfter:dd/MM/yyyy HH:mm}.";
+                    }
+                }
+
+                // 4. Chuyến SAU từ cùng điểm đi — chuyến mới phải kịp khứ hồi trước khi chuyến sau xuất phát
+                if (existingRoute != null
+                    && PointsMatch(existingRoute.DeparturePoint, newDeparturePoint)
+                    && existing.DepartureTime > departureTime)
+                {
+                    var newRoundTripEnds = arrivalTime + newReturnDuration;
+
+                    if (newRoundTripEnds > existing.DepartureTime)
+                    {
+                        var latestArrival = existing.DepartureTime - newReturnDuration;
+                        return
+                            $"Chuyến này chưa kịp khứ hồi về {newDeparturePoint} trước chuyến {tripCode} ({existing.DepartureTime:dd/MM/yyyy HH:mm}). Giờ đến tối đa nên trước {latestArrival:dd/MM/yyyy HH:mm} (cần ~{FormatTravelDuration(newReturnDuration)} để về).";
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        private static bool PointsMatch(string? a, string? b) =>
+            string.Equals(a?.Trim(), b?.Trim(), StringComparison.OrdinalIgnoreCase);
+
+        private static TimeSpan GetReturnDuration(BusRoute outboundRoute, IEnumerable<BusRoute> allRoutes)
+        {
+            var reverse = allRoutes.FirstOrDefault(r =>
+                PointsMatch(r.DeparturePoint, outboundRoute.DestinationPoint)
+                && PointsMatch(r.DestinationPoint, outboundRoute.DeparturePoint));
+
+            if (reverse != null)
+            {
+                return EstimateTravelDuration(reverse.DistanceKm);
+            }
+
+            return EstimateTravelDuration(outboundRoute.DistanceKm);
+        }
+
+        private static TimeSpan EstimateTravelDuration(double distanceKm)
+        {
+            if (distanceKm <= 0)
+            {
+                return TimeSpan.FromHours(8);
+            }
+
+            var travelHours = distanceKm / 60.0 + (distanceKm / 200.0) * (10.0 / 60.0);
+            return TimeSpan.FromHours(Math.Max(travelHours, 1));
+        }
+
+        private static string FormatTravelDuration(TimeSpan duration)
+        {
+            var totalHours = (int)duration.TotalHours;
+            return duration.Minutes > 0 ? $"{totalHours}g{duration.Minutes}p" : $"{totalHours} giờ";
         }
 
         private static string GenerateTripCode(DateTime departureTime)

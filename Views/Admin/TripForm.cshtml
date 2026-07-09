@@ -1,5 +1,6 @@
 @model Bus_ticket.ViewModels.TripFormViewModel
 @using System.Globalization
+@using Bus_ticket.Helpers
 @{
     Layout = "_AdminLayout";
     ViewData["Title"] = Model.IsEdit ? "Sửa chuyến xe" : "Thêm chuyến xe";
@@ -92,6 +93,7 @@
                         }
                     }
                 </select>
+                <p id="busScheduleWarning" class="hidden text-xs text-red-400 mt-2"></p>
             </div>
         </div>
 
@@ -118,6 +120,7 @@
                     <label class="block mb-1 text-sm font-semibold text-gray-300">Giờ đến</label>
                     <input type="datetime-local" name="arrivalTime" id="txtArrivalTime" required value="@arrValue"
                            class="block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400"/>
+                    <p class="text-xs text-gray-500 mt-1">Tự ước tính theo quãng đường tuyến (~60 km/h, có thể sửa tay)</p>
                 </div>
             </div>
             <div>
@@ -125,23 +128,16 @@
                 <select name="status" id="ddlTripStatus" class="bg-gray-900 border border-gray-700 text-white text-sm rounded-lg block w-full p-2.5 focus:ring-2 focus:ring-amber-400">
                     @{
                         var statuses = new[] { "Scheduled", "Active", "Completed", "Cancelled" };
-                        var statusLabels = new Dictionary<string, string>
-                        {
-                            ["Scheduled"] = "Scheduled - Sẵn sàng đặt vé",
-                            ["Active"] = "Active",
-                            ["Completed"] = "Completed",
-                            ["Cancelled"] = "Cancelled"
-                        };
                     }
                     @foreach (var s in statuses)
                     {
                         if (Model.Status == s)
                         {
-                            <option value="@s" selected="selected">@statusLabels[s]</option>
+                            <option value="@s" selected="selected">@TripStatusHelper.GetDisplayName(s)</option>
                         }
                         else
                         {
-                            <option value="@s">@statusLabels[s]</option>
+                            <option value="@s">@TripStatusHelper.GetDisplayName(s)</option>
                         }
                     }
                 </select>
@@ -166,12 +162,124 @@
             id = r.Id,
             departurePoint = r.DeparturePoint ?? string.Empty,
             destinationPoint = r.DestinationPoint ?? string.Empty,
+            distanceKm = r.DistanceKm,
             fareConfigs = r.FareConfigs.Select(f => new
             {
                 busType = f.BusType ?? string.Empty,
                 flatPrice = f.FlatPrice
             })
         })));
+
+    const AVG_BUS_SPEED_KMH = 60;
+    const DEFAULT_TRIP_HOURS = 8;
+
+    document.getElementById('ddlRoute')?.addEventListener('change', function () {
+        suggestFare();
+        updateArrivalTime();
+        checkBusSchedule();
+    });
+    document.getElementById('ddlBus')?.addEventListener('change', function () {
+        suggestFare();
+        checkBusSchedule();
+    });
+    document.getElementById('txtDepartureTime')?.addEventListener('change', function () {
+        updateArrivalTime();
+        checkBusSchedule();
+    });
+    document.getElementById('txtDepartureTime')?.addEventListener('input', function () {
+        updateArrivalTime();
+        checkBusSchedule();
+    });
+    document.getElementById('txtArrivalTime')?.addEventListener('change', checkBusSchedule);
+    document.getElementById('txtArrivalTime')?.addEventListener('input', checkBusSchedule);
+    document.getElementById('formTrip')?.addEventListener('submit', function (e) {
+        if (busScheduleInvalid) {
+            e.preventDefault();
+            alert(busScheduleMessage || 'Xe không khả dụng trong khung giờ này.');
+        }
+    });
+
+    let busScheduleInvalid = false;
+    let busScheduleMessage = '';
+    let busScheduleTimer = null;
+
+    async function checkBusSchedule() {
+        const busId = document.getElementById('ddlBus')?.value;
+        const routeId = document.getElementById('ddlRoute')?.value;
+        const departureTime = document.getElementById('txtDepartureTime')?.value;
+        const arrivalTime = document.getElementById('txtArrivalTime')?.value;
+        const tripId = document.querySelector('input[name="tripId"]')?.value || '';
+        const warning = document.getElementById('busScheduleWarning');
+
+        if (!busId || !routeId || !departureTime || !arrivalTime || !warning) {
+            busScheduleInvalid = false;
+            busScheduleMessage = '';
+            warning.classList.add('hidden');
+            warning.textContent = '';
+            return;
+        }
+
+        clearTimeout(busScheduleTimer);
+        busScheduleTimer = setTimeout(async () => {
+            const params = new URLSearchParams({
+                busId,
+                routeId,
+                departureTime,
+                arrivalTime
+            });
+            if (tripId) params.set('tripId', tripId);
+
+            try {
+                const response = await fetch(`/Admin/CheckBusSchedule?${params.toString()}`);
+                const result = await response.json();
+                busScheduleInvalid = !result.valid;
+                busScheduleMessage = result.message || '';
+
+                if (result.valid) {
+                    warning.classList.add('hidden');
+                    warning.textContent = '';
+                } else {
+                    warning.textContent = result.message;
+                    warning.classList.remove('hidden');
+                }
+            } catch {
+                busScheduleInvalid = false;
+                busScheduleMessage = '';
+                warning.classList.add('hidden');
+            }
+        }, 300);
+    }
+
+    function formatDateTimeLocal(date) {
+        const pad = n => String(n).padStart(2, '0');
+        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    }
+
+    function updateArrivalTime() {
+        const routeId = document.getElementById('ddlRoute')?.value;
+        const depInput = document.getElementById('txtDepartureTime');
+        const arrInput = document.getElementById('txtArrivalTime');
+        if (!routeId || !depInput?.value || !arrInput) return;
+
+        const route = routeOptions.find(r => r.id === routeId);
+        if (!route) return;
+
+        const departure = new Date(depInput.value);
+        if (isNaN(departure.getTime())) return;
+
+        let travelHours;
+        const distanceKm = Number(route.distanceKm) || 0;
+        if (distanceKm > 0) {
+            travelHours = distanceKm / AVG_BUS_SPEED_KMH;
+            travelHours += (distanceKm / 200) * (10 / 60);
+        } else {
+            travelHours = DEFAULT_TRIP_HOURS;
+        }
+
+        travelHours = Math.max(travelHours, 1);
+        const arrival = new Date(departure.getTime() + travelHours * 60 * 60 * 1000);
+        arrInput.value = formatDateTimeLocal(arrival);
+    }
 
     const priceConfigs = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
         Model.PriceConfigs.Select(p => new
@@ -181,9 +289,6 @@
             destinationPoint = p.DestinationPoint ?? string.Empty,
             basePrice = p.BasePrice
         })));
-
-    document.getElementById('ddlRoute')?.addEventListener('change', suggestFare);
-    document.getElementById('ddlBus')?.addEventListener('change', suggestFare);
 
     function normalizeType(value) {
         return (value || '')
@@ -231,7 +336,13 @@
         }
     }
 
+    const isEdit = @(Model.IsEdit ? "true" : "false");
+
     if (document.getElementById('ddlRoute')?.value && document.getElementById('ddlBus')?.value) {
         suggestFare();
     }
+    if (!isEdit && document.getElementById('ddlRoute')?.value && document.getElementById('txtDepartureTime')?.value) {
+        updateArrivalTime();
+    }
+    checkBusSchedule();
 </script>
