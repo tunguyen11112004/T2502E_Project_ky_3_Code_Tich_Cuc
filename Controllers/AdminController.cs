@@ -197,7 +197,7 @@ namespace Bus_ticket.Controllers
             var searchDateOnly = parsedDate.Date;
 
             var trips = (await _dbContext.Trips
-                    .Find(_ => true)
+                    .Find(TripFilters.NotDeleted)
                     .SortByDescending(t => t.DepartureTime)
                     .ToListAsync())
                 .Where(t => t.DepartureTime.ToLocalTime().Date == searchDateOnly)
@@ -286,7 +286,11 @@ namespace Bus_ticket.Controllers
                 return NotFound();
             }
 
-            var trip = await _dbContext.Trips.Find(t => t.Id == id).FirstOrDefaultAsync();
+            var trip = await _dbContext.Trips
+                .Find(Builders<Trip>.Filter.And(
+                    Builders<Trip>.Filter.Eq(t => t.Id, id),
+                    TripFilters.NotDeleted))
+                .FirstOrDefaultAsync();
             if (trip == null)
             {
                 return NotFound();
@@ -545,10 +549,14 @@ namespace Bus_ticket.Controllers
             }
             else
             {
-                var existing = await _dbContext.Trips.Find(t => t.Id == tripId).FirstOrDefaultAsync();
+                var existing = await _dbContext.Trips
+                    .Find(Builders<Trip>.Filter.And(
+                        Builders<Trip>.Filter.Eq(t => t.Id, tripId),
+                        TripFilters.NotDeleted))
+                    .FirstOrDefaultAsync();
                 if (existing == null)
                 {
-                    return RedirectTripFormError(tripId, "Chuyến xe không tồn tại.");
+                    return RedirectTripFormError(tripId, "Chuyến xe không tồn tại hoặc đã bị xóa.");
                 }
 
                 var update = Builders<Trip>.Update
@@ -589,6 +597,19 @@ namespace Bus_ticket.Controllers
                 return BadRequest();
             }
 
+            var trip = await _dbContext.Trips.Find(t => t.Id == id).FirstOrDefaultAsync();
+            if (trip == null)
+            {
+                TempData["ErrorMessage"] = "Không tìm thấy chuyến xe để xóa.";
+                return RedirectToAction(nameof(PriceConfig));
+            }
+
+            if (trip.DeletedAt.HasValue)
+            {
+                TempData["ErrorMessage"] = "Chuyến xe này đã được xóa trước đó.";
+                return RedirectToAction(nameof(PriceConfig));
+            }
+
             var hasBookings = await _dbContext.Bookings
                 .Find(b => b.TripId == id && b.BookingStatus == "Completed")
                 .AnyAsync();
@@ -599,10 +620,18 @@ namespace Bus_ticket.Controllers
                 return RedirectToAction(nameof(PriceConfig));
             }
 
-            var result = await _dbContext.Trips.DeleteOneAsync(t => t.Id == id);
-            TempData[result.DeletedCount > 0 ? "SuccessMessage" : "ErrorMessage"] =
-                result.DeletedCount > 0 ? "Xóa chuyến xe thành công!" : "Không tìm thấy chuyến xe để xóa.";
+            var userName = User.Identity?.Name ?? "Admin";
+            var update = Builders<Trip>.Update
+                .Set(t => t.Status, "Cancelled")
+                .Set(t => t.DeletedAt, DateTime.UtcNow)
+                .Set(t => t.DeletedBy, userName)
+                .Set(t => t.UpdatedAt, DateTime.UtcNow)
+                .Set(t => t.UpdatedBy, userName);
 
+            await _dbContext.Trips.UpdateOneAsync(t => t.Id == id, update);
+
+            TempData["SuccessMessage"] =
+                "Đã xóa chuyến xe. Dữ liệu đặt vé và lịch sử liên kết vẫn được giữ nguyên.";
             return RedirectToAction(nameof(PriceConfig));
         }
 
@@ -705,6 +734,7 @@ namespace Bus_ticket.Controllers
             }
 
             var filter = Builders<Trip>.Filter.And(
+                TripFilters.NotDeleted,
                 Builders<Trip>.Filter.In(t => t.RouteId, routeIds),
                 Builders<Trip>.Filter.In(t => t.BusId, matchingBusIds));
 
@@ -752,6 +782,7 @@ namespace Bus_ticket.Controllers
             BusRoute newRoute)
         {
             var filter = Builders<Trip>.Filter.And(
+                TripFilters.NotDeleted,
                 Builders<Trip>.Filter.Eq(t => t.BusId, busId),
                 Builders<Trip>.Filter.Ne(t => t.Status, "Cancelled"));
 

@@ -36,7 +36,7 @@ namespace Bus_ticket.Controllers
             if (page < 1) page = 1;
 
             var filterBuilder = Builders<Trip>.Filter;
-            var filter = filterBuilder.Empty;
+            var filter = TripFilters.NotDeleted;
 
             if (!string.IsNullOrEmpty(searchDate) && DateTime.TryParse(searchDate, out DateTime parsedDate))
             {
@@ -44,9 +44,9 @@ namespace Bus_ticket.Controllers
                 var endOfDay = parsedDate.Date.AddDays(1).AddTicks(-1).ToUniversalTime();
 
                 filter = filterBuilder.And(
+                    TripFilters.NotDeleted,
                     filterBuilder.Gte(t => t.DepartureTime, startOfDay),
-                    filterBuilder.Lte(t => t.DepartureTime, endOfDay)
-                );
+                    filterBuilder.Lte(t => t.DepartureTime, endOfDay));
             }
 
             long totalTrips = await _dbContext.Trips.CountDocumentsAsync(filter);
@@ -100,7 +100,7 @@ namespace Bus_ticket.Controllers
         [HttpGet]
         public async Task<IActionResult> Create()
         {
-            var trips = await _dbContext.Trips.Find(_ => true).ToListAsync();
+            var trips = await _dbContext.Trips.Find(TripFilters.NotDeleted).ToListAsync();
             var buses = await _dbContext.Buses.Find(_ => true).ToListAsync();
 
             ViewBag.BusList = buses;
@@ -184,10 +184,12 @@ namespace Bus_ticket.Controllers
     var endOfDay = parsedDate.Date.AddDays(1).AddTicks(-1).ToUniversalTime();
 
     var trips = await _dbContext.Trips
-        .Find(t => t.RouteId == matchedRoute.Id
-                   && t.DepartureTime >= startOfDay
-                   && t.DepartureTime <= endOfDay
-                   && (t.Status == "Scheduled" || t.Status == "Active"))
+        .Find(Builders<Trip>.Filter.And(
+            TripFilters.NotDeleted,
+            Builders<Trip>.Filter.Eq(t => t.RouteId, matchedRoute.Id),
+            Builders<Trip>.Filter.Gte(t => t.DepartureTime, startOfDay),
+            Builders<Trip>.Filter.Lte(t => t.DepartureTime, endOfDay),
+            Builders<Trip>.Filter.In(t => t.Status, new[] { "Scheduled", "Active" })))
         .ToListAsync();
 
     var buses = await _dbContext.Buses.Find(_ => true).ToListAsync();
@@ -280,7 +282,7 @@ public async Task<IActionResult> GetTripSeatMap(string tripId)
         .Find(t => t.Id == tripId)
         .FirstOrDefaultAsync();
 
-    if (trip == null)
+    if (trip == null || trip.DeletedAt.HasValue)
     {
         return NotFound("Không tìm thấy chuyến xe.");
     }
@@ -416,9 +418,9 @@ public async Task<IActionResult> GetTripSeatMap(string tripId)
                     .Find(t => t.Id == tripId)
                     .FirstOrDefaultAsync();
 
-                if (trip == null)
+                if (trip == null || trip.DeletedAt.HasValue)
                 {
-                    return Json(new { success = false, message = "Chuyến không tồn tại." });
+                    return Json(new { success = false, message = "Chuyến không tồn tại hoặc đã bị xóa." });
                 }
 
                 var config = await _dbContext.SystemConfigs
@@ -1105,7 +1107,7 @@ public async Task<IActionResult> GetTripSeatMap(string tripId)
                 .Find(t => t.Id == tripId)
                 .FirstOrDefaultAsync();
 
-            if (trip == null)
+            if (trip == null || trip.DeletedAt.HasValue)
             {
                 return false;
             }

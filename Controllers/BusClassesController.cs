@@ -308,7 +308,11 @@ public class BusClassesController : Controller
             return RedirectToAction(nameof(Edit), new { id = busClassId });
         }
 
-        var inUse = await _context.Trips.Find(t => t.BusId == busId).AnyAsync();
+        var inUse = await _context.Trips
+            .Find(Builders<Trip>.Filter.And(
+                TripFilters.NotDeleted,
+                Builders<Trip>.Filter.Eq(t => t.BusId, busId)))
+            .AnyAsync();
         if (inUse)
         {
             TempData["ErrorMessage"] = "Không thể xóa xe! Xe đang được gán cho chuyến đi.";
@@ -329,7 +333,11 @@ public class BusClassesController : Controller
         var buses = await _context.Buses.Find(b => b.BusClassId == id).ToListAsync();
         foreach (var bus in buses)
         {
-            var inTrip = await _context.Trips.Find(t => t.BusId == bus.Id).AnyAsync();
+            var inTrip = await _context.Trips
+                .Find(Builders<Trip>.Filter.And(
+                    TripFilters.NotDeleted,
+                    Builders<Trip>.Filter.Eq(t => t.BusId, bus.Id)))
+                .AnyAsync();
             if (inTrip)
             {
                 TempData["ErrorMessage"] = "Không thể xóa! Có xe trong hạng này đang được gán chuyến đi.";
