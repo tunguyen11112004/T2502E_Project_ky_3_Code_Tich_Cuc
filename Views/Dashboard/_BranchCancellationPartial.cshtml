@@ -1,9 +1,6 @@
 @model IEnumerable<Bus_ticket.ViewModels.BranchCancellationViewModel>
 
 @{
-    Layout = "_AdminLayout";
-    ViewData["Title"] = "Thống kê tỷ lệ hủy chuyến";
-
     var fromDateValue = ViewBag.FromDateValue != null ? ((DateTime)ViewBag.FromDateValue).ToString("yyyy-MM-dd") : DateTime.Today.AddDays(-30).ToString("yyyy-MM-dd");
     var toDateValue = ViewBag.ToDateValue != null ? ((DateTime)ViewBag.ToDateValue).ToString("yyyy-MM-dd") : DateTime.Today.ToString("yyyy-MM-dd");
 }

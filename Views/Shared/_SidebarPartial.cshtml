@@ -198,7 +198,8 @@
                                 @if (isAdmin)
                                 {
                                     <li>
-                                        <a href="/Admin" class="@subMenuItemClass">
+                                        <a asp-controller="Dashboard"
+                                           asp-action="Index" class="@subMenuItemClass">
                                             Overview
                                         </a>
                                     </li>

@@ -14,6 +14,13 @@ public class DashboardController : Controller
     {
         _dashboardService = dashboardService;
     }
+    
+    [HttpGet]
+    [Authorize(Roles = "Admin,Employee")] 
+    public IActionResult Index()
+    {
+        return View();
+    }
 
     [HttpGet]
     [Authorize(Roles = "Admin,Employee")]
@@ -138,7 +145,7 @@ public class DashboardController : Controller
 
     [HttpGet]
     [Authorize(Roles = "Admin,Employee")]
-    public async Task<IActionResult> SeatAnalytics(DateTime? fromDate, DateTime? toDate, int page = 1)
+    public async Task<IActionResult> SeatAnalyticsPartial(DateTime? fromDate, DateTime? toDate, int page = 1)
     {
         var from = fromDate ?? DateTime.Today.AddDays(-7);
         var to = toDate ?? DateTime.Today;
@@ -165,7 +172,7 @@ public class DashboardController : Controller
         ViewBag.TotalPages = totalPages;
         ViewBag.TotalItems = result.TotalItems;
 
-        return View(result.Items); // Model truyền xuống View bây giờ là List<SeatAnalyticsViewModel> đã cắt 10 phần tử
+        return PartialView("_SeatAnalyticsPartial", result.Items); // Model truyền xuống View bây giờ là List<SeatAnalyticsViewModel> đã cắt 10 phần tử
     }
 
     [HttpGet]
@@ -261,7 +268,7 @@ public class DashboardController : Controller
 
     [HttpGet]
     [Authorize(Roles = "Admin,Employee")]
-    public async Task<IActionResult> BranchCancellation(DateTime? fromDate, DateTime? toDate)
+    public async Task<IActionResult> BranchCancellationPartial(DateTime? fromDate, DateTime? toDate)
     {
         var from = fromDate ?? DateTime.Today.AddDays(-30);
         var to = toDate ?? DateTime.Today;
@@ -281,7 +288,7 @@ public class DashboardController : Controller
         ViewBag.HighestCancellation = model.OrderByDescending(m => m.CancellationRate).FirstOrDefault();
         ViewBag.LowestCancellation = model.OrderBy(m => m.CancellationRate).FirstOrDefault();
 
-        return View(model);
+        return PartialView("_BranchCancellationPartial",model);
     }
 
 
@@ -353,7 +360,7 @@ public class DashboardController : Controller
 
     [HttpGet]
     [Authorize(Roles = "Admin,Employee,Operator")]
-    public async Task<IActionResult> OperatorRevenue(DateTime? fromDate, DateTime? toDate)
+    public async Task<IActionResult> OperatorRevenuePartial(DateTime? fromDate, DateTime? toDate)
     {
         // Xác định ID nếu người dùng là Nhà xe
         string? operatorId = null;
@@ -370,7 +377,7 @@ public class DashboardController : Controller
 
         ViewBag.From = from;
         ViewBag.To = to;
-        return View(model);
+        return PartialView("_OperatorRevenuePartial",model);
     }
 
     [HttpGet]
