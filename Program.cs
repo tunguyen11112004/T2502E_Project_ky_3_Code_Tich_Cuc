@@ -49,6 +49,14 @@ builder.Services.AddSession(options =>
 builder.Services.AddControllersWithViews()
     .AddViewLocalization(Microsoft.AspNetCore.Mvc.Razor.LanguageViewLocationExpanderFormat.Suffix);
 
+builder.Services.Configure<Bus_ticket.Settings.MomoSettings>(builder.Configuration.GetSection("Momo"));
+
+builder.Services.AddScoped<Bus_ticket.Interfaces.IMomoService, Bus_ticket.Services.MomoService>();
+
+builder.Services.AddScoped<IRabbitMQService, RabbitMQService>();
+
+builder.Services.AddHostedService<RabbitMqConsumerService>();
+
 var app = builder.Build();
 
 var supportedCultures = new[] { "vi", "en" };

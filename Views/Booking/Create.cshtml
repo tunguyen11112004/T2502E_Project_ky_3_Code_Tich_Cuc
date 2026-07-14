@@ -180,6 +180,11 @@
                             <input type="radio" name="paymentMethod" value="VNPAY" class="text-amber-400 focus:ring-0">
                             <span class="ml-3 text-white">VNPAY (Quét mã QR)</span>
                         </label>
+                        <label
+                            class="flex items-center p-3 bg-gray-900 border border-gray-700 rounded-lg cursor-pointer hover:border-amber-400">
+                            <input type="radio" name="paymentMethod" value="MOMO" class="text-amber-400 focus:ring-0">
+                            <span class="ml-3 text-white">MOMO (Quét mã QR)</span>
+                        </label>
                     </div>
                     <button type="submit"
                             class="w-full mt-6 bg-amber-400 hover:bg-amber-500 text-gray-900 font-bold py-3 rounded-lg transition-all">
@@ -193,7 +198,8 @@
                     Sơ đồ ma trận ghế thực tế
                 </h2>
                 <p id="lblBusType" class="text-sm font-bold text-amber-400 mb-3 text-center">-</p>
-                <div id="grid-seats" style="display: grid; width: 100% !important; grid-template-columns: repeat(4, 1fr); gap: 5px;"></div>
+                <div id="grid-seats"
+                     style="display: grid; width: 100% !important; grid-template-columns: repeat(4, 1fr); gap: 5px;"></div>
             </div>
 
         </form>
@@ -527,77 +533,78 @@
     }
 
     // MAP CHUẨN XÁC VÀO THE GRID SEATS CỦA FILE HTML
-async function loadSeatMatrix(tripId) {
-    if (!gridSeats) return;
+    async function loadSeatMatrix(tripId) {
+        if (!gridSeats) return;
 
-    gridSeats.innerHTML = '<p class="text-xs text-amber-400"> Đang tải sơ đồ...</p>';
+        gridSeats.innerHTML = '<p class="text-xs text-amber-400"> Đang tải sơ đồ...</p>';
 
-    try {
-        const response = await fetch('@Url.Action("GetTripSeatMap", "Booking")?tripId=' + encodeURIComponent(tripId));
+        try {
+            const response = await fetch('@Url.Action("GetTripSeatMap", "Booking")?tripId=' + encodeURIComponent(tripId));
 
-        if (!response.ok) {
-            throw new Error('Không thể kết nối server');
-        }
-
-        const result = await response.json();
-        const data = result.data || result;
-
-        gridSeats.innerHTML = '';
-
-        // Reset lại danh sách ghế đã chọn khi chuyển chuyến
-        selectedSeats = [];
-        if (txtSeatNum) {
-            txtSeatNum.innerText = 'Chưa chọn';
-        }
-        if (container) {
-            container.innerHTML = '';
-        }
-
-        const totalCols = data.cols || 4;
-
-        gridSeats.style.display = 'grid';
-        gridSeats.style.gridTemplateColumns = `repeat(${totalCols}, minmax(40px, 1fr))`;
-        gridSeats.style.gap = '8px';
-
-        // Render ghế
-        data.seats.forEach(function (seat) {
-            const btn = document.createElement('button');
-            btn.type = "button"; // Tránh form tự submit khi click vào button
-
-            const isLocked = seat.isLocked || seat.isBooked || seat.isHolding;
-
-            btn.className = `h-8 w-10 text-[10px] font-bold rounded border flex items-center justify-center transition-all ${
-        isLocked
-            ? "bg-gray-800 border-gray-700 text-gray-500 cursor-not-allowed"
-            : "bg-[#1f2937] border-gray-600 text-gray-300 hover:border-amber-400 cursor-pointer"
-    }`;
-
-            btn.innerText = seat.isHolding ? `${seat.seatNumber}⏳` : seat.seatNumber;
-            btn.disabled = isLocked;
-
-            if (seat.isBooked) {
-                btn.title = "Ghế đã được đặt";
-            } else if (seat.isHolding) {
-                btn.title = "Ghế đang được giữ chỗ";
-            } else {
-                btn.title = "Ghế còn trống";
+            if (!response.ok) {
+                throw new Error('Không thể kết nối server');
             }
 
-            btn.onclick = function () {
-                if (isLocked) {
-                    return;
+            const result = await response.json();
+            const data = result.data || result;
+
+            gridSeats.innerHTML = '';
+
+            // Reset lại danh sách ghế đã chọn khi chuyển chuyến
+            selectedSeats = [];
+            if (txtSeatNum) {
+                txtSeatNum.innerText = 'Chưa chọn';
+            }
+            if (container) {
+                container.innerHTML = '';
+            }
+
+            const totalCols = data.cols || 4;
+
+            gridSeats.style.display = 'grid';
+            gridSeats.style.gridTemplateColumns = `repeat(${totalCols}, minmax(40px, 1fr))`;
+            gridSeats.style.gap = '8px';
+
+            // Render ghế
+            data.seats.forEach(function (seat) {
+                const btn = document.createElement('button');
+                btn.type = "button"; // Tránh form tự submit khi click vào button
+
+                const isLocked = seat.isLocked || seat.isBooked || seat.isHolding;
+
+                btn.className = `h-8 w-10 text-[10px] font-bold rounded border flex items-center justify-center transition-all ${
+                    isLocked
+                        ? "bg-gray-800 border-gray-700 text-gray-500 cursor-not-allowed"
+                        : "bg-[#1f2937] border-gray-600 text-gray-300 hover:border-amber-400 cursor-pointer"
+                }`;
+
+                btn.innerText = seat.isHolding ? `${seat.seatNumber}⏳` : seat.seatNumber;
+                btn.disabled = isLocked;
+
+                if (seat.isBooked) {
+                    btn.title = "Ghế đã được đặt";
+                } else if (seat.isHolding) {
+                    btn.title = "Ghế đang được giữ chỗ";
+                } else {
+                    btn.title = "Ghế còn trống";
                 }
 
-                toggleSeat(btn, seat.seatNumber, isLocked);
-            };
+                btn.onclick = function () {
+                    if (isLocked) {
+                        return;
+                    }
 
-            gridSeats.appendChild(btn);
-        });
-    } catch (err) {
-        console.error(err);
-        gridSeats.innerHTML = '<p class="text-xs text-rose-400">Lỗi tải dữ liệu.</p>';
+                    toggleSeat(btn, seat.seatNumber, isLocked);
+                };
+
+                gridSeats.appendChild(btn);
+            });
+        } catch (err) {
+            console.error(err);
+            gridSeats.innerHTML = '<p class="text-xs text-rose-400">Lỗi tải dữ liệu.</p>';
+        }
     }
-}
+
     function clearBookingData() {
         const form = document.getElementById('formBooking');
         if (form) form.reset();
@@ -647,21 +654,30 @@ async function loadSeatMatrix(tripId) {
                 const result = await response.json();
 
                 if (result.success) {
+                    // Nếu Backend trả về link thanh toán (VNPAY hoặc MoMo)
                     if (result.paymentUrl) {
+                        // Xác định tên cổng thanh toán để đặt tiêu đề cho popup
+                        const isMomo = result.paymentUrl.includes("momo.vn");
+                        const titleWindow = isMomo ? "MOMOPayment" : "VNPAYPayment";
+
                         const paymentWindow = window.open(
                             result.paymentUrl,
-                            "VNPAYPayment",
+                            titleWindow,
                             "width=1100,height=800,left=100,top=50"
                         );
 
-                        let paymentTimeLeft = 180; // 3 phút
+                        let paymentTimeLeft = 180; // 3 phút bằng với thời gian hết hạn backend
 
                         const paymentTimer = setInterval(function () {
                             paymentTimeLeft--;
 
-                            // Nếu user thanh toán xong, cửa sổ VNPAY có thể tự đóng hoặc redirect xong
+                            // Nếu user thanh toán xong hoặc đóng cửa sổ
                             if (paymentWindow && paymentWindow.closed) {
                                 clearInterval(paymentTimer);
+
+                                // Load lại ma trận ghế và reload trang để cập nhật trạng thái mới nhất
+                                alert("Đang kiểm tra trạng thái giao dịch...");
+                                window.location.reload();
                                 return;
                             }
 
@@ -685,7 +701,6 @@ async function loadSeatMatrix(tripId) {
                                 }
 
                                 const tripId = document.getElementById('hidTripId')?.value;
-
                                 if (tripId) {
                                     loadSeatMatrix(tripId);
                                 }
@@ -693,6 +708,7 @@ async function loadSeatMatrix(tripId) {
                         }, 1000);
 
                     } else if (result.redirectUrl) {
+                        // Dùng cho phương thức Thanh toán tại quầy (Cash)
                         window.location.href = result.redirectUrl;
                     }
                 } else {

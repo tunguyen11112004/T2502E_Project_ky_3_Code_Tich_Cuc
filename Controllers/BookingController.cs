@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Bus_ticket.Interfaces;
 using JsonConvert = Newtonsoft.Json.JsonConvert;
 
 namespace Bus_ticket.Controllers
@@ -21,11 +22,15 @@ namespace Bus_ticket.Controllers
     {
         private readonly ApplicationDbContext _dbContext;
         private readonly IConfiguration _config;
+        private readonly IMomoService _momoService;
+        private readonly IRabbitMQService _rabbitMqService;
 
-        public BookingController(ApplicationDbContext dbContext, IConfiguration config)
+        public BookingController(ApplicationDbContext dbContext, IConfiguration config, IMomoService momoService, IRabbitMQService rabbitMqService)
         {
             _dbContext = dbContext;
             _config = config;
+            _momoService = momoService;
+            _rabbitMqService = rabbitMqService;
         }
 
         // GET: /Booking
@@ -150,206 +155,206 @@ namespace Bus_ticket.Controllers
         // GET: /Booking/SearchTrips
         [HttpGet]
         public async Task<IActionResult> SearchTrips(string departure, string destination, string date)
-{
-    if (string.IsNullOrWhiteSpace(departure)
-        || string.IsNullOrWhiteSpace(destination)
-        || string.IsNullOrWhiteSpace(date))
-    {
-        return BadRequest("Thiếu thông tin tìm kiếm.");
-    }
-
-    var depKey = departure.Trim().ToLower();
-    var destKey = destination.Trim().ToLower();
-
-    var allRoutes = await _dbContext.BusRoutes.Find(_ => true).ToListAsync();
-
-    var matchedRoute = allRoutes.FirstOrDefault(r =>
-        !string.IsNullOrWhiteSpace(r.DeparturePoint)
-        && !string.IsNullOrWhiteSpace(r.DestinationPoint)
-        && r.DeparturePoint.Trim().ToLower().Contains(depKey)
-        && r.DestinationPoint.Trim().ToLower().Contains(destKey)
-    );
-
-    if (matchedRoute == null)
-    {
-        return Json(new List<object>());
-    }
-
-    if (!DateTime.TryParse(date, out DateTime parsedDate))
-    {
-        return BadRequest("Định dạng ngày không hợp lệ.");
-    }
-
-    var startOfDay = parsedDate.Date.ToUniversalTime();
-    var endOfDay = parsedDate.Date.AddDays(1).AddTicks(-1).ToUniversalTime();
-
-    var trips = await _dbContext.Trips
-        .Find(t => t.RouteId == matchedRoute.Id
-                   && t.DepartureTime >= startOfDay
-                   && t.DepartureTime <= endOfDay)
-        .ToListAsync();
-
-    var buses = await _dbContext.Buses.Find(_ => true).ToListAsync();
-    var busClasses = await _dbContext.BusClasses.Find(_ => true).ToListAsync();
-
-    var tripIds = trips.Select(t => t.Id).ToList();
-
-    var activeBookings = tripIds.Any()
-        ? await _dbContext.Bookings
-            .Find(b => tripIds.Contains(b.TripId) && b.BookingStatus == "Completed")
-            .ToListAsync()
-        : new List<Booking>();
-
-    var result = trips
-        .OrderBy(t => t.DepartureTime)
-        .Select(t =>
         {
-            var bus = buses.FirstOrDefault(b => b.Id == t.BusId);
-            var busClass = busClasses.FirstOrDefault(c => c.Id == bus?.BusClassId);
-
-            var bookedSeatsCount = activeBookings
-                .Where(b => b.TripId == t.Id)
-                .Sum(b => b.Passengers?.Count ?? 0);
-
-            int totalSeats = 45;
-
-            if (busClass != null && busClass.TotalSeats > 0)
+            if (string.IsNullOrWhiteSpace(departure)
+                || string.IsNullOrWhiteSpace(destination)
+                || string.IsNullOrWhiteSpace(date))
             {
-                totalSeats = busClass.TotalSeats;
-            }
-            else if (bus?.LegacyTotalSeats != null && bus.LegacyTotalSeats.Value > 0)
-            {
-                totalSeats = bus.LegacyTotalSeats.Value;
+                return BadRequest("Thiếu thông tin tìm kiếm.");
             }
 
-            int availableSeats = totalSeats - bookedSeatsCount;
-            if (availableSeats < 0) availableSeats = 0;
+            var depKey = departure.Trim().ToLower();
+            var destKey = destination.Trim().ToLower();
 
-            return new
+            var allRoutes = await _dbContext.BusRoutes.Find(_ => true).ToListAsync();
+
+            var matchedRoute = allRoutes.FirstOrDefault(r =>
+                !string.IsNullOrWhiteSpace(r.DeparturePoint)
+                && !string.IsNullOrWhiteSpace(r.DestinationPoint)
+                && r.DeparturePoint.Trim().ToLower().Contains(depKey)
+                && r.DestinationPoint.Trim().ToLower().Contains(destKey)
+            );
+
+            if (matchedRoute == null)
             {
-                id = t.Id,
-                departureTime = t.DepartureTime.ToLocalTime().ToString("yyyy-MM-ddTHH:mm:ss"),
-                baseFare = t.BaseFare,
-                busCode = bus?.BusCode ?? "Mã xe ẩn",
-                busType = busClass?.ClassName ?? bus?.LegacyBusType ?? "Ghế ngồi",
-                totalSeats,
-                availableSeats
-            };
-        })
-        .ToList();
+                return Json(new List<object>());
+            }
 
-    return Json(result);
-}   
+            if (!DateTime.TryParse(date, out DateTime parsedDate))
+            {
+                return BadRequest("Định dạng ngày không hợp lệ.");
+            }
+
+            var startOfDay = parsedDate.Date.ToUniversalTime();
+            var endOfDay = parsedDate.Date.AddDays(1).AddTicks(-1).ToUniversalTime();
+
+            var trips = await _dbContext.Trips
+                .Find(t => t.RouteId == matchedRoute.Id
+                           && t.DepartureTime >= startOfDay
+                           && t.DepartureTime <= endOfDay)
+                .ToListAsync();
+
+            var buses = await _dbContext.Buses.Find(_ => true).ToListAsync();
+            var busClasses = await _dbContext.BusClasses.Find(_ => true).ToListAsync();
+
+            var tripIds = trips.Select(t => t.Id).ToList();
+
+            var activeBookings = tripIds.Any()
+                ? await _dbContext.Bookings
+                    .Find(b => tripIds.Contains(b.TripId) && b.BookingStatus == "Completed")
+                    .ToListAsync()
+                : new List<Booking>();
+
+            var result = trips
+                .OrderBy(t => t.DepartureTime)
+                .Select(t =>
+                {
+                    var bus = buses.FirstOrDefault(b => b.Id == t.BusId);
+                    var busClass = busClasses.FirstOrDefault(c => c.Id == bus?.BusClassId);
+
+                    var bookedSeatsCount = activeBookings
+                        .Where(b => b.TripId == t.Id)
+                        .Sum(b => b.Passengers?.Count ?? 0);
+
+                    int totalSeats = 45;
+
+                    if (busClass != null && busClass.TotalSeats > 0)
+                    {
+                        totalSeats = busClass.TotalSeats;
+                    }
+                    else if (bus?.LegacyTotalSeats != null && bus.LegacyTotalSeats.Value > 0)
+                    {
+                        totalSeats = bus.LegacyTotalSeats.Value;
+                    }
+
+                    int availableSeats = totalSeats - bookedSeatsCount;
+                    if (availableSeats < 0) availableSeats = 0;
+
+                    return new
+                    {
+                        id = t.Id,
+                        departureTime = t.DepartureTime.ToLocalTime().ToString("yyyy-MM-ddTHH:mm:ss"),
+                        baseFare = t.BaseFare,
+                        busCode = bus?.BusCode ?? "Mã xe ẩn",
+                        busType = busClass?.ClassName ?? bus?.LegacyBusType ?? "Ghế ngồi",
+                        totalSeats,
+                        availableSeats
+                    };
+                })
+                .ToList();
+
+            return Json(result);
+        }
 
         // GET: /Booking/GetTripSeatMap?tripId=xxx
         [HttpGet]
-public async Task<IActionResult> GetTripSeatMap(string tripId)
-{
-    if (string.IsNullOrEmpty(tripId))
-    {
-        return BadRequest("Mã không hợp lệ.");
-    }
-
-    await ReleaseExpiredHoldsAsync(tripId);
-
-    var trip = await _dbContext.Trips
-        .Find(t => t.Id == tripId)
-        .FirstOrDefaultAsync();
-
-    if (trip == null)
-    {
-        return NotFound("Không tìm thấy chuyến xe.");
-    }
-
-    var bus = await _dbContext.Buses
-        .Find(b => b.Id == trip.BusId)
-        .FirstOrDefaultAsync();
-
-    if (bus == null)
-    {
-        return NotFound("Không tìm thấy thông tin xe.");
-    }
-
-    var busClass = await _dbContext.BusClasses
-        .Find(bc => bc.Id == bus.BusClassId)
-        .FirstOrDefaultAsync();
-
-    if (busClass == null)
-    {
-        return NotFound("Không tìm thấy cấu hình loại xe.");
-    }
-
-    var layout = busClass.DefaultLayout != null && busClass.DefaultLayout.Any()
-        ? busClass.DefaultLayout
-        : BusSeatLayoutGenerator.Generate(
-            busClass.TotalRows,
-            busClass.TotalColumns,
-            busClass.TotalFloors,
-            busClass.BusType
-        );
-
-    var activeBookings = await _dbContext.Bookings
-        .Find(b => b.TripId == tripId && b.BookingStatus == "Completed")
-        .ToListAsync();
-
-    var bookedSeatsFromBookings = activeBookings
-        .SelectMany(b => b.Passengers ?? new List<PassengerDetail>())
-        .Where(p => !string.IsNullOrWhiteSpace(p.SeatNumber))
-        .Select(p => p.SeatNumber.Trim().ToUpper())
-        .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-    var now = DateTime.UtcNow;
-    var realtimeSeats = trip.RealtimeSeats ?? new List<RealtimeSeat>();
-
-    var seatsList = layout
-        .Where(s => !string.IsNullOrWhiteSpace(s.SeatNumber))
-        .OrderBy(s => s.Floor)
-        .ThenBy(s => s.Row)
-        .ThenBy(s => s.Column)
-        .Select(seat =>
+        public async Task<IActionResult> GetTripSeatMap(string tripId)
         {
-            var seatName = seat.SeatNumber.Trim().ToUpper();
-
-            var isBookedByTrip = realtimeSeats.Any(s =>
-                s.SeatNumber != null
-                && s.SeatNumber.Trim().Equals(seatName, StringComparison.OrdinalIgnoreCase)
-                && s.Status == "Booked"
-            );
-
-            var activeHold = realtimeSeats.FirstOrDefault(s =>
-                s.SeatNumber != null
-                && s.SeatNumber.Trim().Equals(seatName, StringComparison.OrdinalIgnoreCase)
-                && s.Status == "Holding"
-                && s.HeldUntil.HasValue
-                && s.HeldUntil.Value > now
-            );
-
-            var isBooked = bookedSeatsFromBookings.Contains(seatName) || isBookedByTrip;
-            var isHolding = !isBooked && activeHold != null;
-
-            return new
+            if (string.IsNullOrEmpty(tripId))
             {
-                seatNumber = seatName,
-                row = seat.Row,
-                column = seat.Column,
-                floor = seat.Floor,
-                seatType = seat.SeatType,
-                status = isBooked ? "Booked" : isHolding ? "Holding" : "Available",
-                isBooked,
-                isHolding,
-                isLocked = isBooked || isHolding,
-                heldUntil = activeHold?.HeldUntil
-            };
-        })
-        .ToList();
+                return BadRequest("Mã không hợp lệ.");
+            }
 
-    return Json(new
-    {
-        cols = busClass.TotalColumns > 0 ? busClass.TotalColumns : 4,
-        floors = busClass.TotalFloors > 0 ? busClass.TotalFloors : 1,
-        seats = seatsList
-    });
-}
+            await ReleaseExpiredHoldsAsync(tripId);
+
+            var trip = await _dbContext.Trips
+                .Find(t => t.Id == tripId)
+                .FirstOrDefaultAsync();
+
+            if (trip == null)
+            {
+                return NotFound("Không tìm thấy chuyến xe.");
+            }
+
+            var bus = await _dbContext.Buses
+                .Find(b => b.Id == trip.BusId)
+                .FirstOrDefaultAsync();
+
+            if (bus == null)
+            {
+                return NotFound("Không tìm thấy thông tin xe.");
+            }
+
+            var busClass = await _dbContext.BusClasses
+                .Find(bc => bc.Id == bus.BusClassId)
+                .FirstOrDefaultAsync();
+
+            if (busClass == null)
+            {
+                return NotFound("Không tìm thấy cấu hình loại xe.");
+            }
+
+            var layout = busClass.DefaultLayout != null && busClass.DefaultLayout.Any()
+                ? busClass.DefaultLayout
+                : BusSeatLayoutGenerator.Generate(
+                    busClass.TotalRows,
+                    busClass.TotalColumns,
+                    busClass.TotalFloors,
+                    busClass.BusType
+                );
+
+            var activeBookings = await _dbContext.Bookings
+                .Find(b => b.TripId == tripId && b.BookingStatus == "Completed")
+                .ToListAsync();
+
+            var bookedSeatsFromBookings = activeBookings
+                .SelectMany(b => b.Passengers ?? new List<PassengerDetail>())
+                .Where(p => !string.IsNullOrWhiteSpace(p.SeatNumber))
+                .Select(p => p.SeatNumber.Trim().ToUpper())
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var now = DateTime.UtcNow;
+            var realtimeSeats = trip.RealtimeSeats ?? new List<RealtimeSeat>();
+
+            var seatsList = layout
+                .Where(s => !string.IsNullOrWhiteSpace(s.SeatNumber))
+                .OrderBy(s => s.Floor)
+                .ThenBy(s => s.Row)
+                .ThenBy(s => s.Column)
+                .Select(seat =>
+                {
+                    var seatName = seat.SeatNumber.Trim().ToUpper();
+
+                    var isBookedByTrip = realtimeSeats.Any(s =>
+                        s.SeatNumber != null
+                        && s.SeatNumber.Trim().Equals(seatName, StringComparison.OrdinalIgnoreCase)
+                        && s.Status == "Booked"
+                    );
+
+                    var activeHold = realtimeSeats.FirstOrDefault(s =>
+                        s.SeatNumber != null
+                        && s.SeatNumber.Trim().Equals(seatName, StringComparison.OrdinalIgnoreCase)
+                        && s.Status == "Holding"
+                        && s.HeldUntil.HasValue
+                        && s.HeldUntil.Value > now
+                    );
+
+                    var isBooked = bookedSeatsFromBookings.Contains(seatName) || isBookedByTrip;
+                    var isHolding = !isBooked && activeHold != null;
+
+                    return new
+                    {
+                        seatNumber = seatName,
+                        row = seat.Row,
+                        column = seat.Column,
+                        floor = seat.Floor,
+                        seatType = seat.SeatType,
+                        status = isBooked ? "Booked" : isHolding ? "Holding" : "Available",
+                        isBooked,
+                        isHolding,
+                        isLocked = isBooked || isHolding,
+                        heldUntil = activeHold?.HeldUntil
+                    };
+                })
+                .ToList();
+
+            return Json(new
+            {
+                cols = busClass.TotalColumns > 0 ? busClass.TotalColumns : 4,
+                floors = busClass.TotalFloors > 0 ? busClass.TotalFloors : 1,
+                seats = seatsList
+            });
+        }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -366,6 +371,7 @@ public async Task<IActionResult> GetTripSeatMap(string tripId)
             {
                 return Json(new { success = false, message = "Dữ liệu không hợp lệ!" });
             }
+
             var blockedCustomer = await _dbContext.Customers
                 .Find(c => c.PhoneNumber == passengerPhone && c.IsBlocked)
                 .FirstOrDefaultAsync();
@@ -375,7 +381,8 @@ public async Task<IActionResult> GetTripSeatMap(string tripId)
                 return Json(new
                 {
                     success = false,
-                    message = "Số điện thoại này đã bị khóa do quá 3 lần đặt vé nhưng không thanh toán. Vui lòng liên hệ quầy vé để được hỗ trợ."
+                    message =
+                        "Số điện thoại này đã bị khóa do quá 3 lần đặt vé nhưng không thanh toán. Vui lòng liên hệ quầy vé để được hỗ trợ."
                 });
             }
 
@@ -510,6 +517,58 @@ public async Task<IActionResult> GetTripSeatMap(string tripId)
                     });
                 }
 
+                if (paymentMethod == "MOMO")
+                {
+                    // MoMo chỉ chấp nhận chữ và số cho orderId nên ta clean tương tự VNPAY
+                    var cleanBookingCode = new string(bookingCode.Where(char.IsLetterOrDigit).ToArray());
+
+                    // 1. Giữ ghế tạm thời để tránh người khác đặt trùng trong lúc đang quét mã
+                    var holdResult = await TryHoldSeatsAsync(tripId, seatNumbers, cleanBookingCode);
+                    if (!holdResult.Success)
+                    {
+                        return Json(new { success = false, message = holdResult.Message });
+                    }
+
+                    // 2. Gom toàn bộ thông tin gốc lưu vào Session chờ xử lý khi quay lại (Return URL)
+                    var pendingData = new PendingBookingDTO
+                    {
+                        tripId = tripId,
+                        seatNumbers = seatNumbers,
+                        passengerName = passengerName,
+                        dob = dob,
+                        passengerPhone = passengerPhone,
+                        passengerEmail = passengerEmail,
+                        finalPerSeat = finalPerSeat,
+                        finalAmount = totalFinal
+                    };
+                    HttpContext.Session.SetString("PendingBooking", JsonConvert.SerializeObject(pendingData));
+
+                    // 3. Gọi sang Service MoMo để khởi tạo link thanh toán (Số tiền đổi sang kiểu double)
+                    var orderInfo = $"Thanh toan ve xe {cleanBookingCode}";
+                    var momoResponse =
+                        await _momoService.CreatePaymentAsync(cleanBookingCode, orderInfo, (long)totalFinal);
+
+                    if (momoResponse != null && !string.IsNullOrEmpty(momoResponse.PayUrl))
+                    {
+                        // Tăng 1 lần đếm chưa thanh toán tương tự VNPAY để chống spam huỷ đơn
+                        await IncreaseUnpaidCountAsync(passengerName, dob, passengerPhone, passengerEmail);
+
+                        return Json(new
+                        {
+                            success = true,
+                            isRedirect = true,
+                            paymentUrl = momoResponse.PayUrl
+                        });
+                    }
+                    else
+                    {
+                        // Nếu MoMo lỗi, lập tức nhả ghế ra để khách khác mua
+                        await ReleaseSeatsByHoldCodeAsync(tripId, cleanBookingCode);
+                        return Json(new
+                            { success = false, message = "Không thể khởi tạo giao dịch với MoMo. Vui lòng thử lại!" });
+                    }
+                }
+
                 var cashHoldResult = await TryHoldSeatsAsync(tripId, seatNumbers, bookingCode);
 
                 if (!cashHoldResult.Success)
@@ -559,11 +618,13 @@ public async Task<IActionResult> GetTripSeatMap(string tripId)
                 };
 
                 await _dbContext.Bookings.InsertOneAsync(newBooking);
-                
+
                 await ResetUnpaidCountAsync(passengerPhone);
-                
+
                 await MarkHeldSeatsAsBookedAsync(tripId, seatNumbers, bookingCode);
 
+                await _rabbitMqService.PublishOrderAsync(newBooking.BookingCode);
+                
                 TempData["NewBookingCode"] = newBooking.BookingCode;
                 return Json(new
                 {
@@ -574,6 +635,111 @@ public async Task<IActionResult> GetTripSeatMap(string tripId)
             catch (Exception ex)
             {
                 return Json(new { success = false, message = "Lỗi: " + ex.Message });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> MomoReturn()
+        {
+            // 1. Đọc các tham số MoMo trả về trên URL
+            var resultCode = Request.Query["resultCode"].ToString();
+            var orderId = Request.Query["orderId"].ToString(); // Đây chính là cleanBookingCode
+            var message = Request.Query["message"].ToString();
+            var transId = Request.Query["transId"].ToString(); // Mã giao dịch của MoMo
+
+            // 2. Đọc dữ liệu khách hàng đang lưu tạm trong Session ra
+            var sessionData = HttpContext.Session.GetString("PendingBooking");
+            if (string.IsNullOrEmpty(sessionData))
+            {
+                TempData["Error"] = "Không tìm thấy thông tin phiên đặt vé hoặc phiên đã hết hạn.";
+                return RedirectToAction("Index", "Booking");
+            }
+
+            var pending = JsonConvert.DeserializeObject<PendingBookingDTO>(sessionData);
+
+            // 3. Kiểm tra nếu thanh toán thành công (resultCode == "0")
+            if (resultCode == "0")
+            {
+                try
+                {
+                    var trip = await _dbContext.Trips.Find(t => t.Id == pending.tripId).FirstOrDefaultAsync();
+                    if (trip == null)
+                    {
+                        TempData["Error"] = "Chuyến xe không tồn tại hoặc đã bị hủy.";
+                        return RedirectToAction("Index", "Booking");
+                    }
+
+                    // Tính lại Base Price tổng để lưu DB đúng cấu trúc của bạn
+                    decimal basePrice = trip.BaseFare;
+
+                    // Tạo đối tượng Booking chính thức để lưu vào MongoDB giống hệt bên Cash
+                    var newBooking = new Booking
+                    {
+                        BookingCode = orderId, // Sử dụng lại mã đã sinh lúc tạo link MoMo
+                        TripId = pending.tripId,
+                        CustomerId = await ResolveCustomerIdAsync(pending.passengerName, pending.dob,
+                            pending.passengerPhone, pending.passengerEmail),
+                        CustomerPhone = pending.passengerPhone,
+                        CustomerEmail = pending.passengerEmail,
+                        UserId = User.Identity?.IsAuthenticated == true
+                            ? User.FindFirstValue(ClaimTypes.NameIdentifier)
+                            : "GUEST",
+                        BookingTime = DateTime.UtcNow,
+                        TotalPrice = basePrice * pending.seatNumbers.Count,
+                        DiscountAmount = (basePrice - pending.finalPerSeat) * pending.seatNumbers.Count,
+                        FinalAmount = pending.finalAmount,
+                        BookingStatus = "Completed",
+                        PaymentStatus = "Paid", // Đã thanh toán thành công
+                        Passengers = pending.seatNumbers.Select(s => new PassengerDetail
+                        {
+                            SeatNumber = s,
+                            Name = pending.passengerName,
+                            Dob = pending.dob,
+                            FinalSeatPrice = pending.finalPerSeat
+                        }).ToList(),
+                        Payment = new PaymentInfo
+                        {
+                            PaymentMethod = "MOMO",
+                            AmountPaid = pending.finalAmount,
+                            TransactionCode = "MOMO-" + transId // Lưu lại mã giao dịch thật từ MoMo
+                        },
+                        CreatedAt = DateTime.UtcNow,
+                        CreatedBy = User.Identity?.Name ?? "Online-Booking"
+                    };
+
+                    // Lưu chính thức vào database
+                    await _dbContext.Bookings.InsertOneAsync(newBooking);
+
+                    // Reset số lần chưa thanh toán (vì khách đã thanh toán thành công)
+                    await ResetUnpaidCountAsync(pending.passengerPhone);
+
+                    // Chuyển trạng thái ghế từ "Đang giữ" sang "Đã đặt chính thức"
+                    await MarkHeldSeatsAsBookedAsync(pending.tripId, pending.seatNumbers, orderId);
+
+                    await _rabbitMqService.PublishOrderAsync(newBooking.BookingCode);
+                    
+                    // Xóa session tạm sau khi đã lưu DB thành công
+                    HttpContext.Session.Remove("PendingBooking");
+
+                    TempData["NewBookingCode"] = newBooking.BookingCode;
+
+                    // Chuyển hướng về trang Index hoặc trang hiển thị vé thành công
+                    return RedirectToAction("Index", "Booking");
+                }
+                catch (Exception ex)
+                {
+                    TempData["Error"] = "Lỗi khi lưu đơn hàng: " + ex.Message;
+                    return RedirectToAction("Index", "Booking");
+                }
+            }
+            else
+            {
+                // 4. Nếu thanh toán thất bại hoặc hủy: Nhả ghế ra cho người khác đặt
+                await ReleaseSeatsByHoldCodeAsync(pending.tripId, orderId);
+                HttpContext.Session.Remove("PendingBooking");
+
+                TempData["Error"] = $"Thanh toán MoMo thất bại hoặc đã bị hủy. (Mã lỗi: {message})";
+                return RedirectToAction("Index", "Booking");
             }
         }
 
@@ -635,7 +801,8 @@ public async Task<IActionResult> GetTripSeatMap(string tripId)
 
                 if (!isStillHolding)
                 {
-                    return Content("Ghế giữ chỗ đã hết hạn hoặc đã được người khác đặt. Vui lòng liên hệ quầy vé để xử lý hoàn tiền.");
+                    return Content(
+                        "Ghế giữ chỗ đã hết hạn hoặc đã được người khác đặt. Vui lòng liên hệ quầy vé để xử lý hoàn tiền.");
                 }
 
                 var newBooking = new Booking
@@ -677,10 +844,12 @@ public async Task<IActionResult> GetTripSeatMap(string tripId)
                 };
 
                 await _dbContext.Bookings.InsertOneAsync(newBooking);
-                
+
                 await ResetUnpaidCountAsync(data.passengerPhone);
 
                 await MarkHeldSeatsAsBookedAsync(data.tripId, seatNumbers, holdCode);
+                
+                await _rabbitMqService.PublishOrderAsync(newBooking.BookingCode);
 
                 HttpContext.Session.Remove("PendingBooking");
 
@@ -744,13 +913,12 @@ public async Task<IActionResult> GetTripSeatMap(string tripId)
             var bus = await _dbContext.Buses
                 .Find(b => b.Id == trip.BusId)
                 .FirstOrDefaultAsync();
-
             return Json(new
             {
                 success = true,
                 bookingCode = booking.BookingCode,
                 busInfo = bus != null
-                    ? $"{bus.BusCode} - {bus.LicensePlate}"
+                    ? $"{bus.BusCode} - Biển: {bus.LicensePlate}"
                     : "Xe không xác định",
                 departureTime = trip.DepartureTime.ToString("HH:mm dd/MM/yyyy"),
                 passengerName = booking.Passengers.FirstOrDefault()?.Name,
@@ -865,76 +1033,79 @@ public async Task<IActionResult> GetTripSeatMap(string tripId)
 
             return Ok(new { rules = config.AgeDiscountRules });
         }
+
         private async Task IncreaseUnpaidCountAsync(string fullName, DateTime dob, string phone, string email)
-{
-    if (string.IsNullOrWhiteSpace(phone))
-    {
-        return;
-    }
-
-    var customer = await _dbContext.Customers
-        .Find(c => c.PhoneNumber == phone)
-        .FirstOrDefaultAsync();
-
-    if (customer == null)
-    {
-        customer = new Customer
         {
-            CustomerCode = "KH-" + Guid.NewGuid().ToString("N").Substring(0, 6).ToUpper(),
-            FullName = fullName,
-            Dob = dob,
-            Gender = "Khác",
-            PhoneNumber = phone,
-            Email = email,
-            ConsecutiveUnpaidCount = 1,
-            IsBlocked = false,
-            CreatedAt = DateTime.UtcNow,
-            CreatedBy = "Booking-Counter",
-            UpdatedAt = DateTime.UtcNow,
-            UpdatedBy = "Booking-Counter"
-        };
+            if (string.IsNullOrWhiteSpace(phone))
+            {
+                return;
+            }
 
-        await _dbContext.Customers.InsertOneAsync(customer);
-        return;
-    }
+            var customer = await _dbContext.Customers
+                .Find(c => c.PhoneNumber == phone)
+                .FirstOrDefaultAsync();
 
-    var newCount = customer.ConsecutiveUnpaidCount + 1;
-    var shouldBlock = newCount >= 3;
+            if (customer == null)
+            {
+                customer = new Customer
+                {
+                    CustomerCode = "KH-" + Guid.NewGuid().ToString("N").Substring(0, 6).ToUpper(),
+                    FullName = fullName,
+                    Dob = dob,
+                    Gender = "Khác",
+                    PhoneNumber = phone,
+                    Email = email,
+                    ConsecutiveUnpaidCount = 1,
+                    IsBlocked = false,
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = "Booking-Counter",
+                    UpdatedAt = DateTime.UtcNow,
+                    UpdatedBy = "Booking-Counter"
+                };
 
-    var updates = new List<UpdateDefinition<Customer>>
-    {
-        Builders<Customer>.Update.Set(c => c.ConsecutiveUnpaidCount, newCount),
-        Builders<Customer>.Update.Set(c => c.UpdatedAt, DateTime.UtcNow),
-        Builders<Customer>.Update.Set(c => c.UpdatedBy, "Booking-Counter")
-    };
+                await _dbContext.Customers.InsertOneAsync(customer);
+                return;
+            }
 
-    if (!string.IsNullOrWhiteSpace(fullName))
-    {
-        updates.Add(Builders<Customer>.Update.Set(c => c.FullName, fullName));
-    }
+            var newCount = customer.ConsecutiveUnpaidCount + 1;
+            var shouldBlock = newCount >= 3;
 
-    if (!string.IsNullOrWhiteSpace(email))
-    {
-        updates.Add(Builders<Customer>.Update.Set(c => c.Email, email));
-    }
+            var updates = new List<UpdateDefinition<Customer>>
+            {
+                Builders<Customer>.Update.Set(c => c.ConsecutiveUnpaidCount, newCount),
+                Builders<Customer>.Update.Set(c => c.UpdatedAt, DateTime.UtcNow),
+                Builders<Customer>.Update.Set(c => c.UpdatedBy, "Booking-Counter")
+            };
 
-    if (dob != default)
-    {
-        updates.Add(Builders<Customer>.Update.Set(c => c.Dob, dob));
-    }
+            if (!string.IsNullOrWhiteSpace(fullName))
+            {
+                updates.Add(Builders<Customer>.Update.Set(c => c.FullName, fullName));
+            }
 
-    if (shouldBlock)
-    {
-        updates.Add(Builders<Customer>.Update.Set(c => c.IsBlocked, true));
-        updates.Add(Builders<Customer>.Update.Set(c => c.BlockReason, "Quá 3 lần đặt vé nhưng không thanh toán."));
-        updates.Add(Builders<Customer>.Update.Set(c => c.BlockedAt, DateTime.UtcNow));
-    }
+            if (!string.IsNullOrWhiteSpace(email))
+            {
+                updates.Add(Builders<Customer>.Update.Set(c => c.Email, email));
+            }
 
-    await _dbContext.Customers.UpdateOneAsync(
-        c => c.Id == customer.Id,
-        Builders<Customer>.Update.Combine(updates)
-    );
-}
+            if (dob != default)
+            {
+                updates.Add(Builders<Customer>.Update.Set(c => c.Dob, dob));
+            }
+
+            if (shouldBlock)
+            {
+                updates.Add(Builders<Customer>.Update.Set(c => c.IsBlocked, true));
+                updates.Add(Builders<Customer>.Update.Set(c => c.BlockReason,
+                    "Quá 3 lần đặt vé nhưng không thanh toán."));
+                updates.Add(Builders<Customer>.Update.Set(c => c.BlockedAt, DateTime.UtcNow));
+            }
+
+            await _dbContext.Customers.UpdateOneAsync(
+                c => c.Id == customer.Id,
+                Builders<Customer>.Update.Combine(updates)
+            );
+        }
+
         private async Task ResetUnpaidCountAsync(string phone)
         {
             if (string.IsNullOrWhiteSpace(phone))
