@@ -192,6 +192,14 @@ public class PermissionMiddleware
             );
         }
 
+        if (currentPath == "busoperators" || currentPath.StartsWith("busoperators/"))
+        {
+            return new PermissionRequirement(
+                ModuleKeywords: new[] { "busoperator", "busoperators", "operator", "operators", "merchant", "merchants" },
+                ActionKeywords: GetActionKeywords(currentPath, method)
+            );
+        }
+
         if (currentPath == "dynamicroles" || currentPath.StartsWith("dynamicroles/"))
         {
             return new PermissionRequirement(

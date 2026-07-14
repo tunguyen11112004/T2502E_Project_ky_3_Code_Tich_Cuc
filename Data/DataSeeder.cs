@@ -57,6 +57,7 @@ namespace Bus_ticket.Data
             Console.WriteLine("--> Bắt đầu seeding dữ liệu liên tỉnh chuẩn...");
 
             await SeedPermissions();
+            await EnsureBusOperatorPermissionsAsync();
             await SeedDynamicRoles();
             await SeedUsers();
             await SeedBranches();
@@ -861,6 +862,15 @@ AddPermission("64f1a2b3c4d5e6f7a8b9ca09", "View.Bus", "Xem danh sách xe và sơ
                 "Branches/Edit", "POST");
             AddPermission("64f1a2b3c4d5e6f7a8b9ca20", "Delete.Branch", "Xóa chi nhánh", "Branches/Delete", "POST");
 
+            AddPermission("64f1a2b3c4d5e6f7a8b9ca38", "View.BusOperator",
+                "View bus operator list", "BusOperators/Index", "GET");
+            AddPermission("64f1a2b3c4d5e6f7a8b9ca39", "Create.BusOperator",
+                "Create new bus operator", "BusOperators/Create", "POST");
+            AddPermission("64f1a2b3c4d5e6f7a8b9ca40", "Update.BusOperator",
+                "Update bus operator", "BusOperators/Edit", "POST");
+            AddPermission("64f1a2b3c4d5e6f7a8b9ca41", "Delete.BusOperator",
+                "Soft delete bus operator", "BusOperators/Delete", "POST");
+
             // --- NHÓM 3: QUẢN LÝ VÉ & KHÁCH HÀNG ---
             AddPermission("64f1a2b3c4d5e6f7a8b9ca21", "View.Booking", "Xem danh sách lịch sử đặt vé của hệ thống",
                 "Bookings/Index", "GET");
@@ -905,6 +915,98 @@ AddPermission("64f1a2b3c4d5e6f7a8b9ca27", "Update.Customer", "Sửa thông tin t
             await _context.Permissions.InsertManyAsync(permissions);
             Console.WriteLine($"--> Đã seeding thành công trọn bộ {permissions.Count} quyền hệ thống!");
         }
+
+        private async Task EnsureBusOperatorPermissionsAsync()
+        {
+            var busOperatorPermissionIds = new[]
+            {
+                "64f1a2b3c4d5e6f7a8b9ca38",
+                "64f1a2b3c4d5e6f7a8b9ca39",
+                "64f1a2b3c4d5e6f7a8b9ca40",
+                "64f1a2b3c4d5e6f7a8b9ca41"
+            };
+
+            var permissionsToEnsure = new List<Permission>
+            {
+                new()
+                {
+                    Id = busOperatorPermissionIds[0],
+                    Name = "View.BusOperator",
+                    Description = "View bus operator list",
+                    Link = "BusOperators/Index",
+                    Method = "GET"
+                },
+                new()
+                {
+                    Id = busOperatorPermissionIds[1],
+                    Name = "Create.BusOperator",
+                    Description = "Create new bus operator",
+                    Link = "BusOperators/Create",
+                    Method = "POST"
+                },
+                new()
+                {
+                    Id = busOperatorPermissionIds[2],
+                    Name = "Update.BusOperator",
+                    Description = "Update bus operator",
+                    Link = "BusOperators/Edit",
+                    Method = "POST"
+                },
+                new()
+                {
+                    Id = busOperatorPermissionIds[3],
+                    Name = "Delete.BusOperator",
+                    Description = "Soft delete bus operator",
+                    Link = "BusOperators/Delete",
+                    Method = "POST"
+                }
+            };
+
+            foreach (var permission in permissionsToEnsure)
+            {
+                var exists = await _context.Permissions
+                    .Find(p => p.Id == permission.Id)
+                    .AnyAsync();
+
+                if (!exists)
+                {
+                    await _context.Permissions.InsertOneAsync(permission);
+                    Console.WriteLine($"--> Added missing permission: {permission.Name}");
+                }
+
+                if (!_allPermissionIds.Contains(permission.Id))
+                {
+                    _allPermissionIds.Add(permission.Id);
+                }
+            }
+
+            var adminRole = await _context.DynamicRoles
+                .Find(role => role.Id == RoleAdminId)
+                .FirstOrDefaultAsync();
+
+            if (adminRole != null)
+            {
+                var permissionIds = adminRole.PermissionIds ?? new List<string>();
+                var updated = false;
+
+                foreach (var permissionId in busOperatorPermissionIds)
+                {
+                    if (!permissionIds.Contains(permissionId))
+                    {
+                        permissionIds.Add(permissionId);
+                        updated = true;
+                    }
+                }
+
+                if (updated)
+                {
+                    await _context.DynamicRoles.UpdateOneAsync(
+                        role => role.Id == RoleAdminId,
+                        Builders<DynamicRole>.Update.Set(role => role.PermissionIds, permissionIds));
+                }
+            }
+        }
+
         public async Task SeedDynamicRoles()
         {
             var count = await _context.DynamicRoles.CountDocumentsAsync(new BsonDocument());
