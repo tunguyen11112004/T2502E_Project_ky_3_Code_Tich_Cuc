@@ -1,35 +1,117 @@
+@using Bus_ticket.Services
+@inject SidebarPermissionService SidebarPermissionService
+
 @{
     Layout = "_AdminLayout";
     ViewData["Title"] = "Admin Dashboard";
+
+    var permissionNames = await SidebarPermissionService.GetCurrentUserPermissionNamesAsync(User);
+    var isAdmin = User.IsInRole("Admin");
+
+    var canViewOperatorRevenue = isAdmin || SidebarPermissionService.HasPermission(
+        permissionNames,
+        "OperatorRevenue",
+        "Operator Revenue",
+        "DoanhThuNhaXe",
+        "/Dashboard/OperatorRevenuePartial"
+    );
+
+    var canViewBranchCancellation = isAdmin || SidebarPermissionService.HasPermission(
+        permissionNames,
+        "BranchCancellation",
+        "Cancellation",
+        "Cancel",
+        "HuyChuyen",
+        "/Dashboard/BranchCancellationPartial"
+    );
+
+    var canViewSeatAnalytics = isAdmin || SidebarPermissionService.HasPermission(
+        permissionNames,
+        "SeatAnalytics",
+        "Seat Analytics",
+        "Occupancy",
+        "LapDay",
+        "/Dashboard/SeatAnalyticsPartial"
+    );
+    var canViewRouteRevenue = isAdmin
+                              || SidebarPermissionService.HasPermission(
+                                  permissionNames,
+                                  "Dashboard",
+                                  "Report",
+                                  "Revenue",
+                                  "Route",
+                                  "RouteRevenue",
+                                  "RouteRevenuePartial",
+                                  "/Dashboard/RouteRevenue",
+                                  "/Dashboard/RouteRevenuePartial");
 }
 
 <div class="p-6 space-y-6">
     <div>
         <h1 class="text-2xl font-bold text-gray-950 dark:text-white mb-1">Xin chào Admin!</h1>
-        <p class="text-sm text-gray-600 dark:text-gray-400">Hệ thống gộp báo cáo tổng quan dưới dạng tương tác trực tiếp.</p>
+        <p class="text-sm text-gray-600 dark:text-gray-400">
+            Hệ thống gộp báo cáo tổng quan dưới dạng tương tác trực tiếp. Các báo cáo mới được mở bằng button tại trang Dashboard, không đưa thêm vào dropdown sidebar.
+        </p>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <button onclick="loadStatistic('OperatorRevenue')" class="p-4 bg-blue-500 text-white rounded-lg text-left transition hover:bg-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-300">
-            <h3 class="font-semibold text-blue-100">Xếp hạng doanh thu nhà xe</h3>
-            <p class="text-2xl font-bold mt-1">Tổng doanh thu của từng nhà xe</p>
-            <span class="text-xs text-blue-200 block mt-2">Xem chi tiết doanh thu từng nhà xe →</span>
-        </button>
-        <button onclick="loadStatistic('BranchCancellation')" class="p-4 bg-green-500 text-white rounded-lg text-left transition hover:bg-green-600 focus:outline-none focus:ring-4 focus:ring-green-300">
-            <h3 class="font-semibold text-green-100">Tỷ lệ hủy chuyến</h3>
-            <p class="text-2xl font-bold mt-1">Độ uy tín</p>
-            <span class="text-xs text-green-200 block mt-2">Xem báo cáo hủy chuyến hệ thống →</span>
-        </button>
-        <button onclick="loadStatistic('SeatAnalytics')" class="p-4 bg-purple-500 text-white rounded-lg text-left transition hover:bg-purple-600 focus:outline-none focus:ring-4 focus:ring-purple-300">
-            <h3 class="font-semibold text-purple-100">Chuyến xe & Ghế trống</h3>
-            <p class="text-2xl font-bold mt-1">Hiệu suất lấp đầy</p>
-            <span class="text-xs text-purple-200 block mt-2">Xem phân tích lấp đầy ghế →</span>
-        </button>
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        @if (canViewOperatorRevenue)
+        {
+            <button type="button"
+                    onclick="loadStatistic('OperatorRevenue')"
+                    class="dashboard-stat-button p-4 bg-blue-500 text-white rounded-lg text-left transition hover:bg-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-300"
+                    data-stat-type="OperatorRevenue">
+                <h3 class="font-semibold text-blue-100">Xếp hạng doanh thu nhà xe</h3>
+                <p class="text-2xl font-bold mt-1">Nhà xe bán chạy nhất</p>
+                <span class="text-xs text-blue-200 block mt-2">Xem chi tiết doanh thu từng nhà xe →</span>
+            </button>
+        }
+
+        @if (canViewBranchCancellation)
+        {
+            <button type="button"
+                    onclick="loadStatistic('BranchCancellation')"
+                    class="dashboard-stat-button p-4 bg-green-500 text-white rounded-lg text-left transition hover:bg-green-600 focus:outline-none focus:ring-4 focus:ring-green-300"
+                    data-stat-type="BranchCancellation">
+                <h3 class="font-semibold text-green-100">Tỷ lệ hủy chuyến</h3>
+                <p class="text-2xl font-bold mt-1">Độ uy tín vận hành</p>
+                <span class="text-xs text-green-200 block mt-2">Xem báo cáo hủy chuyến hệ thống →</span>
+            </button>
+        }
+
+        @if (canViewSeatAnalytics)
+        {
+            <button type="button"
+                    onclick="loadStatistic('SeatAnalytics')"
+                    class="dashboard-stat-button p-4 bg-purple-500 text-white rounded-lg text-left transition hover:bg-purple-600 focus:outline-none focus:ring-4 focus:ring-purple-300"
+                    data-stat-type="SeatAnalytics">
+                <h3 class="font-semibold text-purple-100">Chuyến xe & Ghế trống</h3>
+                <p class="text-2xl font-bold mt-1">Hiệu suất lấp đầy</p>
+                <span class="text-xs text-purple-200 block mt-2">Xem phân tích lấp đầy ghế →</span>
+            </button>
+        }
+        @if (canViewRouteRevenue)
+        {
+            <button type="button"
+                    onclick="loadStatistic('RouteRevenue')"
+                    class="dashboard-stat-button rounded-xl bg-gradient-to-r from-yellow-400 to-orange-500 p-5 text-left shadow-xl hover:scale-[1.02] transition-transform duration-200"
+                    data-stat-type="RouteRevenue">
+                <p class="text-sm font-semibold text-white/90">
+                    Doanh thu tuyến đường
+                </p>
+                <h2 class="mt-3 text-2xl font-bold text-white">
+                    Tuyến bán chạy nhất
+                </h2>
+                <p class="mt-3 text-sm text-white/80">
+                    Xem doanh thu theo từng tuyến →
+                </p>
+            </button>
+        }
     </div>
 
     <div id="statisticContainer" class="bg-gray-50 dark:bg-gray-900/40 rounded-xl min-h-[250px] p-4 relative border border-dashed border-gray-300 dark:border-gray-700">
         <div id="placeholderText" class="text-center py-16 text-gray-400">
-            <p>Vui lòng click chọn 1 trong 3 Thẻ thông số phía trên để hiển thị biểu đồ và bảng dữ liệu chi tiết.</p>
+            <p>Vui lòng click chọn 1 thẻ thống kê phía trên để hiển thị biểu đồ tròn và bảng dữ liệu chi tiết.</p>
         </div>
 
         <div id="loadingSpinner" class="hidden absolute inset-0 bg-white/50 dark:bg-gray-900/60 flex items-center justify-center rounded-xl z-10">
@@ -42,48 +124,350 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+<style>
+    .dashboard-range-popup {
+        width: min(720px, calc(100vw - 32px));
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+    }
+</style>
+
 <script>
-    // Định nghĩa biến toàn cục để lưu trạng thái loại thống kê hiện tại
     let currentType = '';
+    let currentFromDate = '';
+    let currentToDate = '';
+    window.dashboardCharts = window.dashboardCharts || {};
+    window.dashboardRangePickers = window.dashboardRangePickers || {};
+
+    function setActiveStatisticButton(type) {
+        document.querySelectorAll('.dashboard-stat-button').forEach(button => {
+            const isActive = button.dataset.statType === type;
+            button.classList.toggle('ring-4', isActive);
+            button.classList.toggle('ring-white/50', isActive);
+        });
+    }
+
+    function destroyDashboardCharts() {
+        Object.keys(window.dashboardCharts || {}).forEach(chartId => {
+            if (window.dashboardCharts[chartId]) {
+                window.dashboardCharts[chartId].destroy();
+                delete window.dashboardCharts[chartId];
+            }
+        });
+    }
+
+    function closeDashboardRangePicker(type) {
+        const state = window.dashboardRangePickers[type];
+        if (!state) return;
+
+        if (state.popup) {
+            state.popup.remove();
+        }
+
+        if (state.closeHandler) {
+            document.removeEventListener('mousedown', state.closeHandler);
+        }
+
+        if (state.resizeHandler) {
+            window.removeEventListener('resize', state.resizeHandler);
+            window.removeEventListener('scroll', state.resizeHandler, true);
+        }
+
+        delete window.dashboardRangePickers[type];
+    }
 
     async function loadStatistic(type, page = 1, fromDate = '', toDate = '') {
         currentType = type;
+        currentFromDate = fromDate || currentFromDate;
+        currentToDate = toDate || currentToDate;
+        setActiveStatisticButton(type);
+
         const placeholder = document.getElementById('placeholderText');
         const spinner = document.getElementById('loadingSpinner');
-        let contentDiv = document.getElementById('dynamicContent');
-
-        // Tạo vùng chứa dynamicContent nếu chưa có
-        if (!contentDiv) {
-            contentDiv = document.createElement('div');
-            contentDiv.id = 'dynamicContent';
-            document.getElementById('statisticContainer')?.appendChild(contentDiv);
-        }
+        const contentDiv = document.getElementById('dynamicContent');
 
         if (placeholder) placeholder.style.display = 'none';
-        spinner.classList.remove('hidden');
+        if (spinner) spinner.classList.remove('hidden');
 
         try {
-            // SỬA ĐỔI: Bổ sung đầy đủ tham số fromDate và toDate vào URL gửi lên Controller
-            const url = `/Dashboard/${type}Partial?page=${page}&fromDate=${fromDate}&toDate=${toDate}`;
-            const response = await fetch(url);
+            const params = new URLSearchParams();
+            params.set('page', page);
+            if (currentFromDate) params.set('fromDate', currentFromDate);
+            if (currentToDate) params.set('toDate', currentToDate);
+
+            const url = `/Dashboard/${type}Partial?${params.toString()}`;
+            const response = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
             if (!response.ok) throw new Error('Lỗi tải dữ liệu hệ thống.');
 
-            const htmlResult = await response.text();
-            contentDiv.innerHTML = htmlResult;
+            Object.keys(window.dashboardRangePickers || {}).forEach(closeDashboardRangePicker);
+            destroyDashboardCharts();
 
-            // SỬA ĐỔI: Thay thế eval() bằng cách tạo thẻ script thực thông qua DOM 
-            // Điều này giúp trình duyệt tự động biên dịch, nhận diện chính xác thư viện Litepicker và các hàm onclick toàn cục
-            const scripts = contentDiv.getElementsByTagName("script");
-            for (let i = 0; i < scripts.length; i++) {
-                const newScript = document.createElement("script");
-                newScript.text = scripts[i].text;
-                document.body.appendChild(newScript).parentNode.removeChild(newScript);
-            }
+            contentDiv.innerHTML = await response.text();
+            executeDynamicScripts(contentDiv);
         } catch (error) {
             console.error(error);
             alert('Không thể lấy được dữ liệu thống kê, vui lòng kiểm tra lại!');
         } finally {
-            spinner.classList.add('hidden');
+            if (spinner) spinner.classList.add('hidden');
         }
+    }
+
+    function executeDynamicScripts(container) {
+        const scripts = Array.from(container.querySelectorAll('script'));
+        scripts.forEach(oldScript => {
+            const newScript = document.createElement('script');
+            Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+            newScript.text = oldScript.textContent;
+            document.body.appendChild(newScript);
+            document.body.removeChild(newScript);
+        });
+    }
+
+    function toDateInputValue(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    function parseDateInputValue(value) {
+        if (!value) return new Date();
+        const parts = value.split('-').map(Number);
+        return new Date(parts[0], parts[1] - 1, parts[2]);
+    }
+
+    function addDays(date, days) {
+        const cloned = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        cloned.setDate(cloned.getDate() + days);
+        return cloned;
+    }
+
+    function getDashboardPresetRange(presetKey) {
+        const today = new Date();
+        const current = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+        switch (presetKey) {
+            case 'today':
+                return { from: current, to: current };
+            case 'yesterday':
+                return { from: addDays(current, -1), to: addDays(current, -1) };
+            case 'last7':
+                return { from: addDays(current, -6), to: current };
+            case 'last30':
+                return { from: addDays(current, -29), to: current };
+            case 'last90':
+                return { from: addDays(current, -89), to: current };
+            case 'weekToDate': {
+                const firstDay = addDays(current, -current.getDay());
+                return { from: firstDay, to: current };
+            }
+            case 'monthToDate':
+                return { from: new Date(current.getFullYear(), current.getMonth(), 1), to: current };
+            default:
+                return null;
+        }
+    }
+
+    function positionDashboardRangePopup(input, popup) {
+        const rect = input.getBoundingClientRect();
+        const margin = 8;
+        const popupWidth = Math.min(720, window.innerWidth - 32);
+
+        let left = rect.left;
+        if (left + popupWidth > window.innerWidth - 16) {
+            left = window.innerWidth - popupWidth - 16;
+        }
+        if (left < 16) left = 16;
+
+        popup.style.width = `${popupWidth}px`;
+        popup.style.left = `${left}px`;
+        popup.style.top = `${rect.bottom + margin}px`;
+    }
+
+    function initializeDashboardDateRangePicker(type, fromDate, toDate) {
+        const input = document.getElementById(`date_range_${type}`);
+        if (!input) return;
+
+        closeDashboardRangePicker(type);
+
+        const defaultFromDate = fromDate || currentFromDate || toDateInputValue(addDays(new Date(), -30));
+        const defaultToDate = toDate || currentToDate || toDateInputValue(new Date());
+        input.value = `${defaultFromDate} - ${defaultToDate}`;
+
+        input.addEventListener('click', function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+
+            if (window.dashboardRangePickers[type]) {
+                closeDashboardRangePicker(type);
+                return;
+            }
+
+            const popup = document.createElement('div');
+            popup.id = `dashboard_range_popup_${type}`;
+            popup.className = 'dashboard-range-popup fixed z-[9999] rounded-xl border border-gray-700 bg-white text-gray-900 dark:bg-[#111827] dark:text-white overflow-hidden';
+            popup.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-[220px_1fr]">
+                    <div class="border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-3 space-y-1">
+                        <button type="button" data-preset="custom" class="dashboard-preset-btn w-full text-left rounded-lg px-3 py-2 text-sm font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-200">Custom</button>
+                        <button type="button" data-preset="today" class="dashboard-preset-btn w-full text-left rounded-lg px-3 py-2 text-sm hover:bg-gray-200 dark:hover:bg-gray-800">Today</button>
+                        <button type="button" data-preset="yesterday" class="dashboard-preset-btn w-full text-left rounded-lg px-3 py-2 text-sm hover:bg-gray-200 dark:hover:bg-gray-800">Yesterday</button>
+                        <button type="button" data-preset="last7" class="dashboard-preset-btn w-full text-left rounded-lg px-3 py-2 text-sm hover:bg-gray-200 dark:hover:bg-gray-800">Last 7 days</button>
+                        <button type="button" data-preset="last30" class="dashboard-preset-btn w-full text-left rounded-lg px-3 py-2 text-sm hover:bg-gray-200 dark:hover:bg-gray-800">Last 30 days</button>
+                        <button type="button" data-preset="last90" class="dashboard-preset-btn w-full text-left rounded-lg px-3 py-2 text-sm hover:bg-gray-200 dark:hover:bg-gray-800">Last 90 days</button>
+                        <button type="button" data-preset="weekToDate" class="dashboard-preset-btn w-full text-left rounded-lg px-3 py-2 text-sm hover:bg-gray-200 dark:hover:bg-gray-800">Week to date</button>
+                        <button type="button" data-preset="monthToDate" class="dashboard-preset-btn w-full text-left rounded-lg px-3 py-2 text-sm hover:bg-gray-200 dark:hover:bg-gray-800">Month to date</button>
+                    </div>
+                    <div class="p-4 space-y-4">
+                        <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+                            <input type="date" data-range-start class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-white" value="${defaultFromDate}" />
+                            <span class="text-gray-400">→</span>
+                            <input type="date" data-range-end class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-white" value="${defaultToDate}" />
+                        </div>
+                        <div class="rounded-lg border border-dashed border-gray-300 dark:border-gray-700 p-4 text-sm text-gray-500 dark:text-gray-400">
+                            Chọn nhanh bằng preset bên trái hoặc nhập ngày tùy chỉnh rồi bấm Apply.
+                        </div>
+                        <div class="flex justify-end gap-3 border-t border-gray-200 dark:border-gray-700 pt-4">
+                            <button type="button" data-range-cancel class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-800">Cancel</button>
+                            <button type="button" data-range-apply class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600">Apply</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(popup);
+            positionDashboardRangePopup(input, popup);
+
+            const startInput = popup.querySelector('[data-range-start]');
+            const endInput = popup.querySelector('[data-range-end]');
+
+            popup.querySelectorAll('[data-preset]').forEach(button => {
+                button.addEventListener('click', function () {
+                    popup.querySelectorAll('[data-preset]').forEach(item => {
+                        item.classList.remove('bg-blue-100', 'text-blue-700', 'dark:bg-blue-900/50', 'dark:text-blue-200');
+                    });
+
+                    this.classList.add('bg-blue-100', 'text-blue-700', 'dark:bg-blue-900/50', 'dark:text-blue-200');
+
+                    const range = getDashboardPresetRange(this.dataset.preset);
+                    if (!range) return;
+
+                    startInput.value = toDateInputValue(range.from);
+                    endInput.value = toDateInputValue(range.to);
+                });
+            });
+
+            function applySelectedRange() {
+                let start = startInput.value;
+                let end = endInput.value;
+
+                if (!start || !end) return;
+
+                if (parseDateInputValue(start) > parseDateInputValue(end)) {
+                    const temp = start;
+                    start = end;
+                    end = temp;
+                }
+
+                input.value = `${start} - ${end}`;
+                closeDashboardRangePicker(type);
+                loadStatistic(type, 1, start, end);
+            }
+
+            popup.querySelector('[data-range-apply]').addEventListener('click', applySelectedRange);
+            popup.querySelector('[data-range-cancel]').addEventListener('click', () => closeDashboardRangePicker(type));
+
+            const closeHandler = function (documentEvent) {
+                if (popup.contains(documentEvent.target) || input.contains(documentEvent.target)) {
+                    return;
+                }
+                closeDashboardRangePicker(type);
+            };
+
+            const resizeHandler = function () {
+                if (document.body.contains(popup)) {
+                    positionDashboardRangePopup(input, popup);
+                }
+            };
+
+            document.addEventListener('mousedown', closeHandler);
+            window.addEventListener('resize', resizeHandler);
+            window.addEventListener('scroll', resizeHandler, true);
+
+            window.dashboardRangePickers[type] = {
+                popup: popup,
+                closeHandler: closeHandler,
+                resizeHandler: resizeHandler
+            };
+        });
+    }
+
+    function highlightLinkedTableRow(rowId) {
+        document.querySelectorAll('[data-linked-row="true"]').forEach(row => {
+            row.classList.remove('bg-amber-500/20', 'ring-1', 'ring-amber-400');
+        });
+
+        const row = document.getElementById(rowId);
+        if (!row) return;
+
+        row.classList.add('bg-amber-500/20', 'ring-1', 'ring-amber-400');
+        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function renderDashboardPieChart(chartId, labels, data, rowIds, labelText) {
+        const canvas = document.getElementById(chartId);
+        if (!canvas || typeof Chart === 'undefined') return;
+
+        if (window.dashboardCharts[chartId]) {
+            window.dashboardCharts[chartId].destroy();
+            delete window.dashboardCharts[chartId];
+        }
+
+        const numericData = (data || []).map(value => Number(value || 0));
+        const hasData = numericData.some(value => value > 0);
+        if (!hasData) return;
+
+        const ctx = canvas.getContext('2d');
+        window.dashboardCharts[chartId] = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: labelText,
+                    data: numericData,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: {
+                    duration: 350
+                },
+                resizeDelay: 200,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            color: '#d1d5db'
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const total = context.dataset.data.reduce((sum, value) => sum + Number(value || 0), 0);
+                                const value = Number(context.raw || 0);
+                                const percent = total > 0 ? (value / total * 100).toFixed(2) : '0.00';
+                                return `${context.label}: ${value.toLocaleString()} (${percent}%)`;
+                            }
+                        }
+                    }
+                },
+                onClick: function(event, elements) {
+                    if (!elements.length) return;
+                    const index = elements[0].index;
+                    if (rowIds[index]) highlightLinkedTableRow(rowIds[index]);
+                }
+            }
+        });
     }
 </script>
