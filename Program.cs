@@ -26,6 +26,9 @@ builder.Services.AddScoped<BranchService>();
 builder.Services.AddSingleton<ICloudinaryService, CloudinaryService>();
 builder.Services.AddScoped<SidebarPermissionService>();
 builder.Services.AddScoped<NewsScraperService>();
+builder.Services.AddSingleton<CrawlerProducer>();
+builder.Services.AddScoped<NewsScraperService>();
+builder.Services.AddHostedService<ArticleProcessorConsumer>();
 builder.Services.AddScoped<DashboardService>();
 
 // Cookie Authentication
@@ -98,5 +101,19 @@ app.UseAuthorization();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+using (var scope = app.Services.CreateScope())
+{
+    try
+    {
+        var crawler = scope.ServiceProvider.GetRequiredService<Bus_ticket.Services.CrawlerProducer>();
+        // Fire and forget: Chạy ngầm tiến trình cào dữ liệu
+        _ = Task.Run(() => crawler.StartCrawlingAsync());
+        Console.WriteLine("[System] Đã tự động đẩy lệnh cào tin tức vào RabbitMQ!");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[Error] Lỗi auto-crawler: {ex.Message}");
+    }
+}
 
 app.Run();

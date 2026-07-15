@@ -138,13 +138,15 @@
 
     var showDashboardMenu = isAdmin || canViewDashboardOverview || canViewRouteRevenue;
 
+    // Đã thêm || isAdmin vào đây để Admin luôn thấy menu CRUD
     var showCrudMenu = canViewBooking
                        || canViewBranches
                        || canViewBusClasses
                        || canManagePrices
                        || canViewUsers
                        || canViewDynamicRoles
-                       || canViewPermissions;
+                       || canViewPermissions
+                       || isAdmin; 
 
     var showSrcAdminFlow = canViewUsers
                            || canManageBuses
@@ -270,6 +272,17 @@
                                         </a>
                                     </li>
                                 }
+
+                                @* ================= ĐÃ THÊM MANAGE NEWS Ở ĐÂY ================= *@
+                                @if (isAdmin)
+                                {
+                                    <li>
+                                        <a href="/Admin/ManageNews" class="@subMenuItemClass">
+                                            Manage News
+                                        </a>
+                                    </li>
+                                }
+                                @* ============================================================= *@
 
                                 @if (canViewDynamicRoles)
                                 {
@@ -498,4 +511,3 @@
 
     <div class="fixed inset-0 z-10 hidden bg-gray-900/50 dark:bg-gray-900/90" id="sidebarBackdrop"></div>
 </aside>
-
