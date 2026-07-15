@@ -1,3 +1,4 @@
+using Bus_ticket.Data;
 using Bus_ticket.Models;
 using Bus_ticket.Settings;
 using Bus_ticket.ViewModels;
@@ -10,9 +11,12 @@ namespace Bus_ticket.Services;
 public class UserService
 {
     private readonly IMongoCollection<User> _users;
+    private readonly ApplicationDbContext _context;
 
-    public UserService(IOptions<MongoDbSettings> mongoDbSettings)
+    public UserService(IOptions<MongoDbSettings> mongoDbSettings, ApplicationDbContext context)
     {
+        _context = context;
+
         var settings = mongoDbSettings.Value;
 
         var mongoClient = new MongoClient(settings.ConnectionString);
@@ -85,7 +89,16 @@ public class UserService
         var existingUser = await GetByEmailAsync(normalizedEmail);
         if (existingUser != null)
         {
-            throw new InvalidOperationException("Email này đã được đăng ký trong hệ thống");
+            throw new InvalidOperationException("Email này đã được đăng ký trong hệ thống.");
+        }
+
+        var selectedRole = await _context.DynamicRoles
+            .Find(role => role.Id == model.RoleId)
+            .FirstOrDefaultAsync();
+
+        if (selectedRole == null || string.IsNullOrWhiteSpace(selectedRole.Id))
+        {
+            throw new InvalidOperationException("Vai trò được chọn không tồn tại trong hệ thống.");
         }
 
         var employeeCode = await GenerateUniqueEmployeeCodeAsync();
@@ -95,12 +108,16 @@ public class UserService
             UserCode = employeeCode,
             EmployeeCode = employeeCode,
             FullName = model.FullName.Trim(),
+            Dob = model.Dob,
             Email = normalizedEmail,
             PhoneNumber = model.PhoneNumber?.Trim() ?? string.Empty,
             EducationLevel = model.Qualifications?.Trim() ?? string.Empty,
             Username = normalizedEmail,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.Password, 10),
+
             Role = "Employee",
+            RoleId = selectedRole.Id,
+
             Status = "Active",
             CreatedAt = DateTime.UtcNow,
             CreatedBy = createdBy,
@@ -112,4 +129,58 @@ public class UserService
 
         return employee;
     }
+
+    public async Task UpdateEmployeeRoleAsync(string employeeId, string newRoleId, string updatedBy)
+    {
+        var employee = await _users
+            .Find(user => user.Id == employeeId && user.Role == "Employee")
+            .FirstOrDefaultAsync();
+
+        if (employee == null)
+        {
+            throw new InvalidOperationException("Employee không tồn tại trong hệ thống.");
+        }
+
+        var selectedRole = await _context.DynamicRoles
+            .Find(role => role.Id == newRoleId)
+            .FirstOrDefaultAsync();
+
+        if (selectedRole == null || string.IsNullOrWhiteSpace(selectedRole.Id))
+        {
+            throw new InvalidOperationException("Vai trò được chọn không tồn tại trong hệ thống.");
+        }
+
+        var update = Builders<User>.Update
+            .Set(user => user.RoleId, selectedRole.Id)
+            .Set(user => user.UpdatedAt, DateTime.UtcNow)
+            .Set(user => user.UpdatedBy, updatedBy);
+
+        await _users.UpdateOneAsync(
+            user => user.Id == employeeId && user.Role == "Employee",
+            update
+        );
+    }
+
+    public async Task DeactivateEmployeeAsync(string employeeId, string updatedBy)
+    {
+        var employee = await _users
+            .Find(user => user.Id == employeeId && user.Role == "Employee")
+            .FirstOrDefaultAsync();
+
+        if (employee == null)
+        {
+            throw new InvalidOperationException("Employee không tồn tại trong hệ thống.");
+        }
+
+        var update = Builders<User>.Update
+            .Set(user => user.Status, "Inactive")
+            .Set(user => user.UpdatedAt, DateTime.UtcNow)
+            .Set(user => user.UpdatedBy, updatedBy);
+
+        await _users.UpdateOneAsync(
+            user => user.Id == employeeId && user.Role == "Employee",
+            update
+        );
+    }
 }
+

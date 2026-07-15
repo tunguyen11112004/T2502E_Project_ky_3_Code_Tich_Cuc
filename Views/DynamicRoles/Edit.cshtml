@@ -20,7 +20,7 @@
     </div>
 
     <form asp-controller="DynamicRoles" asp-action="Edit" asp-route-id="@Model.Id" method="post" class="space-y-6">
-        <input type="hidden" asp-for="Id" />
+        <input type="hidden" asp-for="Id"/>
 
         <div class="p-6 bg-[#1e1e24] border border-gray-700/50 rounded-xl space-y-4 shadow-md">
             <h3 class="text-lg font-semibold text-white">1. Thông tin Vai trò</h3>
@@ -28,7 +28,7 @@
                 <div>
                     @* ĐÃ SỬA: Đổi sang RoleName để mapping chuẩn với thuộc tính trong Model *@
                     <label asp-for="RoleName" class="block mb-2 text-sm font-medium text-gray-300">Tên Vai Trò</label>
-                    <input asp-for="RoleName" class="w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400" required />
+                    <input asp-for="RoleName" class="w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400" required/>
                     <span asp-validation-for="RoleName" class="text-xs text-red-400"></span>
                 </div>
                 <div class="flex items-end">
@@ -51,7 +51,7 @@
                     </button>
                 </div>
             </div>
-            
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
                 @foreach (var group in groupedPermissions)
                 {
@@ -62,14 +62,14 @@
                                 Chọn nhóm này
                             </button>
                         </div>
-                        
+
                         <div class="p-4 space-y-3">
                             @foreach (var permission in group)
                             {
                                 bool isChecked = Model.PermissionIds != null && Model.PermissionIds.Contains(permission.Id!);
-                                
+
                                 <label class="flex items-start gap-3 cursor-pointer select-none group p-2 hover:bg-gray-800/30 rounded-lg transition-all duration-100">
-                                    <input type="checkbox" name="selectedPermissions" value="@permission.Id" checked="@isChecked" class="js-permission-checkbox mt-0.5 w-4 h-4 text-amber-400 bg-gray-900 border-gray-600 rounded focus:ring-amber-400 focus:ring-offset-gray-900" />
+                                    <input type="checkbox" name="selectedPermissions" value="@permission.Id" checked="@isChecked" class="js-permission-checkbox mt-0.5 w-4 h-4 text-amber-400 bg-gray-900 border-gray-600 rounded focus:ring-amber-400 focus:ring-offset-gray-900"/>
                                     <div>
                                         <span class="block text-sm font-semibold text-gray-200 group-hover:text-white">@permission.Name</span>
                                         <span class="block text-xs text-gray-400">@permission.Description</span>

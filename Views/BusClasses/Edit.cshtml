@@ -1,0 +1,49 @@
+@model Bus_ticket.ViewModels.BusClassFormViewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Sửa loại xe";
+    ViewData["IsEdit"] = true;
+}
+
+<div class="p-6 sm:p-8 space-y-6 max-w-4xl mx-auto">
+    <div class="border-b border-gray-700/50 pb-4">
+        <a asp-action="Index" class="inline-flex items-center text-sm font-medium text-gray-400 hover:text-amber-400 mb-2">Quay lại danh sách</a>
+        <h1 class="text-2xl font-bold tracking-tight text-white">Sửa cấu hình loại xe</h1>
+        <p class="text-sm text-gray-400 mt-1">Chỉnh sửa template loại xe: tên, sơ đồ ghế, ảnh và trạng thái. Tất cả trường bắt buộc.</p>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="p-4 text-sm text-emerald-400 rounded-lg bg-gray-800 border border-emerald-800">@TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="p-4 text-sm text-red-400 rounded-lg bg-gray-800 border border-red-800">@TempData["ErrorMessage"]</div>
+    }
+
+    <form asp-action="Edit" asp-route-id="@Model.Id" method="post" enctype="multipart/form-data" class="space-y-6" novalidate>
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Id"/>
+        <input type="hidden" asp-for="ImageUrl"/>
+        <input type="hidden" asp-for="ImagePublicId"/>
+        <div asp-validation-summary="All" class="text-sm text-red-400"></div>
+
+        <div class="p-6 bg-[#1e1e24] border border-gray-700/50 rounded-xl space-y-4 shadow-md">
+            <h3 class="text-lg font-semibold text-white">Cấu hình loại xe</h3>
+            <partial name="_BusClassFormFields" model="Model" />
+        </div>
+
+        <div class="flex justify-end gap-3">
+            <a asp-action="Index" class="px-5 py-2.5 text-sm font-semibold text-gray-300 bg-gray-800 border border-gray-700 rounded-lg hover:bg-gray-700">Hủy</a>
+            <button type="submit" id="btnSubmitBusClass" data-loading-text="Đang cập nhật..."
+                    class="px-5 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg disabled:opacity-60 disabled:cursor-not-allowed">
+                Cập nhật
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial"/>
+    <partial name="_BusClassFormScripts"/>
+}

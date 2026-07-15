@@ -1,19 +1,27 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - Admin Bus Ticket</title>
-    <link rel="stylesheet" href="~/admin-assets/css/style.css" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    
+    <link rel="stylesheet" href="/admin-assets/css/style.css" />
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.css" rel="stylesheet" />
+    
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
     <script>
         tailwind.config = {
             darkMode: 'class',
         }
     </script>
 </head>
-<body class="dark bg-gray-50 dark:bg-gray-900">
+<body class="dark bg-gray-50 dark:bg-gray-900 font-sans antialiased" style="font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;">
 @*Nav-bar*@
 <partial name="_NavbarPartial" />
 
@@ -21,7 +29,7 @@
     @*Sidebar*@
     <partial name="_SidebarPartial" />
     
-    <div id="main-content" class="relative w-full lg:ml-64 bg-gray-50 dark:bg-gray-900 flex flex-col min-h-[calc(100vh-4rem)]">
+    <div id="main-content" class="relative w-full min-w-0 lg:ml-64 lg:w-[calc(100%-16rem)] bg-gray-50 dark:bg-gray-900 flex flex-col min-h-[calc(100vh-4rem)]">
         
         <main class="p-4 mx-auto max-w-screen-2xl w-full flex-grow">
             @RenderBody()
@@ -29,63 +37,72 @@
 
         <partial name="_AdminFooterPartial" />
     </div>
-
 </div>
 
-<script src="~/js/constants.js"></script>
-<script src="~/js/dark-mode.js"></script>
-<script src="~/js/sidebar.js"></script>
-<script src="~/js/charts.js"></script>
-<script src="~/js/index.js"></script>
+<script type="module" src="/admin-assets/js/index.js"></script>
+
 @await RenderSectionAsync("Scripts", required: false)
 <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
-</body>
-</html>
 
 <script>
     document.addEventListener("DOMContentLoaded", function () {
-        // Lấy pathname hiện tại (ví dụ: /DynamicRoles hoặc /DynamicRoles/Create)
-        const currentUrl = window.location.pathname.toLowerCase();
+        const currentUrl = window.location.pathname.toLowerCase().replace(/\/$/, "") || "/";
+
+        const navGroups = {
+            trips: ["/admin/priceconfig", "/admin/createtrip", "/admin/edittrip"]
+        };
+
+        function isNavLinkActive(link) {
+            const linkUrl = (link.getAttribute("href") || "").toLowerCase().replace(/\/$/, "");
+            if (!linkUrl || linkUrl === "#") return false;
+
+            const navGroup = link.getAttribute("data-nav-group");
+            if (navGroup && navGroups[navGroup]) {
+                return navGroups[navGroup].some(prefix =>
+                    currentUrl === prefix || currentUrl.startsWith(prefix + "/"));
+            }
+
+            if (currentUrl === linkUrl) return true;
+
+            // Dashboard (/Admin) chỉ active khi đúng trang chủ admin
+            if (linkUrl === "/admin") return false;
+
+            return currentUrl.startsWith(linkUrl + "/") || currentUrl.startsWith(linkUrl + "?");
+        }
+
         const navLinks = document.querySelectorAll(".nav-link-item");
 
         navLinks.forEach(link => {
-            const linkUrl = link.getAttribute("href")?.toLowerCase();
-            if (!linkUrl || linkUrl === "#" || linkUrl === "/") return;
+            if (!isNavLinkActive(link)) return;
 
-            // Kiểm tra khớp URL chính xác hoặc khớp phân hệ cha (ví dụ: /DynamicRoles/Create chứa /DynamicRoles)
-            if (currentUrl === linkUrl || currentUrl.startsWith(linkUrl + "/") || currentUrl.startsWith(linkUrl + "?")) {
-                
-                // 🎨 Áp dụng hiệu ứng sáng đèn nút (Phối màu Dark/Light chuẩn Flowbite)
-                link.classList.remove("text-gray-900", "dark:text-gray-200", "hover:bg-gray-100", "dark:hover:bg-gray-700");
-                link.classList.add(
-                    "bg-amber-500/10", 
-                    "text-amber-600", 
-                    "dark:text-amber-400", 
-                    "font-bold", 
-                    "border-l-4", 
-                    "border-amber-500", 
-                    "dark:border-amber-400", 
-                    "rounded-r-lg", 
-                    "rounded-l-none"
-                );
+            link.classList.remove("text-gray-900", "dark:text-gray-200", "hover:bg-gray-100", "dark:hover:bg-gray-700");
+            link.classList.add(
+                "bg-amber-500/10",
+                "text-amber-600",
+                "dark:text-amber-400",
+                "font-bold",
+                "border-l-4",
+                "border-amber-500",
+                "dark:border-amber-400",
+                "rounded-r-lg",
+                "rounded-l-none"
+            );
 
-                // 📂 Tự động mở rộng Dropdown cha nếu menu con này đang hoạt động
-                const parentUl = link.closest("ul");
-                if (parentUl && parentUl.id && parentUl.id.startsWith("dropdown-")) {
-                    // Loại bỏ class 'hidden' để bung danh sách con
-                    parentUl.classList.remove("hidden");
+            const parentUl = link.closest("ul");
+            if (parentUl && parentUl.id && parentUl.id.startsWith("dropdown-")) {
+                parentUl.classList.remove("hidden");
 
-                    // Tìm nút cha điều khiển và xoay icon mũi tên chỉ xuống
-                    const toggleButton = document.querySelector(`[aria-controls="${parentUl.id}"]`);
-                    if (toggleButton) {
-                        toggleButton.classList.add("text-gray-900", "dark:text-white", "bg-gray-100", "dark:bg-gray-700");
-                        const arrowIcon = toggleButton.querySelector("svg[sidebar-toggle-item]");
-                        if (arrowIcon) {
-                            arrowIcon.classList.add("rotate-180");
-                        }
+                const toggleButton = document.querySelector(`[aria-controls="${parentUl.id}"]`);
+                if (toggleButton) {
+                    toggleButton.classList.add("text-gray-900", "dark:text-white", "bg-gray-100", "dark:bg-gray-700");
+                    const arrowIcon = toggleButton.querySelector("svg[sidebar-toggle-item]");
+                    if (arrowIcon) {
+                        arrowIcon.classList.add("rotate-180");
                     }
                 }
             }
         });
     });
 </script>
+</body>
+</html>

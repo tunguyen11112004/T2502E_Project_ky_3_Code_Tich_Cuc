@@ -17,9 +17,10 @@ namespace Bus_ticket.Models
         public string? OriginalUrl { get; set; }
         public string? SourceSite { get; set; }
         public DateTime CreatedDate { get; set; } = DateTime.Now;
+        public bool IsCloned { get; set; } = true;
+        public int Status { get; set; } = 2;
         public bool IsCrawled { get; set; } = false;
         public bool IsApproved { get; set; } = false;
-        public bool IsCloned { get; set; } = false;
         public string? TitleXpath { get; set; }
         public string? DescXpath { get; set; }
         public string? ContentXpath { get; set; }

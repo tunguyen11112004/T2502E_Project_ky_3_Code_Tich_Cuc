@@ -8,50 +8,69 @@ namespace Bus_ticket.Models;
 
 public class SeatTemplate
 {
-    [BsonElement("seatNumber")] 
+    [BsonElement("seatNumber")]
     public string SeatNumber { get; set; }
 
-    [BsonElement("row")] 
+    [BsonElement("row")]
     public int Row { get; set; }
 
-    [BsonElement("column")] 
+    [BsonElement("column")]
     public int Column { get; set; }
 
-    [BsonElement("floor")] 
-    public int Floor { get; set; } // 1: Tầng dưới, 2: Tầng trên
+    [BsonElement("floor")]
+    public int Floor { get; set; }
 
-    [BsonElement("seatType")] 
-    public string SeatType { get; set; } = "Standard"; // Standard / VIP / Sleeper
+    [BsonElement("seatType")]
+    public string SeatType { get; set; } = "Standard";
 }
 
+[BsonIgnoreExtraElements]
 public class BusClass
 {
     [BsonId]
     [BsonRepresentation(BsonType.ObjectId)]
     public string Id { get; set; }
 
-    [BsonElement("className")] 
-    [Required] 
-    public string ClassName { get; set; } // Ví dụ: Luxury Limousine 22, Express Seat 45
-
-    [BsonElement("busType")] 
+    [BsonElement("className")]
     [Required]
-    public string BusType { get; set; } // Express_Seat, Luxury_Sleeper, Limousine_Sleeper
+    public string ClassName { get; set; }
 
-    [BsonElement("totalSeats")] 
+    [BsonElement("classNameKey")]
+    public string? ClassNameKey { get; set; }
+
+    [BsonElement("busType")]
+    [Required]
+    public string BusType { get; set; }
+
+    [BsonElement("imageUrl")]
+    public string ImageUrl { get; set; } = string.Empty;
+
+    [BsonElement("imagePublicId")]
+    public string ImagePublicId { get; set; } = string.Empty;
+  
+    [BsonElement("totalSeats")]
     public int TotalSeats { get; set; }
 
-    [BsonElement("totalRows")] 
+    [BsonElement("totalRows")]
     public int TotalRows { get; set; }
 
-    [BsonElement("totalColumns")] 
+    [BsonElement("totalColumns")]
     public int TotalColumns { get; set; }
 
-    [BsonElement("totalFloors")] 
+    [BsonElement("totalFloors")]
     public int TotalFloors { get; set; } = 1;
 
-    [BsonElement("defaultLayout")] 
+    [BsonElement("defaultLayout")]
     public List<SeatTemplate> DefaultLayout { get; set; } = new List<SeatTemplate>();
+
+    [BsonElement("status")]
+    public string Status { get; set; } = "Active";
+
+    [BsonElement("deletedAt")]
+    public DateTime? DeletedAt { get; set; }
+
+    [BsonElement("deletedBy")]
+    public string? DeletedBy { get; set; }
 
     [BsonElement("createdAt")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -60,7 +79,7 @@ public class BusClass
     public string CreatedBy { get; set; }
 
     [BsonElement("updatedAt")]
-    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? UpdatedAt { get; set; } = DateTime.UtcNow;
 
     [BsonElement("updatedBy")]
     public string UpdatedBy { get; set; }

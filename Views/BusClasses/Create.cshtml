@@ -1,0 +1,38 @@
+@model Bus_ticket.ViewModels.BusClassFormViewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Thêm loại xe";
+    ViewData["IsEdit"] = false;
+}
+
+<div class="p-6 sm:p-8 space-y-6 max-w-4xl mx-auto">
+    <div class="border-b border-gray-700/50 pb-4">
+        <a asp-action="Index" class="inline-flex items-center text-sm font-medium text-gray-400 hover:text-amber-400 mb-2">Quay lại danh sách</a>
+        <h1 class="text-2xl font-bold tracking-tight text-white">Thêm cấu hình loại xe</h1>
+        <p class="text-sm text-gray-400 mt-1">Định nghĩa template loại xe: tên, sơ đồ ghế, ảnh và trạng thái. Tất cả trường bắt buộc.</p>
+    </div>
+
+    <form asp-action="Create" method="post" enctype="multipart/form-data" class="space-y-6" novalidate>
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="formToken" value="@ViewBag.FormToken"/>
+        <div asp-validation-summary="All" class="text-sm text-red-400"></div>
+
+        <div class="p-6 bg-[#1e1e24] border border-gray-700/50 rounded-xl space-y-4 shadow-md">
+            <h3 class="text-lg font-semibold text-white">Cấu hình loại xe</h3>
+            <partial name="_BusClassFormFields" model="Model" />
+        </div>
+
+        <div class="flex justify-end gap-3">
+            <a asp-action="Index" class="px-5 py-2.5 text-sm font-semibold text-gray-300 bg-gray-800 border border-gray-700 rounded-lg hover:bg-gray-700">Hủy</a>
+            <button type="submit" id="btnSubmitBusClass" data-loading-text="Đang lưu..."
+                    class="px-5 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg disabled:opacity-60 disabled:cursor-not-allowed">
+                Lưu cấu hình
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial"/>
+    <partial name="_BusClassFormScripts"/>
+}

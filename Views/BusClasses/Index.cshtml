@@ -1,0 +1,235 @@
+@model List<Bus_ticket.ViewModels.BusClassListItemViewModel>
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Quản lý Hạng Xe";
+
+    string searchTerm = ViewBag.SearchTerm as string ?? string.Empty;
+    int currentPage = ViewBag.CurrentPage ?? 1;
+    int totalPages = ViewBag.TotalPages ?? 1;
+    long totalItems = ViewBag.TotalItems ?? 0;
+    int pageSize = ViewBag.PageSize ?? 10;
+
+    long startItem = totalItems == 0 ? 0 : ((currentPage - 1) * pageSize) + 1;
+    long endItem = (currentPage * pageSize) > totalItems ? totalItems : (currentPage * pageSize);
+}
+
+<div class="p-4 sm:p-6 lg:p-8 space-y-6 max-w-full overflow-x-hidden">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold tracking-tight text-white">Cấu hình Loại Xe (BusClasses)</h1>
+            <p class="text-sm text-gray-400 mt-1">Danh sách cấu hình loại xe: tên, hàng/cột/tầng ghế, ảnh và trạng thái.</p>
+        </div>
+
+        <a asp-action="Create" id="btnCreateBusClass"
+           class="inline-flex items-center justify-center px-4 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg transition-colors duration-200 shadow-sm">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+            </svg>
+            Thêm loại xe
+        </a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="flex items-center p-4 text-sm text-emerald-400 rounded-lg bg-gray-800 border border-emerald-800">
+            <div><span class="font-medium">Thành công!</span> @TempData["SuccessMessage"]</div>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="flex items-center p-4 text-sm text-red-400 rounded-lg bg-gray-800 border border-red-800">
+            <div><span class="font-medium">Thất bại!</span> @TempData["ErrorMessage"]</div>
+        </div>
+    }
+
+    <div class="flex flex-col md:flex-row md:items-center md:justify-end gap-3">
+        <form method="get" asp-action="Index" class="w-full md:w-80">
+            <div class="relative">
+                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </div>
+
+                <input type="text"
+                       name="searchTerm"
+                       value="@searchTerm"
+                       class="block w-full pl-10 pr-4 py-2 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 placeholder-gray-500"
+                       placeholder="Tìm kiếm hạng xe..." />
+            </div>
+        </form>
+    </div>
+
+    <div class="w-full max-w-full overflow-hidden bg-[#1e1e24] border border-gray-700/50 rounded-xl shadow-xl">
+        <div class="w-full overflow-x-auto">
+            <table class="w-full min-w-[960px] table-fixed text-sm text-left text-gray-300">
+                <thead class="text-xs uppercase bg-[#141419] text-gray-400 border-b border-gray-700/60">
+                    <tr>
+                        <th class="w-20 px-4 py-4 font-semibold tracking-wider">Ảnh</th>
+                        <th class="w-48 px-4 py-4 font-semibold tracking-wider">Tên loại xe</th>
+                        <th class="w-20 px-4 py-4 font-semibold tracking-wider">Hàng</th>
+                        <th class="w-20 px-4 py-4 font-semibold tracking-wider">Cột</th>
+                        <th class="w-20 px-4 py-4 font-semibold tracking-wider">Tầng</th>
+                        <th class="w-24 px-4 py-4 font-semibold tracking-wider">Tổng ghế</th>
+                        <th class="w-32 px-4 py-4 font-semibold tracking-wider">Trạng thái</th>
+                        <th class="w-32 px-4 py-4 font-semibold tracking-wider text-right">Hành động</th>
+                    </tr>
+                </thead>
+
+                <tbody class="divide-y divide-gray-700/50">
+                    @if (Model == null || !Model.Any())
+                    {
+                        <tr>
+                            <td colspan="8" class="px-4 py-10 text-center text-gray-500">
+                                Chưa có cấu hình loại xe nào.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        foreach (var item in Model)
+                        {
+                            <tr class="hover:bg-gray-800/30 transition-colors duration-150">
+                                <td class="px-4 py-4">
+                                    @if (!string.IsNullOrEmpty(item.ImageUrl))
+                                    {
+                                        <img src="@item.ImageUrl"
+                                             alt="@item.ClassName"
+                                             class="w-14 h-10 object-cover rounded border border-gray-600" />
+                                    }
+                                    else
+                                    {
+                                        <span class="text-xs text-gray-500">Chưa có ảnh</span>
+                                    }
+                                </td>
+
+                                <td class="px-4 py-4 font-semibold text-amber-400 whitespace-normal break-words">
+                                    @(string.IsNullOrWhiteSpace(item.ClassName) ? "—" : item.ClassName)
+                                </td>
+
+                                <td class="px-4 py-4 text-white">@(item.TotalRows > 0 ? item.TotalRows : "—")</td>
+                                <td class="px-4 py-4 text-white">@(item.TotalColumns > 0 ? item.TotalColumns : "—")</td>
+                                <td class="px-4 py-4 text-white">@(item.TotalFloors > 0 ? item.TotalFloors : "—")</td>
+                                <td class="px-4 py-4 font-semibold text-white">@(item.TotalSeats > 0 ? item.TotalSeats : "—")</td>
+
+                                <td class="px-4 py-4">
+                                    @if (string.Equals(item.Status, "Active", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        <span class="inline-flex items-center px-2.5 py-0.5 text-xs font-semibold rounded-md border bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
+                                            Hoạt động
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="inline-flex items-center px-2.5 py-0.5 text-xs font-semibold rounded-md border bg-gray-500/10 text-gray-400 border-gray-500/20">
+                                            Ngưng
+                                        </span>
+                                    }
+                                </td>
+
+                                <td class="px-4 py-4 text-right text-sm font-medium">
+                                    <div class="inline-flex items-center gap-3">
+                                        <a asp-action="Edit"
+                                           asp-route-id="@item.Id"
+                                           class="text-amber-400 hover:text-amber-300 font-semibold">
+                                            Sửa
+                                        </a>
+
+                                        <span class="text-gray-600">|</span>
+
+                                        <form asp-action="Delete"
+                                              asp-route-id="@item.Id"
+                                              method="post"
+                                              class="inline"
+                                              onsubmit="return confirm('Xóa loại xe này? Dữ liệu xe và chuyến đi liên kết vẫn được giữ.');">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="text-rose-400 hover:text-rose-300 font-semibold">
+                                                Xóa
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="flex flex-col sm:flex-row items-center justify-between p-4 bg-[#141419] border-t border-gray-700/60 gap-4">
+            <span class="text-sm text-gray-400">
+                Hiển thị từ <span class="font-semibold text-white">@startItem</span> đến
+                <span class="font-semibold text-white">@endItem</span> trong tổng số
+                <span class="font-semibold text-white">@totalItems</span> loại xe
+            </span>
+
+            @if (totalPages > 1)
+            {
+                <nav class="inline-flex items-center -space-x-px rounded-md shadow-sm">
+                    <a asp-action="Index"
+                       asp-route-page="@(currentPage - 1)"
+                       asp-route-searchTerm="@searchTerm"
+                       class="relative inline-flex items-center rounded-l-md px-3 py-2 text-sm font-medium border border-gray-700 bg-gray-900 text-gray-400 hover:bg-gray-800 hover:text-white @(currentPage == 1 ? "pointer-events-none opacity-40" : "")">
+                        Trước
+                    </a>
+
+                    @for (int i = 1; i <= totalPages; i++)
+                    {
+                        if (i == currentPage)
+                        {
+                            <span class="relative z-10 inline-flex items-center bg-amber-400 px-4 py-2 text-sm font-semibold text-gray-900 border border-amber-400">
+                                @i
+                            </span>
+                        }
+                        else
+                        {
+                            <a asp-action="Index"
+                               asp-route-page="@i"
+                               asp-route-searchTerm="@searchTerm"
+                               class="relative inline-flex items-center border border-gray-700 bg-gray-900 px-4 py-2 text-sm font-medium text-gray-400 hover:bg-gray-800 hover:text-white">
+                                @i
+                            </a>
+                        }
+                    }
+
+                    <a asp-action="Index"
+                       asp-route-page="@(currentPage + 1)"
+                       asp-route-searchTerm="@searchTerm"
+                       class="relative inline-flex items-center rounded-r-md px-3 py-2 text-sm font-medium border border-gray-700 bg-gray-900 text-gray-400 hover:bg-gray-800 hover:text-white @(currentPage == totalPages ? "pointer-events-none opacity-40" : "")">
+                        Tiếp
+                    </a>
+                </nav>
+            }
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        const link = document.getElementById('btnCreateBusClass');
+        if (!link) return;
+
+        let navigating = false;
+
+        link.addEventListener('click', function (e) {
+            if (navigating) {
+                e.preventDefault();
+                return;
+            }
+            
+            // Đánh dấu đang điều hướng
+            navigating = true;
+            
+            // Làm mờ nhẹ nút để tạo hiệu ứng phản hồi trực quan (Visual Feedback)
+            link.classList.add('opacity-70');
+            link.innerHTML = `
+                <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-900" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Đang tải...
+            `;
+        });
+    })();
+</script>

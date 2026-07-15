@@ -1,0 +1,66 @@
+<script>
+    function renderSeatPreview() {
+        const rows = parseInt(document.getElementById('totalRows')?.value) || 1;
+        const cols = parseInt(document.getElementById('totalColumns')?.value) || 1;
+        const floors = parseInt(document.getElementById('totalFloors')?.value) || 1;
+        const container = document.getElementById('seatPreview');
+        const countEl = document.getElementById('seatPreviewCount');
+        if (!container || !countEl) return;
+
+        container.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
+        container.innerHTML = '';
+        let total = 0;
+        for (let f = 0; f < floors; f++) {
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    total++;
+                    const cell = document.createElement('div');
+                    cell.className = 'text-[10px] font-bold text-center py-1 rounded bg-gray-700 text-gray-200 border border-gray-600';
+                    cell.textContent = total;
+                    container.appendChild(cell);
+                }
+            }
+        }
+        countEl.textContent = total;
+    }
+
+    ['totalRows', 'totalColumns', 'totalFloors'].forEach(id => {
+        document.getElementById(id)?.addEventListener('input', renderSeatPreview);
+    });
+    renderSeatPreview();
+
+    const form = document.querySelector('form[method="post"]');
+    const submitBtn = document.getElementById('btnSubmitBusClass');
+
+    function lockSubmitButton() {
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = submitBtn.dataset.loadingText || 'Đang lưu...';
+        }
+    }
+
+    submitBtn?.addEventListener('click', function (e) {
+        if (form?._submitLock) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+        }
+    }, true);
+
+    form?.addEventListener('submit', function (e) {
+        if (form._submitLock) {
+            e.preventDefault();
+            return;
+        }
+
+        if (window.jQuery?.fn?.validate) {
+            const $form = window.jQuery(form);
+            if ($form.data('validator') && !$form.valid()) {
+                return;
+            }
+        }
+
+        form._submitLock = true;
+        form.dataset.submitting = 'true';
+        lockSubmitButton();
+    });
+</script>

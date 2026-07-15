@@ -273,7 +273,11 @@
     </ItemGroup>
 
     <ItemGroup>
+      <PackageReference Include="AngleSharp" Version="1.5.2" />
       <PackageReference Include="BCrypt.Net-Next" Version="4.2.0" />
+      <PackageReference Include="ClosedXML" Version="0.105.0" />
+      <PackageReference Include="CloudinaryDotNet" Version="1.26.2" />
+      <PackageReference Include="HtmlAgilityPack" Version="1.12.4" />
       <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.8" />
       <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.8" />
       <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.8">
@@ -281,7 +285,9 @@
         <PrivateAssets>all</PrivateAssets>
       </PackageReference>
       <PackageReference Include="MongoDB.Driver" Version="3.9.0" />
+      <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
       <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="8.0.2" />
+      <PackageReference Include="RabbitMQ.Client" Version="7.2.1" />
       <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
     </ItemGroup>
 

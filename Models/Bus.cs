@@ -5,6 +5,7 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace Bus_ticket.Models;
 
+[BsonIgnoreExtraElements]
 public class Bus
 {
     [BsonId]
@@ -25,14 +26,26 @@ public class Bus
     // Liên kết với bảng chi nhánh quản lý xe này
     [BsonElement("branchId")]
     [BsonRepresentation(BsonType.ObjectId)]
-    [Required]
-    public string BranchId { get; set; }
+    public string? BranchId { get; set; }
+    
+    // Nhà xe/đối tác sở hữu xe này
+    [BsonElement("operatorId")]
+    [BsonRepresentation(BsonType.ObjectId)]
+    public string? OperatorId { get; set; }
 
-    // THAY ĐỔI QUAN TRỌNG: Liên kết tham chiếu đến Hạng xe / Sơ đồ xe tương ứng
     [BsonElement("busClassId")]
     [BsonRepresentation(BsonType.ObjectId)]
-    [Required]
-    public string BusClassId { get; set; }
+    public string? BusClassId { get; set; }
+
+  // Legacy schema (dữ liệu seed cũ)
+    [BsonElement("busType")]
+    public string? LegacyBusType { get; set; }
+
+    [BsonElement("seatsLayout")]
+    public List<SeatTemplate>? SeatsLayout { get; set; }
+
+    [BsonElement("totalSeats")]
+    public int? LegacyTotalSeats { get; set; }
 
     [BsonElement("createdAt")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -45,4 +58,5 @@ public class Bus
 
     [BsonElement("updatedBy")]
     public string UpdatedBy { get; set; }
+    
 }

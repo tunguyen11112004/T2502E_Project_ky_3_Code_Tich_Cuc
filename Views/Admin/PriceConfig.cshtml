@@ -1,0 +1,179 @@
+﻿@model Bus_ticket.ViewModels.PriceManagementViewModel
+@using Bus_ticket.Helpers
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Quản lý Chuyến Xe";
+    int currentPage = ViewBag.CurrentPage ?? 1;
+    int totalPages = ViewBag.TotalPages ?? 1;
+    long totalItems = ViewBag.TotalItems ?? 0;
+    string searchDate = ViewBag.SearchDate as string ?? DateTime.Now.ToString("yyyy-MM-dd");
+    string searchText = ViewBag.SearchText ?? string.Empty;
+    string today = DateTime.Now.ToString("yyyy-MM-dd");
+}
+
+<div class="p-6 sm:p-8 space-y-6">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+            <h1 class="text-2xl font-bold tracking-tight text-white">Quản Lý Chuyến Xe & Tuyến Chạy</h1>
+            <p class="text-sm text-gray-400 mt-1">
+                Hiển thị <strong class="text-amber-400">(danh sách chuyến đi)</strong>
+            </p>
+        </div>
+        <a asp-controller="Admin" asp-action="CreateTrip"
+           class="inline-flex w-full sm:w-auto sm:self-center items-center justify-center px-4 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg transition-colors duration-200 shadow-sm whitespace-nowrap">
+            + Thêm tuyến đường cho xe chạy
+        </a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="flex items-center p-4 text-sm text-emerald-400 rounded-lg bg-gray-800 border border-emerald-800">
+            <div><span class="font-medium">Thành công!</span> @TempData["SuccessMessage"]</div>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="flex items-center p-4 text-sm text-red-400 rounded-lg bg-gray-800 border border-red-800">
+            <div><span class="font-medium">Thất bại!</span> @TempData["ErrorMessage"]</div>
+        </div>
+    }
+
+    <form method="get" asp-controller="Admin" asp-action="PriceConfig" id="filterForm" class="bg-[#1e1e24] p-4 border border-gray-700/50 rounded-xl grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+        <div>
+            <label class="block mb-1 text-xs font-semibold text-gray-400 uppercase">Lọc theo ngày đi</label>
+            <input type="date" name="searchDate" id="searchDate" value="@searchDate"
+                   class="block w-full px-3 py-2 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-1 focus:ring-amber-400 focus:border-amber-400"/>
+        </div>
+        <div>
+            <label class="block mb-1 text-xs font-semibold text-gray-400 uppercase">Tìm nhanh mã chuyến / biển số / tuyến</label>
+            <input type="text" name="searchText" value="@searchText" placeholder="Nhập từ khóa cần tìm..."
+                   class="block w-full px-3 py-2 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-1 focus:ring-amber-400 focus:border-amber-400"/>
+        </div>
+        <div class="flex gap-2">
+            <button type="submit" class="w-full px-4 py-2 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg transition-colors">
+                Lọc dữ liệu
+            </button>
+            <a asp-controller="Admin" asp-action="PriceConfig" asp-route-searchDate="@today" asp-route-searchText="" class="px-4 py-2 text-sm font-semibold text-gray-300 bg-gray-800 hover:bg-gray-700 rounded-lg text-center transition-colors">
+                Về hôm nay
+            </a>
+        </div>
+    </form>
+
+    <div class="overflow-hidden bg-[#1e1e24] border border-gray-700/50 rounded-xl shadow-xl">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left text-gray-300 whitespace-nowrap">
+                <thead class="text-xs uppercase bg-[#141419] text-gray-400 border-b border-gray-700/60">
+                <tr>
+                    <th class="px-6 py-4 font-semibold">Mã chuyến</th>
+                    <th class="px-6 py-4 font-semibold">Biển số</th>
+                    <th class="px-6 py-4 font-semibold">Lớp xe</th>
+                    <th class="px-6 py-4 font-semibold">Tuyến đường</th>
+                    <th class="px-6 py-4 font-semibold">Giờ đi</th>
+                    <th class="px-6 py-4 font-semibold">Giá vé</th>
+                    <th class="px-6 py-4 font-semibold">Ghế</th>
+                    <th class="px-6 py-4 font-semibold">Trạng thái</th>
+                    <th class="px-6 py-4 font-semibold text-center">Hành động</th>
+                </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-700/50">
+                @if (Model.Trips.Any())
+                {
+                    foreach (var trip in Model.Trips)
+                    {
+                        <tr class="hover:bg-gray-800/30 transition-colors duration-150">
+                            <td class="px-6 py-4 font-semibold text-amber-400 text-xs">@trip.TripCode</td>
+                            <td class="px-6 py-4 font-bold text-white">@trip.LicensePlate</td>
+                            <td class="px-6 py-4 text-xs text-gray-400 max-w-[160px] truncate" title="@trip.BusClassName">@trip.BusClassName</td>
+                            <td class="px-6 py-4 text-xs max-w-[180px] truncate" title="@trip.RouteLabel">@trip.RouteLabel</td>
+                            <td class="px-6 py-4 text-gray-300">@trip.DepartureTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                            <td class="px-6 py-4 font-semibold text-white">@trip.BaseFare.ToString("N0") đ</td>
+                            <td class="px-6 py-4 text-xs text-gray-400">@trip.BookedSeats/@trip.TotalSeats</td>
+                            <td class="px-6 py-4 text-xs @TripStatusHelper.GetBadgeClass(trip.Status)">@TripStatusHelper.GetDisplayName(trip.Status)</td>
+                            <td class="px-6 py-4">
+                                <div class="flex justify-center gap-2">
+                                    <a asp-controller="Admin" asp-action="EditTrip" asp-route-id="@trip.Id"
+                                       class="px-3 py-1.5 text-xs font-semibold rounded bg-amber-400/10 text-amber-400 hover:bg-amber-400 hover:text-gray-900 transition-colors">
+                                        Sửa
+                                    </a>
+                                    <form asp-controller="Admin" asp-action="DeleteTrip" method="post" class="inline" onsubmit="return confirm('Xóa chuyến @trip.TripCode? Dữ liệu đặt vé liên kết vẫn được giữ.');">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@trip.Id"/>
+                                        <button type="submit" class="px-3 py-1.5 text-xs font-semibold rounded bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white transition-colors">
+                                            Xóa
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="9" class="px-6 py-12 text-center text-gray-500">
+                            Không có chuyến xe nào trong ngày @DateTime.Parse(searchDate).ToString("dd/MM/yyyy").
+                            <a asp-controller="Admin" asp-action="CreateTrip" class="text-amber-400 hover:underline font-semibold">Thêm tuyến đường cho xe chạy</a>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+
+        @if (totalPages > 1)
+        {
+            var startPage = Math.Max(1, currentPage - 1);
+            var endPage = Math.Min(totalPages, currentPage + 1);
+            if (currentPage == 1)
+            {
+                endPage = Math.Min(totalPages, 2);
+            }
+            else if (currentPage == totalPages)
+            {
+                startPage = Math.Max(1, totalPages - 1);
+            }
+
+            var pageBtn = "px-3 py-1 text-xs font-medium rounded";
+            var pageBtnDefault = pageBtn + " text-gray-400 bg-gray-800 hover:bg-gray-700 hover:text-white";
+            var pageBtnActive = pageBtn + " bg-amber-400 text-gray-900 font-bold";
+            var pageBtnDisabled = pageBtn + " text-gray-500 bg-gray-800 opacity-40 pointer-events-none";
+
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 bg-[#141419] border-t border-gray-700/60">
+                <span class="text-xs text-gray-400 whitespace-nowrap">
+                    @totalItems chuyến — Trang <span class="text-white font-semibold">@currentPage</span> / @totalPages
+                </span>
+                <div class="inline-flex flex-wrap items-center gap-1">
+                    <a asp-controller="Admin" asp-action="PriceConfig" asp-route-page="1" asp-route-searchDate="@searchDate" asp-route-searchText="@searchText"
+                       class="@(currentPage == 1 ? pageBtnDisabled : pageBtnDefault)">
+                        Đầu
+                    </a>
+                    <a asp-controller="Admin" asp-action="PriceConfig" asp-route-page="@(currentPage - 1)" asp-route-searchDate="@searchDate" asp-route-searchText="@searchText"
+                       class="@(currentPage == 1 ? pageBtnDisabled : pageBtnDefault)">
+                        Trước
+                    </a>
+                    @for (int i = startPage; i <= endPage; i++)
+                    {
+                        <a asp-controller="Admin" asp-action="PriceConfig" asp-route-page="@i" asp-route-searchDate="@searchDate" asp-route-searchText="@searchText"
+                           class="@(i == currentPage ? pageBtnActive : pageBtnDefault)">
+                            @i
+                        </a>
+                    }
+                    <a asp-controller="Admin" asp-action="PriceConfig" asp-route-page="@(currentPage + 1)" asp-route-searchDate="@searchDate" asp-route-searchText="@searchText"
+                       class="@(currentPage == totalPages ? pageBtnDisabled : pageBtnDefault)">
+                        Tiếp
+                    </a>
+                    <a asp-controller="Admin" asp-action="PriceConfig" asp-route-page="@totalPages" asp-route-searchDate="@searchDate" asp-route-searchText="@searchText"
+                       class="@(currentPage == totalPages ? pageBtnDisabled : pageBtnDefault)">
+                        Cuối
+                    </a>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<script>
+    document.getElementById('searchDate')?.addEventListener('change', function () {
+        document.getElementById('filterForm')?.submit();
+    });
+</script>

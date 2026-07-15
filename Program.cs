@@ -1,4 +1,5 @@
 using Bus_ticket.Data;
+using Bus_ticket.Helpers;
 using Bus_ticket.Interfaces;
 using Bus_ticket.Middlewares;
 using Bus_ticket.Models;
@@ -21,9 +22,16 @@ builder.Services.Configure<MongoDbSettings>(
 // Services
 builder.Services.AddSingleton<ApplicationDbContext>();
 builder.Services.AddSingleton<UserService>();
+builder.Services.AddScoped<BranchService>();
+builder.Services.AddSingleton<ICloudinaryService, CloudinaryService>();
+builder.Services.AddScoped<SidebarPermissionService>();
+builder.Services.AddScoped<NewsScraperService>();
+builder.Services.AddSingleton<CrawlerProducer>();
+builder.Services.AddScoped<NewsScraperService>();
+builder.Services.AddHostedService<ArticleProcessorConsumer>();
+builder.Services.AddScoped<DashboardService>();
 
 // Cookie Authentication
-// Used for MVC login session after successful MongoDB authentication.
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
@@ -35,8 +43,23 @@ builder.Services.AddAuthorization();
 
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(30);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
+
 builder.Services.AddControllersWithViews()
     .AddViewLocalization(Microsoft.AspNetCore.Mvc.Razor.LanguageViewLocationExpanderFormat.Suffix);
+
+builder.Services.Configure<Bus_ticket.Settings.MomoSettings>(builder.Configuration.GetSection("Momo"));
+
+builder.Services.AddScoped<Bus_ticket.Interfaces.IMomoService, Bus_ticket.Services.MomoService>();
+
+builder.Services.AddScoped<IRabbitMQService, RabbitMQService>();
+
+builder.Services.AddHostedService<RabbitMqConsumerService>();
 
 var app = builder.Build();
 
@@ -48,57 +71,14 @@ var localizationOptions = new RequestLocalizationOptions()
 
 app.UseRequestLocalization(localizationOptions);
 
-// Seed default MongoDB users for testing login.
-// NOTE: These accounts are only for local/demo testing.
-// Later, real Admin/Employee accounts should be created from the system flow.
-using (var scope = app.Services.CreateScope())
-{
-    var userService = scope.ServiceProvider.GetRequiredService<UserService>();
-
-    var adminEmail = "admin@src.com";
-    var employeeEmail = "employee@src.com";
-
-    var existingAdmin = await userService.GetByEmailAsync(adminEmail);
-    if (existingAdmin == null)
-    {
-        await userService.CreateAsync(new User
-        {
-            UserCode = "ADM001",
-            EmployeeCode = "000001",
-            FullName = "System Admin",
-            Email = adminEmail,
-            Username = "admin",
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin@123"),
-            Role = "Admin",
-            Status = "Active",
-            CreatedAt = DateTime.UtcNow,
-            CreatedBy = "System"
-        });
-    }
-
-    var existingEmployee = await userService.GetByEmailAsync(employeeEmail);
-    if (existingEmployee == null)
-    {
-        await userService.CreateAsync(new User
-        {
-            UserCode = "EMP001",
-            EmployeeCode = "123456",
-            FullName = "Ticket Agent",
-            Email = employeeEmail,
-            Username = "employee01",
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword("Employee@123"),
-            Role = "Employee",
-            Status = "Active",
-            CreatedAt = DateTime.UtcNow,
-            CreatedBy = "System"
-        });
-    }
-}
 
 using (var scope = app.Services.CreateScope())
 {
     var seeder = scope.ServiceProvider.GetRequiredService<IDbSeeder>();
     await seeder.SeedAllAsync();
+
+    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    await BusClassIndexInitializer.EnsureIndexesAsync(dbContext.BusClasses);
 }
 
 // Configure HTTP request pipeline
@@ -108,36 +88,32 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-// NOTE:
-// If local development only runs on http://localhost:5280,
-// this line may show "Failed to determine the https port for redirect".
-// It is safe to comment it during local testing.
-// app.UseHttpsRedirection();
-
 app.UseStaticFiles();
 
 app.UseRouting();
 
-app.UseAuthentication();
-app.UseAuthorization();
+app.UseSession();
 
-// NOTE:
-// PermissionMiddleware belongs to the MongoDB dynamic RBAC/database structure branch.
-// It checks permissions by RoleId + permissions collection.
-//
-// We only apply it to /api routes to avoid blocking MVC pages such as:
-// /Account/Login
-// /Admin
-// /Employee
-//
-// MVC pages are protected by [Authorize] and [Authorize(Roles = "...")] in controllers.
-app.UseWhen(context => context.Request.Path.StartsWithSegments("/api"), apiApp =>
-{
-    apiApp.UseMiddleware<PermissionMiddleware>();
-});
+app.UseAuthentication();
+app.UseMiddleware<PermissionMiddleware>();
+app.UseAuthorization();
 
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+using (var scope = app.Services.CreateScope())
+{
+    try
+    {
+        var crawler = scope.ServiceProvider.GetRequiredService<Bus_ticket.Services.CrawlerProducer>();
+        // Fire and forget: Chạy ngầm tiến trình cào dữ liệu
+        _ = Task.Run(() => crawler.StartCrawlingAsync());
+        Console.WriteLine("[System] Đã tự động đẩy lệnh cào tin tức vào RabbitMQ!");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[Error] Lỗi auto-crawler: {ex.Message}");
+    }
+}
 
 app.Run();
