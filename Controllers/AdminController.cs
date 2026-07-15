@@ -3,12 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Bus_ticket.Models;
 using MongoDB.Driver;
-using System.Net.Http;
 using AngleSharp;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Bus_ticket.Controllers
 {
