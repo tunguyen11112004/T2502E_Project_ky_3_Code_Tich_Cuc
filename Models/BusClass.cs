@@ -35,6 +35,9 @@ public class BusClass
     [Required]
     public string ClassName { get; set; }
 
+    [BsonElement("classNameKey")]
+    public string? ClassNameKey { get; set; }
+
     [BsonElement("busType")]
     [Required]
     public string BusType { get; set; }
@@ -62,6 +65,12 @@ public class BusClass
 
     [BsonElement("status")]
     public string Status { get; set; } = "Active";
+
+    [BsonElement("deletedAt")]
+    public DateTime? DeletedAt { get; set; }
+
+    [BsonElement("deletedBy")]
+    public string? DeletedBy { get; set; }
 
     [BsonElement("createdAt")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

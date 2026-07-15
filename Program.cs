@@ -1,4 +1,5 @@
 using Bus_ticket.Data;
+using Bus_ticket.Helpers;
 using Bus_ticket.Interfaces;
 using Bus_ticket.Middlewares;
 using Bus_ticket.Models;
@@ -52,6 +53,14 @@ builder.Services.AddSession(options =>
 builder.Services.AddControllersWithViews()
     .AddViewLocalization(Microsoft.AspNetCore.Mvc.Razor.LanguageViewLocationExpanderFormat.Suffix);
 
+builder.Services.Configure<Bus_ticket.Settings.MomoSettings>(builder.Configuration.GetSection("Momo"));
+
+builder.Services.AddScoped<Bus_ticket.Interfaces.IMomoService, Bus_ticket.Services.MomoService>();
+
+builder.Services.AddScoped<IRabbitMQService, RabbitMQService>();
+
+builder.Services.AddHostedService<RabbitMqConsumerService>();
+
 var app = builder.Build();
 
 var supportedCultures = new[] { "vi", "en" };
@@ -67,6 +76,9 @@ using (var scope = app.Services.CreateScope())
 {
     var seeder = scope.ServiceProvider.GetRequiredService<IDbSeeder>();
     await seeder.SeedAllAsync();
+
+    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    await BusClassIndexInitializer.EnsureIndexesAsync(dbContext.BusClasses);
 }
 
 // Configure HTTP request pipeline

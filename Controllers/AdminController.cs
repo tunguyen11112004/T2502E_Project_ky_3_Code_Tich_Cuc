@@ -24,13 +24,17 @@ namespace Bus_ticket.Controllers
         // Trang chủ Admin
         public IActionResult Index()
         {
-            return View();
+            return RedirectToAction("Index", "Dashboard");
         }
 
         [HttpGet]
-        public IActionResult Create()
+        public IActionResult RenderDropdownDatePicker(string targetType, string currentFromDate = "", string currentToDate = "")
         {
-            return View();
+            ViewBag.TargetType = targetType;
+            ViewBag.CurrentFromDate = currentFromDate;
+            ViewBag.CurrentToDate = currentToDate;
+
+            return PartialView("_DropdownDatePicker");
         }
         
         [HttpPost]
