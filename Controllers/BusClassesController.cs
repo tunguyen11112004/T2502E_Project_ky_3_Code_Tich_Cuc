@@ -296,27 +296,39 @@ public class BusClassesController : Controller
         var busClass = await _context.BusClasses.Find(bc => bc.Id == id).FirstOrDefaultAsync();
         if (busClass == null) return NotFound();
 
-        if (busClass.DeletedAt.HasValue)
+        // 1. Kiểm tra trạng thái xóa mềm
+        if (busClass.DeletedAt.HasValue || busClass.Status == "Inactive")
         {
             TempData["ErrorMessage"] = "Loại xe này đã được xóa trước đó.";
             return RedirectToAction(nameof(Index));
         }
 
+        // 2. Kiểm tra ràng buộc dữ liệu chuyến đi (Trips)
         var inUse = await _context.Trips
             .Find(Builders<Trip>.Filter.And(
                 TripFilters.NotDeleted,
-                Builders<Trip>.Filter.Eq(t => t.BusId, busId)))
+                Builders<Trip>.Filter.Eq(t => t.BusId, id)))
             .AnyAsync();
+
         if (inUse)
         {
             TempData["ErrorMessage"] = "Không thể xóa xe! Xe đang được gán cho chuyến đi.";
-            return RedirectToAction(nameof(Edit), new { id = busClassId });
+            return RedirectToAction(nameof(Edit), new { id = id });
         }
+
+        // 3. Tiến hành xóa mềm bằng cách cập nhật các trường tương ứng trong Model mới
+        var currentUserName = User.Identity?.Name ?? "SystemAdmin"; // Lấy tên user đang đăng nhập (nếu có)
+
+        var update = Builders<BusClass>.Update
+            .Set(bc => bc.DeletedAt, DateTime.UtcNow)
+            .Set(bc => bc.DeletedBy, currentUserName) // Lưu vết người xóa
+            .Set(bc => bc.Status, "Inactive")
+            .Set(bc => bc.UpdatedAt, DateTime.UtcNow)
+            .Set(bc => bc.UpdatedBy, currentUserName);
 
         await _context.BusClasses.UpdateOneAsync(bc => bc.Id == id, update);
 
-        TempData["SuccessMessage"] =
-            "Đã xóa loại xe. Xe, chuyến đi và dữ liệu liên kết vẫn được giữ nguyên.";
+        TempData["SuccessMessage"] = "Đã xóa loại xe thành công (Xóa mềm).";
         return RedirectToAction(nameof(Index));
     }
 
@@ -325,28 +337,23 @@ public class BusClassesController : Controller
         var hasNewImage = model.ImageFile != null && model.ImageFile.Length > 0;
         var hasExistingImage = !string.IsNullOrWhiteSpace(existingImageUrl);
 
+        // 1. Kiểm tra nếu tạo mới (hoặc edit nhưng không có ảnh cũ) mà lại không upload ảnh mới
         if (!hasNewImage && (!isEdit || !hasExistingImage))
         {
-            var inTrip = await _context.Trips
-                .Find(Builders<Trip>.Filter.And(
-                    TripFilters.NotDeleted,
-                    Builders<Trip>.Filter.Eq(t => t.BusId, bus.Id)))
-                .AnyAsync();
-            if (inTrip)
-            {
-                TempData["ErrorMessage"] = "Không thể xóa! Có xe trong hạng này đang được gán chuyến đi.";
-                return RedirectToAction(nameof(Index));
-            }
+            ModelState.AddModelError(nameof(model.ImageFile), "Vui lòng tải lên một hình ảnh cho loại xe.");
+            return;
         }
 
+        // 2. Nếu không upload ảnh mới (nhưng đã có ảnh cũ - trường hợp Edit hợp lệ), không cần check định dạng nữa
         if (!hasNewImage)
         {
             return;
         }
 
+        // 3. Kiểm tra định dạng file ảnh tải lên
         if (!model.ImageFile!.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
         {
-            ModelState.AddModelError(nameof(model.ImageFile), "File tải lên phải là ảnh (image/*).");
+            ModelState.AddModelError(nameof(model.ImageFile), "File tải lên phải là định dạng ảnh (image/*).");
         }
     }
 

@@ -25,7 +25,8 @@ namespace Bus_ticket.Controllers
         private readonly IMomoService _momoService;
         private readonly IRabbitMQService _rabbitMqService;
 
-        public BookingController(ApplicationDbContext dbContext, IConfiguration config, IMomoService momoService, IRabbitMQService rabbitMqService)
+        public BookingController(ApplicationDbContext dbContext, IConfiguration config, IMomoService momoService,
+            IRabbitMQService rabbitMqService)
         {
             _dbContext = dbContext;
             _config = config;
@@ -188,19 +189,19 @@ namespace Bus_ticket.Controllers
             var startOfDay = parsedDate.Date.ToUniversalTime();
             var endOfDay = parsedDate.Date.AddDays(1).AddTicks(-1).ToUniversalTime();
 
-    var trips = await _dbContext.Trips
-        .Find(Builders<Trip>.Filter.And(
-            TripFilters.NotDeleted,
-            Builders<Trip>.Filter.Eq(t => t.RouteId, matchedRoute.Id),
-            Builders<Trip>.Filter.Gte(t => t.DepartureTime, startOfDay),
-            Builders<Trip>.Filter.Lte(t => t.DepartureTime, endOfDay),
-            Builders<Trip>.Filter.In(t => t.Status, new[] { "Scheduled", "Active" })))
-        .ToListAsync();
+            var trips = await _dbContext.Trips
+                .Find(Builders<Trip>.Filter.And(
+                    TripFilters.NotDeleted,
+                    Builders<Trip>.Filter.Eq(t => t.RouteId, matchedRoute.Id),
+                    Builders<Trip>.Filter.Gte(t => t.DepartureTime, startOfDay),
+                    Builders<Trip>.Filter.Lte(t => t.DepartureTime, endOfDay),
+                    Builders<Trip>.Filter.In(t => t.Status, new[] { "Scheduled", "Active" })))
+                .ToListAsync();
 
-    var buses = await _dbContext.Buses.Find(_ => true).ToListAsync();
-    var busClasses = await _dbContext.BusClasses.Find(_ => true).ToListAsync();
-    var priceConfigs = await _dbContext.PriceConfigs.Find(_ => true).ToListAsync();
-    var routeMap = allRoutes.ToDictionary(r => r.Id, r => r);
+            var buses = await _dbContext.Buses.Find(_ => true).ToListAsync();
+            var busClasses = await _dbContext.BusClasses.Find(_ => true).ToListAsync();
+            var priceConfigs = await _dbContext.PriceConfigs.Find(_ => true).ToListAsync();
+            var routeMap = allRoutes.ToDictionary(r => r.Id, r => r);
 
             var tripIds = trips.Select(t => t.Id).ToList();
 
@@ -210,148 +211,75 @@ namespace Bus_ticket.Controllers
                     .ToListAsync()
                 : new List<Booking>();
 
-    var result = trips
-        .OrderBy(t => t.DepartureTime)
-        .Select(t =>
-        {
-            var bus = buses.FirstOrDefault(b => b.Id == t.BusId);
-            var busClass = busClasses.FirstOrDefault(c => c.Id == bus?.BusClassId);
-            var route = routeMap.GetValueOrDefault(t.RouteId);
+            // GIẢI QUYẾT BẤT ĐỒNG BỘ (ASYNC): 
+            // Do ReleaseExpiredHoldsAsync là tác vụ Async, ta giải phóng hàng giữ chỗ hết hạn cho toàn bộ các trip trước khi ánh xạ kết quả đồng bộ.
+            foreach (var tripId in tripIds)
+            {
+                await ReleaseExpiredHoldsAsync(tripId);
+            }
 
+            var result = trips
+                .OrderBy(t => t.DepartureTime)
+                .Select(t =>
+                {
+                    var bus = buses.FirstOrDefault(b => b.Id == t.BusId);
+                    var busClass = busClasses.FirstOrDefault(c => c.Id == bus?.BusClassId);
+                    var route = routeMap.GetValueOrDefault(t.RouteId);
+
+                    // Số lượng ghế đã được mua từ danh sách Booking hoàn thành
                     var bookedSeatsCount = activeBookings
                         .Where(b => b.TripId == t.Id)
                         .Sum(b => b.Passengers?.Count ?? 0);
 
-            int totalSeats = 45;
-            if (busClass != null && busClass.TotalSeats > 0)
-            {
-                totalSeats = busClass.TotalSeats;
-            }
-            else if (bus?.LegacyTotalSeats != null && bus.LegacyTotalSeats.Value > 0)
-            {
-                return BadRequest("Mã không hợp lệ.");
-            }
-            else if (t.RealtimeSeats?.Count > 0)
-            {
-                totalSeats = t.RealtimeSeats.Count;
-            }
+                    int totalSeats = 45;
+                    if (busClass != null && busClass.TotalSeats > 0)
+                    {
+                        totalSeats = busClass.TotalSeats;
+                    }
+                    else if (bus?.LegacyTotalSeats != null && bus.LegacyTotalSeats.Value > 0)
+                    {
+                        totalSeats = bus.LegacyTotalSeats.Value;
+                    }
+                    else if (t.RealtimeSeats?.Count > 0)
+                    {
+                        totalSeats = t.RealtimeSeats.Count;
+                    }
 
-            await ReleaseExpiredHoldsAsync(tripId);
+                    // Tính số ghế còn trống (Có sẵn)
+                    int availableSeats = totalSeats - bookedSeatsCount;
+                    if (availableSeats < 0) availableSeats = 0;
 
-            decimal baseFare = t.BaseFare;
-            if (baseFare <= 0 && route != null)
-            {
-                var matchedPrice = priceConfigs.FirstOrDefault(p =>
-                    p.DeparturePoint == route.DeparturePoint
-                    && p.DestinationPoint == route.DestinationPoint
-                    && BusTypeMatcher.Matches(p.BusType, busClass, bus));
-                if (matchedPrice != null)
-                {
-                    baseFare = matchedPrice.BasePrice;
-                }
-            }
-
-            return new
-            {
-                id = t.Id,
-                tripCode = t.TripCode ?? string.Empty,
-                departureTime = t.DepartureTime.ToLocalTime().ToString("yyyy-MM-ddTHH:mm:ss"),
-                baseFare,
-                busCode = bus?.BusCode ?? "—",
-                licensePlate = bus?.LicensePlate ?? "—",
-                busType = busClass?.ClassName ?? bus?.LegacyBusType ?? "Ghế ngồi",
-                totalSeats,
-                availableSeats,
-                departurePoint = route?.DeparturePoint ?? departure.Trim(),
-                destinationPoint = route?.DestinationPoint ?? destination.Trim()
-            };
-        })
-        .ToList();
-
-            var bus = await _dbContext.Buses
-                .Find(b => b.Id == trip.BusId)
-                .FirstOrDefaultAsync();
-
-            if (bus == null)
-            {
-                return NotFound("Không tìm thấy thông tin xe.");
-            }
-
-            var busClass = await _dbContext.BusClasses
-                .Find(bc => bc.Id == bus.BusClassId)
-                .FirstOrDefaultAsync();
-
-            if (busClass == null)
-            {
-                return NotFound("Không tìm thấy cấu hình loại xe.");
-            }
-
-    if (trip == null || trip.DeletedAt.HasValue)
-    {
-        return NotFound("Không tìm thấy chuyến xe.");
-    }
-    
-            var activeBookings = await _dbContext.Bookings
-                .Find(b => b.TripId == tripId && b.BookingStatus == "Completed")
-                .ToListAsync();
-
-            var bookedSeatsFromBookings = activeBookings
-                .SelectMany(b => b.Passengers ?? new List<PassengerDetail>())
-                .Where(p => !string.IsNullOrWhiteSpace(p.SeatNumber))
-                .Select(p => p.SeatNumber.Trim().ToUpper())
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-            var now = DateTime.UtcNow;
-            var realtimeSeats = trip.RealtimeSeats ?? new List<RealtimeSeat>();
-
-            var seatsList = layout
-                .Where(s => !string.IsNullOrWhiteSpace(s.SeatNumber))
-                .OrderBy(s => s.Floor)
-                .ThenBy(s => s.Row)
-                .ThenBy(s => s.Column)
-                .Select(seat =>
-                {
-                    var seatName = seat.SeatNumber.Trim().ToUpper();
-
-                    var isBookedByTrip = realtimeSeats.Any(s =>
-                        s.SeatNumber != null
-                        && s.SeatNumber.Trim().Equals(seatName, StringComparison.OrdinalIgnoreCase)
-                        && s.Status == "Booked"
-                    );
-
-                    var activeHold = realtimeSeats.FirstOrDefault(s =>
-                        s.SeatNumber != null
-                        && s.SeatNumber.Trim().Equals(seatName, StringComparison.OrdinalIgnoreCase)
-                        && s.Status == "Holding"
-                        && s.HeldUntil.HasValue
-                        && s.HeldUntil.Value > now
-                    );
-
-                    var isBooked = bookedSeatsFromBookings.Contains(seatName) || isBookedByTrip;
-                    var isHolding = !isBooked && activeHold != null;
+                    decimal baseFare = t.BaseFare;
+                    if (baseFare <= 0 && route != null)
+                    {
+                        var matchedPrice = priceConfigs.FirstOrDefault(p =>
+                            p.DeparturePoint == route.DeparturePoint
+                            && p.DestinationPoint == route.DestinationPoint
+                            && BusTypeMatcher.Matches(p.BusType, busClass, bus));
+                        if (matchedPrice != null)
+                        {
+                            baseFare = matchedPrice.BasePrice;
+                        }
+                    }
 
                     return new
                     {
-                        seatNumber = seatName,
-                        row = seat.Row,
-                        column = seat.Column,
-                        floor = seat.Floor,
-                        seatType = seat.SeatType,
-                        status = isBooked ? "Booked" : isHolding ? "Holding" : "Available",
-                        isBooked,
-                        isHolding,
-                        isLocked = isBooked || isHolding,
-                        heldUntil = activeHold?.HeldUntil
+                        id = t.Id,
+                        tripCode = t.TripCode ?? string.Empty,
+                        departureTime = t.DepartureTime.ToLocalTime().ToString("yyyy-MM-ddTHH:mm:ss"),
+                        baseFare,
+                        busCode = bus?.BusCode ?? "—",
+                        licensePlate = bus?.LicensePlate ?? "—",
+                        busType = busClass?.ClassName ?? bus?.LegacyBusType ?? "Ghế ngồi",
+                        totalSeats,
+                        availableSeats, // Biến này bây giờ đã được khai báo và gán trị hợp lệ
+                        departurePoint = route?.DeparturePoint ?? departure.Trim(),
+                        destinationPoint = route?.DestinationPoint ?? destination.Trim()
                     };
                 })
                 .ToList();
 
-            return Json(new
-            {
-                cols = busClass.TotalColumns > 0 ? busClass.TotalColumns : 4,
-                floors = busClass.TotalFloors > 0 ? busClass.TotalFloors : 1,
-                seats = seatsList
-            });
+            return Json(result);
         }
 
         [HttpPost]
@@ -622,7 +550,7 @@ namespace Bus_ticket.Controllers
                 await MarkHeldSeatsAsBookedAsync(tripId, seatNumbers, bookingCode);
 
                 await _rabbitMqService.PublishOrderAsync(newBooking.BookingCode);
-                
+
                 TempData["NewBookingCode"] = newBooking.BookingCode;
                 return Json(new
                 {
@@ -715,7 +643,7 @@ namespace Bus_ticket.Controllers
                     await MarkHeldSeatsAsBookedAsync(pending.tripId, pending.seatNumbers, orderId);
 
                     await _rabbitMqService.PublishOrderAsync(newBooking.BookingCode);
-                    
+
                     // Xóa session tạm sau khi đã lưu DB thành công
                     HttpContext.Session.Remove("PendingBooking");
 
@@ -846,7 +774,7 @@ namespace Bus_ticket.Controllers
                 await ResetUnpaidCountAsync(data.passengerPhone);
 
                 await MarkHeldSeatsAsBookedAsync(data.tripId, seatNumbers, holdCode);
-                
+
                 await _rabbitMqService.PublishOrderAsync(newBooking.BookingCode);
 
                 HttpContext.Session.Remove("PendingBooking");

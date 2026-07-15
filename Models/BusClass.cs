@@ -79,7 +79,7 @@ public class BusClass
     public string CreatedBy { get; set; }
 
     [BsonElement("updatedAt")]
-    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? UpdatedAt { get; set; } = DateTime.UtcNow;
 
     [BsonElement("updatedBy")]
     public string UpdatedBy { get; set; }

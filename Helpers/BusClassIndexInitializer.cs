@@ -15,20 +15,23 @@ public static class BusClassIndexInitializer
         try
         {
             var indexKeys = Builders<BusClass>.IndexKeys.Ascending(bc => bc.ClassNameKey);
+            
+            // SỬA LẠI ĐOẠN NÀY: Dùng Eq(bc => bc.DeletedAt, BsonNull.Value) thay cho BusClassFilters.NotDeleted
             var indexOptions = new CreateIndexOptions<BusClass>
             {
                 Name = "ux_busclass_classNameKey_active",
                 Unique = true,
                 PartialFilterExpression = Builders<BusClass>.Filter.And(
-                    BusClassFilters.NotDeleted,
-                    Builders<BusClass>.Filter.Type(bc => bc.ClassNameKey, BsonType.String))
+                    Builders<BusClass>.Filter.Eq<DateTime?>(bc => bc.DeletedAt, null),
+                    Builders<BusClass>.Filter.Type(bc => bc.ClassNameKey, BsonType.String) // Đảm bảo trường ClassNameKey là kiểu String
+                )
             };
 
             await collection.Indexes.CreateOneAsync(new CreateIndexModel<BusClass>(indexKeys, indexOptions));
         }
         catch (MongoCommandException ex) when (ex.CodeName is "IndexOptionsConflict" or "IndexKeySpecsConflict")
         {
-            // Index already exists with compatible definition.
+            // Index đã tồn tại với cấu hình tương thích, bỏ qua.
         }
         catch (MongoCommandException ex) when (ex.Code == 11000)
         {
@@ -39,6 +42,7 @@ public static class BusClassIndexInitializer
 
     private static async Task BackfillClassNameKeysAsync(IMongoCollection<BusClass> collection)
     {
+        // Khi backfill dữ liệu cũ chưa có key, bạn vẫn có thể giữ nguyên lọc này vì đây là Query thông thường, không phải Partial Index
         var missingKeyFilter = Builders<BusClass>.Filter.And(
             BusClassFilters.NotDeleted,
             Builders<BusClass>.Filter.Or(

@@ -3,6 +3,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Bus_ticket.Interfaces;
 using RabbitMQ.Client;
+using RabbitMQ.Client.Events;
 
 namespace Bus_ticket.Services
 {
