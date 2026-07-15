@@ -1,86 +1,92 @@
 @model IEnumerable<Bus_ticket.Models.News>
+@{
+    ViewData["Title"] = "Quản lý Tin Tức Hệ Thống";
+    Layout = "_AdminLayout";
+}
 
-<div class="p-6 bg-white dark:bg-gray-800 rounded-xl shadow min-h-screen">
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b border-gray-100 dark:border-gray-700 pb-4">
-        <div>
-            <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Quản Lý Tin Tức Hệ Thống</h2>
-            <p class="text-sm text-gray-500 mt-1">Cập nhật và lấy tin tức tự động từ các nguồn báo chí xe khách.</p>
+<div class="p-6 bg-gray-900 min-h-screen text-white">
+    <div class="max-w-7xl mx-auto">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold flex items-center gap-2">
+                📝 Quản Lý Tin Tức Hệ Thống
+            </h1>
+            <a asp-action="CrawlNews" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all">
+                ❄️ Quét Link nguồn mới
+            </a>
         </div>
-        
-        <form asp-controller="Admin" asp-action="CrawlNews" method="post" onsubmit="return toggleLoading(true);">
-            <button type="submit" id="btn-crawl" class="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-700 hover:to-sky-600 text-white font-semibold text-sm py-2.5 px-5 rounded-lg transition duration-200 shadow-sm disabled:opacity-50">
-                <i id="icon-sync" class="fas fa-sync-alt"></i> 
-                <span id="text-sync">Quét & Đồng Bộ Tin Mới</span>
-            </button>
-        </form>
-    </div>
 
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="mb-4 p-4 text-sm text-green-800 bg-green-50 rounded-lg dark:bg-gray-800 dark:text-green-400 border border-green-200">
-            @TempData["SuccessMessage"]
-        </div>
-    }
-    @if (TempData["InfoMessage"] != null)
-    {
-        <div class="mb-4 p-4 text-sm text-blue-800 bg-blue-50 rounded-lg dark:bg-gray-800 dark:text-blue-400 border border-blue-200">
-            @TempData["InfoMessage"]
-        </div>
-    }
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="bg-green-950 border border-green-800 text-green-300 p-4 rounded-lg mb-6 text-sm">
+                @TempData["SuccessMessage"]
+            </div>
+        }
 
-    <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
-        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-            <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
-                <tr>
-                    <th class="px-4 py-3">Hình ảnh</th>
-                    <th class="px-6 py-3">Tiêu đề bài viết</th>
-                    <th class="px-4 py-3">Nguồn</th>
-                    <th class="px-4 py-3">Ngày quét</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                @if (Model != null && Model.Any())
-                {
-                    foreach (var item in Model)
+        <div class="bg-gray-800 rounded-xl overflow-hidden border border-gray-700 shadow-xl">
+            <table class="w-full text-left text-sm border-collapse">
+                <thead>
+                    <tr class="bg-gray-750 text-gray-300 uppercase text-xs font-bold border-b border-gray-700">
+                        <th class="p-4 w-28">Hình ảnh</th>
+                        <th class="p-4">Tiêu đề bài viết</th>
+                        <th class="p-4 w-36">Nguồn</th>
+                        <th class="p-4 w-36">Trạng thái</th>
+                        <th class="p-4 w-44">Ngày tạo</th>
+                        <th class="p-4 w-32 text-center">Hành động</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-700/50">
+                    @if (Model != null && Model.Any())
                     {
-                        <tr class="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-600">
-                            <td class="px-4 py-3">
-                                <img src="@item.ThumbnailUrl" class="w-16 h-12 object-cover rounded border" alt="thumbnail" onerror="this.src='/images/no-image.png';"/>
-                            </td>
-                            <td class="px-6 py-3 font-medium text-gray-950 dark:text-white max-w-md truncate">
-                                @item.Title
-                            </td>
-                            <td class="px-4 py-3 text-xs">
-                                <span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-medium">@item.SourceSite</span>
-                            </td>
-                            <td class="px-4 py-3 text-gray-400 text-xs">
-                                @item.CreatedDate.ToString("dd/MM/yyyy HH:mm")
+                        foreach (var item in Model)
+                        {
+                            <tr class="hover:bg-gray-750/30 transition-all">
+                                <td class="p-4">
+                                    <img src="@item.ThumbnailUrl" class="w-20 h-12 object-cover rounded border border-gray-700" alt="Thumbnail" />
+                                </td>
+                                <td class="p-4 font-semibold text-gray-100">
+                                    @item.Title
+                                </td>
+                                <td class="p-4">
+                                    <span class="bg-gray-700 text-gray-300 text-xs px-2.5 py-1 rounded-md">
+                                        @item.SourceSite
+                                    </span>
+                                </td>
+                                <td class="p-4">
+                                    @if (item.IsApproved)
+                                    {
+                                        <span class="bg-green-950 text-green-400 border border-green-900 text-xs px-2.5 py-1 rounded-full font-medium">
+                                            Đã Xuất Bản
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="bg-yellow-950 text-yellow-400 border border-yellow-900 text-xs px-2.5 py-1 rounded-full font-medium">
+                                            Bản Nháp (Chờ Duyệt)
+                                        </span>
+                                    }
+                                </td>
+                                <td class="p-4 text-gray-400 text-xs">
+                                    @item.CreatedDate.ToString("dd/MM/yyyy HH:mm")
+                                </td>
+                                <td class="p-4 text-center">
+                                    <a asp-action="EditNews" asp-route-id="@item.Id" 
+                                       class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-all inline-flex items-center gap-1">
+                                        Biên tập ✏️
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="6" class="p-8 text-center text-gray-500">
+                                Chưa có liên kết hoặc tin tức nháp nào được lưu trong hệ thống.
                             </td>
                         </tr>
                     }
-                }
-                else
-                {
-                    <tr>
-                        <td colspan="4" class="text-center py-8 text-gray-400 italic">Hệ thống chưa có bài viết nào. Hãy bấm nút quét để lấy bài mới!</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
-
-<script>
-    function toggleLoading(isLoading) {
-        const btn = document.getElementById('btn-crawl');
-        const icon = document.getElementById('icon-sync');
-        const text = document.getElementById('text-sync');
-        
-        if (isLoading) {
-            btn.disabled = true;
-            icon.classList.add('animate-spin');
-            text.innerText = 'Đang quét dữ liệu, vui lòng chờ...';
-        }
-        return true;
-    }
-</script>

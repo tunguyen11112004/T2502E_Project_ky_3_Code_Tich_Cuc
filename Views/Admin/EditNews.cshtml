@@ -1,0 +1,193 @@
+@model Bus_ticket.Models.News
+
+@{
+    ViewData["Title"] = "Biên Tập & Cấu Hình Cào Tin";
+    Layout = "_AdminLayout";
+}
+
+<div class="p-4 sm:ml-64 bg-gray-900 min-h-screen text-gray-200">
+    <div class="p-4 border-2 border-gray-700 border-dashed rounded-lg dark:border-gray-700 mt-14">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+                📝 Biên Tập & Cấu Hình Cào Thủ Công
+            </h2>
+            <a href="/Admin/ManageNews" class="text-sm text-blue-500 hover:underline">← Quay lại danh sách</a>
+        </div>
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="p-4 mb-4 text-sm text-green-800 rounded-lg bg-green-900/30 border border-green-800 text-green-400" role="alert">
+                <span class="font-medium">Thành công!</span> @TempData["SuccessMessage"]
+            </div>
+        }
+        @if (ViewBag.ErrorMessage != null)
+        {
+            <div class="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-900/30 border border-red-800 text-red-400" role="alert">
+                <span class="font-medium">Lỗi!</span> @ViewBag.ErrorMessage
+            </div>
+        }
+        <form asp-action="EditNews" method="post" class="space-y-6">
+            <input type="hidden" asp-for="Id" />
+            <input type="hidden" asp-for="OriginalUrl" />
+            <input type="hidden" asp-for="SourceSite" />
+            <input type="hidden" asp-for="CreatedDate" />
+            <div class="p-6 bg-gray-800 rounded-lg border border-gray-700">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-yellow-400 flex items-center gap-2">
+                        ⚙️ Cấu Hình Bộ Cào XPath Cho Liên Kết
+                    </h3>
+                    <a href="@Model.OriginalUrl" target="_blank" class="text-xs text-blue-400 hover:underline">Mở liên kết gốc ↗</a>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-gray-300">XPath Tiêu đề (Title)</label>
+                        <input type="text" asp-for="TitleXpath" class="bg-gray-900 border border-gray-700 text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="//h1" />
+                    </div>
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-gray-300">XPath Mô tả ngắn (Description)</label>
+                        <input type="text" asp-for="DescXpath" class="bg-gray-900 border border-gray-700 text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="//h2" />
+                    </div>
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-gray-300">XPath Nội dung chính (Content)</label>
+                        <input type="text" asp-for="ContentXpath" class="bg-gray-900 border border-gray-700 text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="//div[contains(@@class,'content')]" />
+                    </div>
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-gray-300">XPath Ảnh bài viết (Thumbnail)</label>
+                        <input type="text" asp-for="ThumbXpath" class="bg-gray-900 border border-gray-700 text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="//img" />
+                    </div>
+                </div>
+                <div class="mt-4 flex justify-end">
+                    <button type="submit" name="actionSubmit" value="CrawlNow" class="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:ring-4 focus:ring-green-800 rounded-lg focus:outline-none">
+                        ⚡ TIẾN HÀNH CÀO DỮ LIỆU THEO XPATH TRÊN
+                    </button>
+                </div>
+            </div>
+            <div class="p-6 bg-gray-800 rounded-lg border border-gray-700 space-y-4">
+                <h3 class="text-lg font-semibold text-yellow-400 flex items-center gap-2 mb-2">
+                    ✍️ Nội Dung Bài Viết Thu Hoạch
+                </h3>
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-gray-300">Tiêu Đề Tin Tức</label>
+                    <input type="text" asp-for="Title" id="Title" class="bg-gray-900 border border-gray-700 text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required />
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                    <div class="md:col-span-3">
+                        <label class="block mb-2 text-sm font-medium text-gray-300">Đường Dẫn Ảnh Đại Diện (Thumbnail URL)</label>
+                        <input type="text" asp-for="ThumbnailUrl" id="ThumbnailUrl" class="bg-gray-900 border border-gray-700 text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" />
+                    </div>
+                    <div class="flex justify-center bg-gray-900 p-2 border border-gray-700 rounded-lg h-[42px] items-center overflow-hidden">
+                        <img id="formThumbPreview" src="@Model.ThumbnailUrl" alt="Thumbnail Preview" class="max-h-full object-contain" onerror="this.src='https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?q=80&w=600&auto=format&fit=crop'" />
+                    </div>
+                </div>
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-gray-300">Mô Tả Sapo Ngắn</label>
+                    <textarea asp-for="Description" id="Description" rows="3" class="bg-gray-900 border border-gray-700 text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Tóm tắt ngắn bài viết..."></textarea>
+                </div>
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-gray-300">Nội Dung Chi Tiết (Mã nguồn HTML/Text)</label>
+                    <textarea asp-for="Content" id="Content" rows="12" class="font-mono bg-gray-900 border border-gray-700 text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Mã HTML bài viết chi tiết..."></textarea>
+                </div>
+                <div class="flex items-center">
+                    <input type="checkbox" asp-for="IsApproved" id="IsApproved" class="w-4 h-4 text-blue-600 bg-gray-900 border-gray-700 rounded focus:ring-blue-500 focus:ring-offset-gray-800" />
+                    <label for="IsApproved" class="ml-2 text-sm font-medium text-gray-300">Xuất bản bài viết này lên trang chủ ngay sau khi lưu</label>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <button type="submit" name="actionSubmit" value="Save" class="px-6 py-3 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-800 rounded-lg focus:outline-none">
+                    💾 Lưu thay đổi và Hoàn tất
+                </button>
+                <button type="button" onclick="openPreviewModal()" class="px-6 py-3 text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:ring-4 focus:ring-teal-800 rounded-lg focus:outline-none flex items-center gap-2">
+                    👁️ Xem trước tức thì
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+<div id="previewModal" class="fixed inset-0 z-50 hidden overflow-y-auto overflow-x-hidden bg-black bg-opacity-70 flex justify-center items-start pt-10 pb-10">
+    <div class="relative p-4 w-full max-w-4xl h-full md:h-auto">
+        <!-- Modal Content -->
+        <div class="relative bg-gray-900 rounded-lg shadow-2xl border border-gray-700 text-gray-200">
+            <!-- Modal Header -->
+            <div class="flex justify-between items-center p-4 rounded-t border-b border-gray-700 bg-gray-850">
+                <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                    🖥️ Bản xem trước giao diện Client (Chưa Lưu)
+                </h3>
+                <button type="button" onclick="closePreviewModal()" class="text-gray-400 bg-transparent hover:bg-gray-700 hover:text-white rounded-lg text-sm p-1.5 ml-auto inline-flex items-center">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                </button>
+            </div>
+            <div class="p-8 space-y-6 max-h-[70vh] overflow-y-auto bg-white text-gray-900 rounded-b-lg">
+                <!-- Header bài viết -->
+                <div class="border-b pb-4 border-gray-200">
+                    <span class="text-xs text-gray-400">Quét ngày: @DateTime.Now.ToString("dd/MM/yyyy HH:mm") (Xem thử)</span>
+                    <h1 id="previewTitle" class="text-3xl font-bold text-gray-900 mt-2"></h1>
+                    <p id="previewDesc" class="text-gray-600 italic font-semibold mt-3 text-lg border-l-4 border-blue-500 pl-4 bg-gray-50 py-2 rounded-r-lg"></p>
+                </div>
+                <div id="previewThumbContainer" class="text-center my-4 hidden">
+                    <img id="previewThumb" src="" alt="Thumbnail Preview" class="rounded-lg max-h-[400px] mx-auto object-cover shadow-md" />
+                </div>
+                <div id="previewContent" class="prose max-w-none leading-relaxed text-gray-800">
+                </div>
+            </div>
+            <div class="flex items-center justify-end p-4 space-x-2 rounded-b border-t border-gray-700 bg-gray-800">
+                <button type="button" onclick="closePreviewModal()" class="text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center">
+                    Quay lại chỉnh sửa tiếp
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const thumbInputOnForm = document.getElementById('ThumbnailUrl');
+        const formThumbPreview = document.getElementById('formThumbPreview');
+        if (thumbInputOnForm && formThumbPreview) {
+            thumbInputOnForm.addEventListener('input', function() {
+                if(this.value.trim() !== "") {
+                    formThumbPreview.src = this.value;
+                } else {
+                    formThumbPreview.src = 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?q=80&w=600&auto=format&fit=crop';
+                }
+            });
+        }
+        function openPreviewModal() {
+            const titleVal = document.getElementById('Title') ? document.getElementById('Title').value.trim() : "";
+            const descVal = document.getElementById('Description') ? document.getElementById('Description').value.trim() : "";
+            const thumbVal = document.getElementById('ThumbnailUrl') ? document.getElementById('ThumbnailUrl').value.trim() : "";
+            const contentVal = document.getElementById('Content') ? document.getElementById('Content').value.trim() : "";
+            const previewTitle = document.getElementById('previewTitle');
+            const previewDesc = document.getElementById('previewDesc');
+            const previewThumbContainer = document.getElementById('previewThumbContainer');
+            const previewThumb = document.getElementById('previewThumb');
+            const previewContent = document.getElementById('previewContent');
+            previewTitle.innerText = titleVal !== "" ? titleVal : "Tiêu đề bài viết đang để trống...";
+            previewDesc.innerText = descVal !== "" ? descVal : "Đoạn Sapo mô tả ngắn chưa có nội dung...";
+            if (thumbVal !== "") {
+                previewThumb.src = thumbVal;
+                previewThumbContainer.classList.remove('hidden');
+            } else {
+                previewThumbContainer.classList.add('hidden');
+            }
+            if (contentVal !== "") {
+                previewContent.innerHTML = contentVal;
+            } else {
+                previewContent.innerHTML = "<p style='color: red; font-style: italic;'>[Trống] Nội dung chi tiết của bài viết đang trống hoặc cào lỗi.</p>";
+            }
+            const modal = document.getElementById('previewModal');
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+        function closePreviewModal() {
+            const modal = document.getElementById('previewModal');
+            modal.classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+        window.onclick = function(event) {
+            const modal = document.getElementById('previewModal');
+            if (event.target === modal) {
+                closePreviewModal();
+            }
+        }
+    </script>
+}

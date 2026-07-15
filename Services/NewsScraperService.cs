@@ -16,6 +16,7 @@ public class NewsScraperService
         _httpClient.DefaultRequestHeaders.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
         _httpClient.DefaultRequestHeaders.Add("Accept-Language", "vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7");
     }
+
     public async Task<List<string>> GetListUrlsAsync(string categoryUrl, string xpathSelector)
     {
         var urls = new List<string>();
@@ -51,6 +52,7 @@ public class NewsScraperService
         }
         return urls;
     }
+
     public async Task<Bus_ticket.Models.News?> ScrapePostDetailAsync(string postUrl, string titleXpath, string descXpath, string contentXpath, string thumbXpath)
     {
         try
@@ -58,18 +60,64 @@ public class NewsScraperService
             var html = await _httpClient.GetStringAsync(postUrl);
             var doc = new HtmlDocument();
             doc.LoadHtml(html);
+            
             var titleNode = doc.DocumentNode.SelectSingleNode(titleXpath) ?? doc.DocumentNode.SelectSingleNode("//h1");
             string title = titleNode?.InnerText?.Trim() ?? "";
-            if (string.IsNullOrEmpty(title)) return null;
+            if (string.IsNullOrWhiteSpace(title))
+            {
+                title = "Không tìm thấy tiêu đề bài viết (Kiểm tra lại XPath)";
+            }
+            
             var descNode = doc.DocumentNode.SelectSingleNode(descXpath);
             string description = descNode?.InnerText?.Trim() ?? "";
+            if (string.IsNullOrWhiteSpace(description))
+            {
+                description = "[Trống] Không tìm thấy đoạn mô tả ngắn nào khớp với XPath.";
+            }
+
             var contentNode = doc.DocumentNode.SelectSingleNode(contentXpath) 
                                ?? doc.DocumentNode.SelectSingleNode("//div[contains(@class,'entry-content')]")
                                ?? doc.DocumentNode.SelectSingleNode("//div[contains(@class,'post-content')]");
-            string content = contentNode?.InnerHtml?.Trim() ?? "Nội dung bài viết đang được cập nhật.";
+            string content = contentNode?.InnerHtml?.Trim() ?? "";
+            if (string.IsNullOrWhiteSpace(content))
+            {
+                content = "<p style='color:red;'>[Lỗi] Không tìm thấy nội dung bài viết chi tiết. Vui lòng kiểm tra lại XPath nội dung!</p>";
+            }
+            
             var thumbNode = doc.DocumentNode.SelectSingleNode(thumbXpath) ?? contentNode?.SelectSingleNode(".//img");
-            string thumbUrl = thumbNode?.GetAttributeValue("src", "") 
-                               ?? thumbNode?.GetAttributeValue("data-src", "") ?? "";
+            string thumbUrl = "";
+            if (thumbNode != null)
+            {
+                thumbUrl = thumbNode.GetAttributeValue("src", "").Trim();
+                if (string.IsNullOrEmpty(thumbUrl) || thumbUrl.StartsWith("data:image"))
+                {
+                    thumbUrl = thumbNode.GetAttributeValue("data-src", "").Trim();
+                }
+                if (string.IsNullOrEmpty(thumbUrl))
+                {
+                    thumbUrl = thumbNode.GetAttributeValue("data-original", "").Trim();
+                }
+                
+                if (!string.IsNullOrEmpty(thumbUrl) && !thumbUrl.StartsWith("http") && !thumbUrl.StartsWith("//"))
+                {
+                    try
+                    {
+                        var uri = new Uri(new Uri(postUrl), thumbUrl);
+                        thumbUrl = uri.ToString();
+                    }
+                    catch { }
+                }
+                else if (!string.IsNullOrEmpty(thumbUrl) && thumbUrl.StartsWith("//"))
+                {
+                    thumbUrl = "https:" + thumbUrl;
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(thumbUrl))
+            {
+                thumbUrl = "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?q=80&w=600&auto=format&fit=crop";
+            }
+
             return new Bus_ticket.Models.News
             {
                 Title = title,
