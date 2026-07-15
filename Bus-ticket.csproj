@@ -265,6 +265,9 @@
       <_ContentIncludedByDefault Remove="wwwroot\images\users\roberta-casas-2x.png" />
       <_ContentIncludedByDefault Remove="wwwroot\images\users\roberta-casas.png" />
       <_ContentIncludedByDefault Remove="wwwroot\images\users\thomas-lean.png" />
+      <_ContentIncludedByDefault Remove="Views\Admin\Buses\Create.cshtml" />
+      <_ContentIncludedByDefault Remove="Views\Admin\Buses\Edit.cshtml" />
+      <_ContentIncludedByDefault Remove="Views\Admin\Buses\Index.cshtml" />
     </ItemGroup>
 
     <ItemGroup>

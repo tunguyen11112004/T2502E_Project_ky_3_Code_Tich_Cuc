@@ -44,7 +44,7 @@ public class BusesController : Controller
         try
         {
             await _busService.CreateAsync(model, GetCurrentActor());
-            TempData["SuccessMessage"] = "Thêm xe khách mới thành công. Dữ liệu đã được lưu vào collection buses trong MongoDB.";
+            TempData["SuccessMessage"] = "Thêm xe khách mới thành công.";
         }
         catch (InvalidOperationException ex)
         {

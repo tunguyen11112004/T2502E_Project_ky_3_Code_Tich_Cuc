@@ -4,11 +4,25 @@ using Bus_ticket.Helpers;
 using Bus_ticket.Models;
 using Bus_ticket.ViewModels;
 using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
 
 namespace Bus_ticket.Services;
 
 public record BusPagedResult(List<BusListItemViewModel> Items, long TotalItems, int TotalPages, int CurrentPage, int PageSize);
+
+// Kết quả trung gian dùng cho truy vấn $lookup: buses -> branches,
+// phục vụ việc bốc đích danh tên chi nhánh (Merchant) sở hữu xe.
+[BsonIgnoreExtraElements]
+public class BusBranchLookupResult
+{
+    [BsonId]
+    [BsonRepresentation(BsonType.ObjectId)]
+    public string Id { get; set; } = string.Empty;
+
+    [BsonElement("branchInfo")]
+    public List<Branch> BranchInfo { get; set; } = new();
+}
 
 public record DeleteBusResult(bool Succeeded, string Message, bool SoftDeleted = false, bool IsInUse = false);
 
@@ -228,27 +242,18 @@ public class BusService
             .Distinct()
             .ToList();
 
-        var branchIds = buses
-            .Select(bus => bus.BranchId)
-            .Where(id => !string.IsNullOrWhiteSpace(id))
-            .Select(id => id!)
-            .Distinct()
-            .ToList();
-
         var busClasses = classIds.Any()
             ? await _dbContext.BusClasses.Find(Builders<BusClass>.Filter.In(busClass => busClass.Id, classIds)).ToListAsync()
             : new List<BusClass>();
 
-        var branches = branchIds.Any()
-            ? await _dbContext.Branches.Find(Builders<Branch>.Filter.In(branch => branch.Id, branchIds)).ToListAsync()
-            : new List<Branch>();
-
         var classMap = busClasses
             .Where(busClass => !string.IsNullOrWhiteSpace(busClass.Id))
             .ToDictionary(busClass => busClass.Id, busClass => busClass);
-        var branchMap = branches
-            .Where(branch => !string.IsNullOrWhiteSpace(branch.Id))
-            .ToDictionary(branch => branch.Id!, branch => branch);
+
+        // Bốc đích danh tên chi nhánh (Merchant) sở hữu xe thông qua $lookup của MongoDB,
+        // join trực tiếp collection "buses" với collection "branches" theo branchId.
+        var busIdsForLookup = buses.Select(bus => bus.Id).ToList();
+        var branchMap = await GetBranchMapViaLookupAsync(busIdsForLookup);
 
         var busIds = buses.Select(bus => bus.Id).ToList();
         var trips = await _dbContext.Trips.Find(Builders<Trip>.Filter.In(trip => trip.BusId, busIds)).ToListAsync();
@@ -263,7 +268,7 @@ public class BusService
         return buses.Select(bus =>
         {
             classMap.TryGetValue(bus.BusClassId ?? string.Empty, out var busClass);
-            branchMap.TryGetValue(bus.BranchId ?? string.Empty, out var branch);
+            branchMap.TryGetValue(bus.Id ?? string.Empty, out var branch);
 
             var busTripIds = trips.Where(trip => trip.BusId == bus.Id).Select(trip => trip.Id).ToList();
             var bookingCount = busTripIds.Sum(tripId => bookingCountByTrip.GetValueOrDefault(tripId, 0));
@@ -290,6 +295,33 @@ public class BusService
                 UpdatedAt = bus.UpdatedAt
             };
         }).ToList();
+    }
+
+    /// <summary>
+    /// Join dữ liệu buses -> branches bằng toán tử $lookup của MongoDB để bốc đích danh
+    /// tên chi nhánh (Merchant) đang sở hữu từng xe, phục vụ hiển thị lên bảng danh sách.
+    /// Trả về map: BusId -> Branch.
+    /// </summary>
+    private async Task<Dictionary<string, Branch>> GetBranchMapViaLookupAsync(List<string> busIds)
+    {
+        if (!busIds.Any())
+        {
+            return new Dictionary<string, Branch>();
+        }
+
+        var results = await _dbContext.Buses
+            .Aggregate()
+            .Match(Builders<Bus>.Filter.In(bus => bus.Id, busIds))
+            .Lookup<Bus, Branch, BusBranchLookupResult>(
+                _dbContext.Branches,
+                bus => bus.BranchId,
+                branch => branch.Id,
+                result => result.BranchInfo)
+            .ToListAsync();
+
+        return results
+            .Where(result => result.BranchInfo.Any())
+            .ToDictionary(result => result.Id, result => result.BranchInfo.First());
     }
 
     private async Task<(int TripCount, int BookingCount)> GetBusUsageAsync(string busId)
