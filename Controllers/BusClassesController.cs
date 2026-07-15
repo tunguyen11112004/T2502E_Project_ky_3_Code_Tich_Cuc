@@ -302,12 +302,16 @@ public class BusClassesController : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        var update = Builders<BusClass>.Update
-            .Set(bc => bc.Status, "Inactive")
-            .Set(bc => bc.DeletedAt, DateTime.UtcNow)
-            .Set(bc => bc.DeletedBy, User.Identity?.Name ?? "Admin")
-            .Set(bc => bc.UpdatedAt, DateTime.UtcNow)
-            .Set(bc => bc.UpdatedBy, User.Identity?.Name ?? "Admin");
+        var inUse = await _context.Trips
+            .Find(Builders<Trip>.Filter.And(
+                TripFilters.NotDeleted,
+                Builders<Trip>.Filter.Eq(t => t.BusId, busId)))
+            .AnyAsync();
+        if (inUse)
+        {
+            TempData["ErrorMessage"] = "Không thể xóa xe! Xe đang được gán cho chuyến đi.";
+            return RedirectToAction(nameof(Edit), new { id = busClassId });
+        }
 
         await _context.BusClasses.UpdateOneAsync(bc => bc.Id == id, update);
 
@@ -323,8 +327,16 @@ public class BusClassesController : Controller
 
         if (!hasNewImage && (!isEdit || !hasExistingImage))
         {
-            ModelState.AddModelError(nameof(model.ImageFile), "Ảnh loại xe không được để trống.");
-            return;
+            var inTrip = await _context.Trips
+                .Find(Builders<Trip>.Filter.And(
+                    TripFilters.NotDeleted,
+                    Builders<Trip>.Filter.Eq(t => t.BusId, bus.Id)))
+                .AnyAsync();
+            if (inTrip)
+            {
+                TempData["ErrorMessage"] = "Không thể xóa! Có xe trong hạng này đang được gán chuyến đi.";
+                return RedirectToAction(nameof(Index));
+            }
         }
 
         if (!hasNewImage)

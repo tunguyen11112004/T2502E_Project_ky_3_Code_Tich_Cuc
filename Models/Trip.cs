@@ -69,6 +69,10 @@ public class Trip
 
     [BsonElement("status")] public string Status { get; set; } = "Scheduled";
 
+    [BsonElement("deletedAt")] public DateTime? DeletedAt { get; set; }
+
+    [BsonElement("deletedBy")] public string? DeletedBy { get; set; }
+
     [BsonElement("realtimeSeats")] public List<RealtimeSeat> RealtimeSeats { get; set; } = new List<RealtimeSeat>();
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

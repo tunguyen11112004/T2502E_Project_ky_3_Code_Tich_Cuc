@@ -41,7 +41,7 @@ namespace Bus_ticket.Controllers
             if (page < 1) page = 1;
 
             var filterBuilder = Builders<Trip>.Filter;
-            var filter = filterBuilder.Empty;
+            var filter = TripFilters.NotDeleted;
 
             if (!string.IsNullOrEmpty(searchDate) && DateTime.TryParse(searchDate, out DateTime parsedDate))
             {
@@ -49,9 +49,9 @@ namespace Bus_ticket.Controllers
                 var endOfDay = parsedDate.Date.AddDays(1).AddTicks(-1).ToUniversalTime();
 
                 filter = filterBuilder.And(
+                    TripFilters.NotDeleted,
                     filterBuilder.Gte(t => t.DepartureTime, startOfDay),
-                    filterBuilder.Lte(t => t.DepartureTime, endOfDay)
-                );
+                    filterBuilder.Lte(t => t.DepartureTime, endOfDay));
             }
 
             long totalTrips = await _dbContext.Trips.CountDocumentsAsync(filter);
@@ -105,7 +105,7 @@ namespace Bus_ticket.Controllers
         [HttpGet]
         public async Task<IActionResult> Create()
         {
-            var trips = await _dbContext.Trips.Find(_ => true).ToListAsync();
+            var trips = await _dbContext.Trips.Find(TripFilters.NotDeleted).ToListAsync();
             var buses = await _dbContext.Buses.Find(_ => true).ToListAsync();
 
             ViewBag.BusList = buses;
@@ -188,14 +188,19 @@ namespace Bus_ticket.Controllers
             var startOfDay = parsedDate.Date.ToUniversalTime();
             var endOfDay = parsedDate.Date.AddDays(1).AddTicks(-1).ToUniversalTime();
 
-            var trips = await _dbContext.Trips
-                .Find(t => t.RouteId == matchedRoute.Id
-                           && t.DepartureTime >= startOfDay
-                           && t.DepartureTime <= endOfDay)
-                .ToListAsync();
+    var trips = await _dbContext.Trips
+        .Find(Builders<Trip>.Filter.And(
+            TripFilters.NotDeleted,
+            Builders<Trip>.Filter.Eq(t => t.RouteId, matchedRoute.Id),
+            Builders<Trip>.Filter.Gte(t => t.DepartureTime, startOfDay),
+            Builders<Trip>.Filter.Lte(t => t.DepartureTime, endOfDay),
+            Builders<Trip>.Filter.In(t => t.Status, new[] { "Scheduled", "Active" })))
+        .ToListAsync();
 
-            var buses = await _dbContext.Buses.Find(_ => true).ToListAsync();
-            var busClasses = await _dbContext.BusClasses.Find(_ => true).ToListAsync();
+    var buses = await _dbContext.Buses.Find(_ => true).ToListAsync();
+    var busClasses = await _dbContext.BusClasses.Find(_ => true).ToListAsync();
+    var priceConfigs = await _dbContext.PriceConfigs.Find(_ => true).ToListAsync();
+    var routeMap = allRoutes.ToDictionary(r => r.Id, r => r);
 
             var tripIds = trips.Select(t => t.Id).ToList();
 
@@ -205,66 +210,63 @@ namespace Bus_ticket.Controllers
                     .ToListAsync()
                 : new List<Booking>();
 
-            var result = trips
-                .OrderBy(t => t.DepartureTime)
-                .Select(t =>
-                {
-                    var bus = buses.FirstOrDefault(b => b.Id == t.BusId);
-                    var busClass = busClasses.FirstOrDefault(c => c.Id == bus?.BusClassId);
+    var result = trips
+        .OrderBy(t => t.DepartureTime)
+        .Select(t =>
+        {
+            var bus = buses.FirstOrDefault(b => b.Id == t.BusId);
+            var busClass = busClasses.FirstOrDefault(c => c.Id == bus?.BusClassId);
+            var route = routeMap.GetValueOrDefault(t.RouteId);
 
                     var bookedSeatsCount = activeBookings
                         .Where(b => b.TripId == t.Id)
                         .Sum(b => b.Passengers?.Count ?? 0);
 
-                    int totalSeats = 45;
-
-                    if (busClass != null && busClass.TotalSeats > 0)
-                    {
-                        totalSeats = busClass.TotalSeats;
-                    }
-                    else if (bus?.LegacyTotalSeats != null && bus.LegacyTotalSeats.Value > 0)
-                    {
-                        totalSeats = bus.LegacyTotalSeats.Value;
-                    }
-
-                    int availableSeats = totalSeats - bookedSeatsCount;
-                    if (availableSeats < 0) availableSeats = 0;
-
-                    return new
-                    {
-                        id = t.Id,
-                        departureTime = t.DepartureTime.ToLocalTime().ToString("yyyy-MM-ddTHH:mm:ss"),
-                        baseFare = t.BaseFare,
-                        busCode = bus?.BusCode ?? "Mã xe ẩn",
-                        busType = busClass?.ClassName ?? bus?.LegacyBusType ?? "Ghế ngồi",
-                        totalSeats,
-                        availableSeats
-                    };
-                })
-                .ToList();
-
-            return Json(result);
-        }
-
-        // GET: /Booking/GetTripSeatMap?tripId=xxx
-        [HttpGet]
-        public async Task<IActionResult> GetTripSeatMap(string tripId)
-        {
-            if (string.IsNullOrEmpty(tripId))
+            int totalSeats = 45;
+            if (busClass != null && busClass.TotalSeats > 0)
+            {
+                totalSeats = busClass.TotalSeats;
+            }
+            else if (bus?.LegacyTotalSeats != null && bus.LegacyTotalSeats.Value > 0)
             {
                 return BadRequest("Mã không hợp lệ.");
+            }
+            else if (t.RealtimeSeats?.Count > 0)
+            {
+                totalSeats = t.RealtimeSeats.Count;
             }
 
             await ReleaseExpiredHoldsAsync(tripId);
 
-            var trip = await _dbContext.Trips
-                .Find(t => t.Id == tripId)
-                .FirstOrDefaultAsync();
-
-            if (trip == null)
+            decimal baseFare = t.BaseFare;
+            if (baseFare <= 0 && route != null)
             {
-                return NotFound("Không tìm thấy chuyến xe.");
+                var matchedPrice = priceConfigs.FirstOrDefault(p =>
+                    p.DeparturePoint == route.DeparturePoint
+                    && p.DestinationPoint == route.DestinationPoint
+                    && BusTypeMatcher.Matches(p.BusType, busClass, bus));
+                if (matchedPrice != null)
+                {
+                    baseFare = matchedPrice.BasePrice;
+                }
             }
+
+            return new
+            {
+                id = t.Id,
+                tripCode = t.TripCode ?? string.Empty,
+                departureTime = t.DepartureTime.ToLocalTime().ToString("yyyy-MM-ddTHH:mm:ss"),
+                baseFare,
+                busCode = bus?.BusCode ?? "—",
+                licensePlate = bus?.LicensePlate ?? "—",
+                busType = busClass?.ClassName ?? bus?.LegacyBusType ?? "Ghế ngồi",
+                totalSeats,
+                availableSeats,
+                departurePoint = route?.DeparturePoint ?? departure.Trim(),
+                destinationPoint = route?.DestinationPoint ?? destination.Trim()
+            };
+        })
+        .ToList();
 
             var bus = await _dbContext.Buses
                 .Find(b => b.Id == trip.BusId)
@@ -284,15 +286,11 @@ namespace Bus_ticket.Controllers
                 return NotFound("Không tìm thấy cấu hình loại xe.");
             }
 
-            var layout = busClass.DefaultLayout != null && busClass.DefaultLayout.Any()
-                ? busClass.DefaultLayout
-                : BusSeatLayoutGenerator.Generate(
-                    busClass.TotalRows,
-                    busClass.TotalColumns,
-                    busClass.TotalFloors,
-                    busClass.BusType
-                );
-
+    if (trip == null || trip.DeletedAt.HasValue)
+    {
+        return NotFound("Không tìm thấy chuyến xe.");
+    }
+    
             var activeBookings = await _dbContext.Bookings
                 .Find(b => b.TripId == tripId && b.BookingStatus == "Completed")
                 .ToListAsync();
@@ -399,9 +397,9 @@ namespace Bus_ticket.Controllers
                     .Find(t => t.Id == tripId)
                     .FirstOrDefaultAsync();
 
-                if (trip == null)
+                if (trip == null || trip.DeletedAt.HasValue)
                 {
-                    return Json(new { success = false, message = "Chuyến không tồn tại." });
+                    return Json(new { success = false, message = "Chuyến không tồn tại hoặc đã bị xóa." });
                 }
 
                 var config = await _dbContext.SystemConfigs
@@ -1252,7 +1250,7 @@ namespace Bus_ticket.Controllers
                 .Find(t => t.Id == tripId)
                 .FirstOrDefaultAsync();
 
-            if (trip == null)
+            if (trip == null || trip.DeletedAt.HasValue)
             {
                 return false;
             }
