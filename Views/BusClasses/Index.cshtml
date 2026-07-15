@@ -16,16 +16,16 @@
 <div class="p-4 sm:p-6 lg:p-8 space-y-6 max-w-full overflow-x-hidden">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-            <h1 class="text-2xl font-bold tracking-tight text-white">Danh sách Hạng Xe (BusClasses)</h1>
-            <p class="text-sm text-gray-400 mt-1">Quản lý loại xe, sơ đồ ghế, ảnh xe, biển số và trạng thái hoạt động.</p>
+            <h1 class="text-2xl font-bold tracking-tight text-white">Cấu hình Loại Xe (BusClasses)</h1>
+            <p class="text-sm text-gray-400 mt-1">Danh sách cấu hình loại xe: tên, hàng/cột/tầng ghế, ảnh và trạng thái.</p>
         </div>
 
-        <a asp-action="Create"
+        <a asp-action="Create" id="btnCreateBusClass"
            class="inline-flex items-center justify-center px-4 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg transition-colors duration-200 shadow-sm">
             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
             </svg>
-            Thêm Hạng Xe
+            Thêm loại xe
         </a>
     </div>
 
@@ -63,16 +63,17 @@
 
     <div class="w-full max-w-full overflow-hidden bg-[#1e1e24] border border-gray-700/50 rounded-xl shadow-xl">
         <div class="w-full overflow-x-auto">
-            <table class="w-full min-w-[920px] table-fixed text-sm text-left text-gray-300">
+            <table class="w-full min-w-[960px] table-fixed text-sm text-left text-gray-300">
                 <thead class="text-xs uppercase bg-[#141419] text-gray-400 border-b border-gray-700/60">
                     <tr>
                         <th class="w-20 px-4 py-4 font-semibold tracking-wider">Ảnh</th>
-                        <th class="w-52 px-4 py-4 font-semibold tracking-wider">Tên Hạng Xe</th>
-                        <th class="w-36 px-4 py-4 font-semibold tracking-wider">Loại Xe</th>
-                        <th class="w-40 px-4 py-4 font-semibold tracking-wider">Ghế</th>
-                        <th class="px-4 py-4 font-semibold tracking-wider">Biển Số</th>
-                        <th class="w-32 px-4 py-4 font-semibold tracking-wider">Trạng Thái</th>
-                        <th class="w-32 px-4 py-4 font-semibold tracking-wider text-right">Hành Động</th>
+                        <th class="w-48 px-4 py-4 font-semibold tracking-wider">Tên loại xe</th>
+                        <th class="w-20 px-4 py-4 font-semibold tracking-wider">Hàng</th>
+                        <th class="w-20 px-4 py-4 font-semibold tracking-wider">Cột</th>
+                        <th class="w-20 px-4 py-4 font-semibold tracking-wider">Tầng</th>
+                        <th class="w-24 px-4 py-4 font-semibold tracking-wider">Tổng ghế</th>
+                        <th class="w-32 px-4 py-4 font-semibold tracking-wider">Trạng thái</th>
+                        <th class="w-32 px-4 py-4 font-semibold tracking-wider text-right">Hành động</th>
                     </tr>
                 </thead>
 
@@ -80,8 +81,8 @@
                     @if (Model == null || !Model.Any())
                     {
                         <tr>
-                            <td colspan="7" class="px-4 py-10 text-center text-gray-500">
-                                Chưa có hạng xe nào.
+                            <td colspan="8" class="px-4 py-10 text-center text-gray-500">
+                                Chưa có cấu hình loại xe nào.
                             </td>
                         </tr>
                     }
@@ -104,35 +105,13 @@
                                 </td>
 
                                 <td class="px-4 py-4 font-semibold text-amber-400 whitespace-normal break-words">
-                                    @item.ClassName
+                                    @(string.IsNullOrWhiteSpace(item.ClassName) ? "—" : item.ClassName)
                                 </td>
 
-                                <td class="px-4 py-4 text-gray-300 whitespace-normal break-words">
-                                    @item.BusType
-                                </td>
-
-                                <td class="px-4 py-4 whitespace-normal">
-                                    @item.TotalRows × @item.TotalColumns
-                                    <span class="block text-gray-500">(@item.TotalSeats ghế)</span>
-                                </td>
-
-                                <td class="px-4 py-4 text-xs text-gray-400 whitespace-normal">
-                                    @if (item.LicensePlates != null && item.LicensePlates.Any())
-                                    {
-                                        <div class="flex flex-wrap gap-1.5">
-                                            @foreach (var plate in item.LicensePlates)
-                                            {
-                                                <span class="inline-flex items-center rounded-md border border-gray-700 bg-gray-900 px-2 py-1 text-xs text-gray-300">
-                                                    @plate
-                                                </span>
-                                            }
-                                        </div>
-                                    }
-                                    else
-                                    {
-                                        <span>—</span>
-                                    }
-                                </td>
+                                <td class="px-4 py-4 text-white">@(item.TotalRows > 0 ? item.TotalRows : "—")</td>
+                                <td class="px-4 py-4 text-white">@(item.TotalColumns > 0 ? item.TotalColumns : "—")</td>
+                                <td class="px-4 py-4 text-white">@(item.TotalFloors > 0 ? item.TotalFloors : "—")</td>
+                                <td class="px-4 py-4 font-semibold text-white">@(item.TotalSeats > 0 ? item.TotalSeats : "—")</td>
 
                                 <td class="px-4 py-4">
                                     @if (string.Equals(item.Status, "Active", StringComparison.OrdinalIgnoreCase))
@@ -163,7 +142,7 @@
                                               asp-route-id="@item.Id"
                                               method="post"
                                               class="inline"
-                                              onsubmit="return confirm('Xóa hạng xe này và tất cả xe liên kết?');">
+                                              onsubmit="return confirm('Xóa loại xe này? Dữ liệu xe và chuyến đi liên kết vẫn được giữ.');">
                                             @Html.AntiForgeryToken()
                                             <button type="submit" class="text-rose-400 hover:text-rose-300 font-semibold">
                                                 Xóa
@@ -182,7 +161,7 @@
             <span class="text-sm text-gray-400">
                 Hiển thị từ <span class="font-semibold text-white">@startItem</span> đến
                 <span class="font-semibold text-white">@endItem</span> trong tổng số
-                <span class="font-semibold text-white">@totalItems</span> hạng xe
+                <span class="font-semibold text-white">@totalItems</span> loại xe
             </span>
 
             @if (totalPages > 1)
@@ -225,3 +204,31 @@
         </div>
     </div>
 </div>
+
+<script>
+    (function () {
+        const link = document.getElementById('btnCreateBusClass');
+        if (!link) return;
+
+        let navigating = false;
+        const lockLink = () => {
+            navigating = true;
+            link.classList.add('pointer-events-none', 'opacity-60');
+            link.setAttribute('aria-disabled', 'true');
+        };
+
+        link.addEventListener('mousedown', function (e) {
+            if (navigating) {
+                e.preventDefault();
+                return;
+            }
+            lockLink();
+        });
+
+        link.addEventListener('click', function (e) {
+            if (navigating) {
+                e.preventDefault();
+            }
+        });
+    })();
+</script>

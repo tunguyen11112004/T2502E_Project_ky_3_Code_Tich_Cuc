@@ -1,4 +1,5 @@
 using Bus_ticket.Data;
+using Bus_ticket.Helpers;
 using Bus_ticket.Interfaces;
 using Bus_ticket.Middlewares;
 using Bus_ticket.Models;
@@ -25,6 +26,10 @@ builder.Services.AddScoped<BranchService>();
 builder.Services.AddSingleton<ICloudinaryService, CloudinaryService>();
 builder.Services.AddScoped<SidebarPermissionService>();
 builder.Services.AddScoped<NewsScraperService>();
+builder.Services.AddSingleton<CrawlerProducer>();
+builder.Services.AddScoped<NewsScraperService>();
+builder.Services.AddHostedService<ArticleProcessorConsumer>();
+builder.Services.AddScoped<DashboardService>();
 
 // Cookie Authentication
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -48,6 +53,14 @@ builder.Services.AddSession(options =>
 builder.Services.AddControllersWithViews()
     .AddViewLocalization(Microsoft.AspNetCore.Mvc.Razor.LanguageViewLocationExpanderFormat.Suffix);
 
+builder.Services.Configure<Bus_ticket.Settings.MomoSettings>(builder.Configuration.GetSection("Momo"));
+
+builder.Services.AddScoped<Bus_ticket.Interfaces.IMomoService, Bus_ticket.Services.MomoService>();
+
+builder.Services.AddScoped<IRabbitMQService, RabbitMQService>();
+
+builder.Services.AddHostedService<RabbitMqConsumerService>();
+
 var app = builder.Build();
 
 var supportedCultures = new[] { "vi", "en" };
@@ -63,6 +76,9 @@ using (var scope = app.Services.CreateScope())
 {
     var seeder = scope.ServiceProvider.GetRequiredService<IDbSeeder>();
     await seeder.SeedAllAsync();
+
+    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    await BusClassIndexInitializer.EnsureIndexesAsync(dbContext.BusClasses);
 }
 
 // Configure HTTP request pipeline
@@ -85,5 +101,19 @@ app.UseAuthorization();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+using (var scope = app.Services.CreateScope())
+{
+    try
+    {
+        var crawler = scope.ServiceProvider.GetRequiredService<Bus_ticket.Services.CrawlerProducer>();
+        // Fire and forget: Chạy ngầm tiến trình cào dữ liệu
+        _ = Task.Run(() => crawler.StartCrawlingAsync());
+        Console.WriteLine("[System] Đã tự động đẩy lệnh cào tin tức vào RabbitMQ!");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[Error] Lỗi auto-crawler: {ex.Message}");
+    }
+}
 
 app.Run();

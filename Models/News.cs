@@ -17,5 +17,6 @@ namespace Bus_ticket.Models
         public bool IsCloned { get; set; } = true;
         public string OriginalUrl { get; set; } 
         public string SourceSite { get; set; }  
+        public int Status { get; set; } = 2;
     }
 }
