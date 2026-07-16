@@ -13,6 +13,9 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Bus_ticket.Interfaces;
+using PayOS;
+using PayOS.Models;
+using PayOS.Models.V2.PaymentRequests;
 using JsonConvert = Newtonsoft.Json.JsonConvert;
 
 namespace Bus_ticket.Controllers
@@ -38,6 +41,17 @@ namespace Bus_ticket.Controllers
         [HttpGet]
         public async Task<IActionResult> Index(int page = 1, string searchDate = "")
         {
+            // Nếu chưa chọn ngày (lần đầu load trang), tự động lấy ngày hiện tại (giờ Việt Nam GMT+7)
+            if (string.IsNullOrEmpty(searchDate))
+            {
+                var localTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow,
+                    TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time"));
+                searchDate = localTime.ToString("yyyy-MM-dd");
+            }
+
+            // Gửi lại searchDate ra View để điền vào thẻ <input type="date">
+            ViewBag.SearchDate = searchDate;
+
             int pageSize = 5;
             if (page < 1) page = 1;
 
@@ -65,10 +79,18 @@ namespace Bus_ticket.Controllers
                 .ToListAsync();
 
             var buses = await _dbContext.Buses.Find(_ => true).ToListAsync();
+
             var routes = await _dbContext.BusRoutes.Find(_ => true).ToListAsync();
 
-            ViewBag.BusList = buses;
+            var busList = await _dbContext.Buses.Find(_ => true).ToListAsync();
+
+            var operatorList = await _dbContext.BusOperators.Find(o => o.Status == "Active").ToListAsync();
+
+            var busClassList = await _dbContext.BusClasses.Find(c => c.Status == "Active").ToListAsync();
+            ViewBag.BusList = busList;
             ViewBag.RouteList = routes;
+            ViewBag.operatorList = operatorList;
+            ViewBag.busClassList = busClassList;
             ViewBag.CurrentPage = page;
             ViewBag.TotalPages = totalPages;
             ViewBag.SearchDate = searchDate;
@@ -168,6 +190,7 @@ namespace Bus_ticket.Controllers
             var destKey = destination.Trim().ToLower();
 
             var allRoutes = await _dbContext.BusRoutes.Find(_ => true).ToListAsync();
+            var busOperators = await _dbContext.BusOperators.Find(_ => true).ToListAsync();
 
             var matchedRoute = allRoutes.FirstOrDefault(r =>
                 !string.IsNullOrWhiteSpace(r.DeparturePoint)
@@ -225,6 +248,8 @@ namespace Bus_ticket.Controllers
                     var bus = buses.FirstOrDefault(b => b.Id == t.BusId);
                     var busClass = busClasses.FirstOrDefault(c => c.Id == bus?.BusClassId);
                     var route = routeMap.GetValueOrDefault(t.RouteId);
+                    var busOperator = busOperators.FirstOrDefault(o => o.Id == bus?.OperatorId);
+                    var operatorName = busOperator?.OperatorName ?? "Chưa xác định";
 
                     // Số lượng ghế đã được mua từ danh sách Booking hoàn thành
                     var bookedSeatsCount = activeBookings
@@ -271,6 +296,7 @@ namespace Bus_ticket.Controllers
                         busCode = bus?.BusCode ?? "—",
                         licensePlate = bus?.LicensePlate ?? "—",
                         busType = busClass?.ClassName ?? bus?.LegacyBusType ?? "Ghế ngồi",
+                        operatorName = operatorName,
                         totalSeats,
                         availableSeats, // Biến này bây giờ đã được khai báo và gán trị hợp lệ
                         departurePoint = route?.DeparturePoint ?? departure.Trim(),
@@ -280,6 +306,90 @@ namespace Bus_ticket.Controllers
                 .ToList();
 
             return Json(result);
+        }
+
+        // GET: /Booking/GetTripSeatMap?tripId=xxx
+        [HttpGet]
+        public async Task<IActionResult> GetTripSeatMap(string tripId)
+        {
+            if (string.IsNullOrEmpty(tripId))
+            {
+                return BadRequest(new { success = false, message = "Mã chuyến không hợp lệ." });
+            }
+
+            // 1. Lấy thông tin chuyến xe
+            var trip = await _dbContext.Trips.Find(t => t.Id == tripId).FirstOrDefaultAsync();
+            if (trip == null || trip.DeletedAt.HasValue)
+            {
+                return NotFound(new { success = false, message = "Không tìm thấy chuyến xe." });
+            }
+
+            // Giải phóng các ghế giữ chỗ quá hạn trước khi kiểm tra trạng thái sơ đồ
+            await ReleaseExpiredHoldsAsync(tripId);
+            // Lấy lại dữ liệu trip mới nhất sau khi giải phóng
+            trip = await _dbContext.Trips.Find(t => t.Id == tripId).FirstOrDefaultAsync();
+
+            // 2. Tìm thông tin Xe và Hạng Xe để lấy sơ đồ mẫu (Layout gốc)
+            var bus = await _dbContext.Buses.Find(b => b.Id == trip.BusId).FirstOrDefaultAsync();
+            var busClass = bus != null
+                ? await _dbContext.BusClasses.Find(c => c.Id == bus.BusClassId).FirstOrDefaultAsync()
+                : null;
+
+            // Lấy danh sách layout ghế mẫu (ưu tiên từ BusClass, sau đó tới Legacy)
+            List<SeatTemplate> defaultLayout = new List<SeatTemplate>();
+            int totalCols = 4; // Mặc định hiển thị 4 cột giống phía View cấu hình
+
+            if (busClass != null && busClass.DefaultLayout != null && busClass.DefaultLayout.Any())
+            {
+                defaultLayout = busClass.DefaultLayout;
+                totalCols = busClass.TotalColumns > 0 ? busClass.TotalColumns : 4;
+            }
+            else if (bus?.SeatsLayout != null && bus.SeatsLayout.Any())
+            {
+                defaultLayout = bus.SeatsLayout;
+            }
+
+            // Nếu hệ thống chưa thiết lập layout mẫu, tự động gen danh sách ghế dựa theo số lượng ghế
+            if (!defaultLayout.Any())
+            {
+                int totalSeats = busClass?.TotalSeats ?? bus?.LegacyTotalSeats ?? 45;
+                for (int i = 1; i <= totalSeats; i++)
+                {
+                    defaultLayout.Add(new SeatTemplate { SeatNumber = $"A{i:00}" });
+                }
+            }
+
+            // 3. Lấy danh sách trạng thái ghế thời gian thực (RealtimeSeats) trong Trip
+            var realtimeSeats = trip.RealtimeSeats ?? new List<RealtimeSeat>();
+            var now = DateTime.UtcNow;
+
+            // 4. Ánh xạ trạng thái realtime vào layout ghế mẫu
+            var seatMapResult = defaultLayout.Select(template =>
+            {
+                // Kiểm tra xem ghế mẫu này hiện tại trong Trip có trạng thái như thế nào
+                var realtimeInfo = realtimeSeats.FirstOrDefault(s =>
+                    s.SeatNumber != null &&
+                    s.SeatNumber.Trim().Equals(template.SeatNumber.Trim(), StringComparison.OrdinalIgnoreCase));
+
+                bool isBooked = realtimeInfo?.Status == "Booked";
+                bool isHolding = realtimeInfo?.Status == "Holding" && realtimeInfo.HeldUntil.HasValue &&
+                                 realtimeInfo.HeldUntil.Value > now;
+
+                return new
+                {
+                    seatNumber = template.SeatNumber,
+                    isBooked = isBooked,
+                    isHolding = isHolding,
+                    isLocked = isBooked || isHolding // Khoá ghế nếu đã thanh toán hoặc đang bị giữ chỗ
+                };
+            }).ToList();
+
+            return Json(new
+            {
+                success = true,
+                cols = totalCols,
+                seats = seatMapResult
+            });
         }
 
         [HttpPost]
@@ -495,6 +605,85 @@ namespace Bus_ticket.Controllers
                     }
                 }
 
+                if (paymentMethod == "PAYOS")
+                {
+                    // Bỏ các ký tự đặc biệt để làm mã giữ chỗ
+                    var cleanBookingCode = new string(bookingCode.Where(char.IsLetterOrDigit).ToArray());
+
+                    var holdResult = await TryHoldSeatsAsync(tripId, seatNumbers, cleanBookingCode);
+                    if (!holdResult.Success)
+                    {
+                        return Json(new { success = false, message = holdResult.Message });
+                    }
+
+                    // TẠO MÃ SỐ DUY NHẤT CHO PAYOS (Kiểu long - Bắt buộc)
+                    string timeStamp = DateTimeOffset.Now.ToString("yyMMddHHmmss");
+                    string randomStr = new Random().Next(10, 99).ToString();
+                    long orderCode = long.Parse(timeStamp + randomStr);
+
+                    var pendingData = new PendingBookingDTO
+                    {
+                        tripId = tripId,
+                        seatNumbers = seatNumbers,
+                        passengerName = passengerName,
+                        dob = dob,
+                        passengerPhone = passengerPhone,
+                        passengerEmail = passengerEmail,
+                        finalPerSeat = finalPerSeat,
+                        finalAmount = totalFinal,
+                        orderCodePayOS = orderCode,
+                        holdCode = cleanBookingCode
+                    };
+                    HttpContext.Session.SetString("PendingBooking", JsonConvert.SerializeObject(pendingData));
+
+                    try
+                    {
+                        // 1. Lấy Key từ appsettings.json
+                        var clientId = _config["PayOS:ClientId"];
+                        var apiKey = _config["PayOS:ApiKey"];
+                        var checksumKey = _config["PayOS:ChecksumKey"];
+
+                        // 2. Khởi tạo Client theo chuẩn thư viện 'payOS' mới
+                        PayOSClient payOSClient = new PayOSClient(clientId, apiKey, checksumKey);
+
+                        var domain = $"{Request.Scheme}://{Request.Host}";
+                        var returnUrl = $"{domain}/Booking/PayOSReturn";
+                        var cancelUrl = $"{domain}/Booking/PayOSReturn?cancel=true";
+
+                        // LƯU Ý: Description của payOS chỉ cho phép tối đa 25 ký tự, không chứa ký tự đặc biệt
+                        string desc = $"Thanh toan ve {cleanBookingCode}";
+                        if (desc.Length > 25) desc = desc.Substring(0, 25);
+
+                        // 3. Tạo Request thanh toán
+                        var paymentRequest = new CreatePaymentLinkRequest
+                        {
+                            OrderCode = orderCode,
+                            Amount = (int)totalFinal,
+                            Description = desc,
+                            ReturnUrl = returnUrl,
+                            CancelUrl = cancelUrl,
+                            ExpiredAt = (long)DateTimeOffset.UtcNow.AddMinutes(3).ToUnixTimeSeconds()
+                        };
+
+                        // 4. Gọi API tạo link
+                        var paymentLink = await payOSClient.PaymentRequests.CreateAsync(paymentRequest);
+
+                        await IncreaseUnpaidCountAsync(passengerName, dob, passengerPhone, passengerEmail);
+
+                        return Json(new
+                        {
+                            success = true,
+                            isRedirect = true,
+                            paymentUrl = paymentLink.CheckoutUrl // Trả về URL để popup mở
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        await ReleaseSeatsByHoldCodeAsync(tripId, cleanBookingCode);
+                        return Json(new { success = false, message = "Lỗi khởi tạo PayOS: " + ex.Message });
+                    }
+                }
+
                 var cashHoldResult = await TryHoldSeatsAsync(tripId, seatNumbers, bookingCode);
 
                 if (!cashHoldResult.Success)
@@ -562,6 +751,101 @@ namespace Bus_ticket.Controllers
             {
                 return Json(new { success = false, message = "Lỗi: " + ex.Message });
             }
+        }
+
+
+        [HttpGet]
+        public async Task<IActionResult> PayOSReturn(bool cancel = false)
+        {
+            var sessionData = HttpContext.Session.GetString("PendingBooking");
+            if (string.IsNullOrEmpty(sessionData))
+            {
+                TempData["Error"] = "Không tìm thấy thông tin phiên đặt vé hoặc phiên đã hết hạn.";
+                return RedirectToAction("Index", "Booking");
+            }
+
+            var pending = JsonConvert.DeserializeObject<PendingBookingDTO>(sessionData);
+
+            if (cancel || Request.Query["cancel"].ToString() == "true")
+            {
+                await ReleaseSeatsByHoldCodeAsync(pending.tripId, pending.holdCode);
+                HttpContext.Session.Remove("PendingBooking");
+                TempData["Error"] = "Thanh toán PayOS đã bị hủy.";
+                return RedirectToAction("Index", "Booking");
+            }
+
+            var code = Request.Query["code"].ToString();
+            var status = Request.Query["status"].ToString();
+
+            // code = "00" hoặc status = "PAID" là thành công
+            if (code == "00" || status == "PAID")
+            {
+                try
+                {
+                    var trip = await _dbContext.Trips.Find(t => t.Id == pending.tripId).FirstOrDefaultAsync();
+                    if (trip == null)
+                    {
+                        TempData["Error"] = "Chuyến xe không tồn tại.";
+                        return RedirectToAction("Index", "Booking");
+                    }
+
+                    decimal basePrice = trip.BaseFare;
+
+                    var newBooking = new Booking
+                    {
+                        BookingCode = pending.holdCode,
+                        TripId = pending.tripId,
+                        CustomerId = await ResolveCustomerIdAsync(pending.passengerName, pending.dob,
+                            pending.passengerPhone, pending.passengerEmail),
+                        CustomerPhone = pending.passengerPhone,
+                        CustomerEmail = pending.passengerEmail,
+                        UserId = User.Identity?.IsAuthenticated == true
+                            ? User.FindFirstValue(ClaimTypes.NameIdentifier)
+                            : "GUEST",
+                        BookingTime = DateTime.UtcNow,
+                        TotalPrice = basePrice * pending.seatNumbers.Count,
+                        DiscountAmount = (basePrice - pending.finalPerSeat) * pending.seatNumbers.Count,
+                        FinalAmount = pending.finalAmount,
+                        BookingStatus = "Completed",
+                        PaymentStatus = "Paid",
+                        Passengers = pending.seatNumbers.Select(s => new PassengerDetail
+                        {
+                            SeatNumber = s,
+                            Name = pending.passengerName,
+                            Dob = pending.dob,
+                            FinalSeatPrice = pending.finalPerSeat
+                        }).ToList(),
+                        Payment = new PaymentInfo
+                        {
+                            PaymentMethod = "PAYOS",
+                            AmountPaid = pending.finalAmount,
+                            TransactionCode = "PAYOS-" + pending.orderCodePayOS
+                        },
+                        CreatedAt = DateTime.UtcNow,
+                        CreatedBy = User.Identity?.Name ?? "Online-Booking"
+                    };
+
+                    await _dbContext.Bookings.InsertOneAsync(newBooking);
+                    await ResetUnpaidCountAsync(pending.passengerPhone);
+                    await MarkHeldSeatsAsBookedAsync(pending.tripId, pending.seatNumbers, pending.holdCode);
+                    await _rabbitMqService.PublishOrderAsync(newBooking.BookingCode);
+
+                    HttpContext.Session.Remove("PendingBooking");
+                    TempData["NewBookingCode"] = newBooking.BookingCode;
+
+                    return RedirectToAction("Index", "Booking");
+                }
+                catch (Exception ex)
+                {
+                    TempData["Error"] = "Lỗi khi lưu đơn hàng: " + ex.Message;
+                    return RedirectToAction("Index", "Booking");
+                }
+            }
+
+            await ReleaseSeatsByHoldCodeAsync(pending.tripId, pending.holdCode);
+            HttpContext.Session.Remove("PendingBooking");
+            TempData["Error"] = "Giao dịch PayOS không thành công.";
+            return RedirectToAction("Index", "Booking");
         }
 
         [HttpGet]
@@ -814,6 +1098,8 @@ namespace Bus_ticket.Controllers
             public string passengerEmail { get; set; } = string.Empty;
             public decimal finalPerSeat { get; set; }
             public decimal finalAmount { get; set; }
+            public long orderCodePayOS { get; set; }
+            public string holdCode { get; set; } = string.Empty;
         }
 
         public async Task<IActionResult> GetBookingDetails(string code)
