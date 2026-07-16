@@ -20,103 +20,103 @@ public class DashboardService
         public int TotalItems { get; set; }
     }
 
-public async Task<RouteRevenueReportViewModel> GetRouteRevenueReportAsync(DateTime fromDate, DateTime toDate)
-{
-    var (fromUtc, toUtc) = ToUtcDateRange(fromDate, toDate);
-
-    var bookings = await _dbContext.Bookings
-        .Find(b => b.BookingTime >= fromUtc && b.BookingTime <= toUtc)
-        .ToListAsync();
-
-    var paidCompletedBookings = bookings
-        .Where(b => IsCompletedBooking(b.BookingStatus) && IsPaidBooking(b.PaymentStatus))
-        .ToList();
-
-    var trips = await _dbContext.Trips
-        .Find(_ => true)
-        .ToListAsync();
-
-    var routes = await _dbContext.BusRoutes
-        .Find(_ => true)
-        .ToListAsync();
-
-    var tripDictionary = trips
-        .Where(t => !string.IsNullOrWhiteSpace(t.Id))
-        .GroupBy(t => t.Id)
-        .ToDictionary(g => g.Key, g => g.First());
-
-    var routeDictionary = routes
-        .Where(r => !string.IsNullOrWhiteSpace(r.Id))
-        .GroupBy(r => r.Id)
-        .ToDictionary(g => g.Key, g => g.First());
-
-    var reportItems = paidCompletedBookings
-        .Select(booking =>
-        {
-            tripDictionary.TryGetValue(booking.TripId, out var trip);
-
-            var routeId = trip?.RouteId ?? "unknown";
-
-            routeDictionary.TryGetValue(routeId, out var route);
-
-            var routeName = route == null
-                ? "Không xác định"
-                : $"{route.DeparturePoint} - {route.DestinationPoint}";
-
-            return new
-            {
-                RouteId = routeId,
-                RouteName = routeName,
-                Booking = booking
-            };
-        })
-        .GroupBy(x => new
-        {
-            x.RouteId,
-            x.RouteName
-        })
-        .Select(group =>
-        {
-            var routeBookings = group
-                .Select(x => x.Booking)
-                .ToList();
-
-            return new RouteRevenueItemViewModel
-            {
-                RouteId = group.Key.RouteId,
-                RouteName = group.Key.RouteName,
-                TotalBookings = routeBookings.Count,
-                TotalTickets = routeBookings.Sum(GetTicketCount),
-                TotalRevenue = routeBookings.Sum(b => b.FinalAmount)
-            };
-        })
-        .OrderByDescending(x => x.TotalRevenue)
-        .ThenByDescending(x => x.TotalTickets)
-        .ThenByDescending(x => x.TotalBookings)
-        .ThenBy(x => x.RouteName)
-        .ToList();
-
-    var grandTotalRevenue = reportItems.Sum(x => x.TotalRevenue);
-    var grandTotalBookings = reportItems.Sum(x => x.TotalBookings);
-    var grandTotalTickets = reportItems.Sum(x => x.TotalTickets);
-
-    foreach (var item in reportItems)
+    public async Task<RouteRevenueReportViewModel> GetRouteRevenueReportAsync(DateTime fromDate, DateTime toDate)
     {
-        item.Percentage = grandTotalRevenue > 0
-            ? Math.Round((double)(item.TotalRevenue / grandTotalRevenue * 100), 2)
-            : 0;
+        var (fromUtc, toUtc) = ToUtcDateRange(fromDate, toDate);
+
+        var bookings = await _dbContext.Bookings
+            .Find(b => b.BookingTime >= fromUtc && b.BookingTime <= toUtc)
+            .ToListAsync();
+
+        var paidCompletedBookings = bookings
+            .Where(b => IsCompletedBooking(b.BookingStatus) && IsPaidBooking(b.PaymentStatus))
+            .ToList();
+
+        var trips = await _dbContext.Trips
+            .Find(_ => true)
+            .ToListAsync();
+
+        var routes = await _dbContext.BusRoutes
+            .Find(_ => true)
+            .ToListAsync();
+
+        var tripDictionary = trips
+            .Where(t => !string.IsNullOrWhiteSpace(t.Id))
+            .GroupBy(t => t.Id)
+            .ToDictionary(g => g.Key, g => g.First());
+
+        var routeDictionary = routes
+            .Where(r => !string.IsNullOrWhiteSpace(r.Id))
+            .GroupBy(r => r.Id)
+            .ToDictionary(g => g.Key, g => g.First());
+
+        var reportItems = paidCompletedBookings
+            .Select(booking =>
+            {
+                tripDictionary.TryGetValue(booking.TripId, out var trip);
+
+                var routeId = trip?.RouteId ?? "unknown";
+
+                routeDictionary.TryGetValue(routeId, out var route);
+
+                var routeName = route == null
+                    ? "Không xác định"
+                    : $"{route.DeparturePoint} - {route.DestinationPoint}";
+
+                return new
+                {
+                    RouteId = routeId,
+                    RouteName = routeName,
+                    Booking = booking
+                };
+            })
+            .GroupBy(x => new
+            {
+                x.RouteId,
+                x.RouteName
+            })
+            .Select(group =>
+            {
+                var routeBookings = group
+                    .Select(x => x.Booking)
+                    .ToList();
+
+                return new RouteRevenueItemViewModel
+                {
+                    RouteId = group.Key.RouteId,
+                    RouteName = group.Key.RouteName,
+                    TotalBookings = routeBookings.Count,
+                    TotalTickets = routeBookings.Sum(GetTicketCount),
+                    TotalRevenue = routeBookings.Sum(b => b.FinalAmount)
+                };
+            })
+            .OrderByDescending(x => x.TotalRevenue)
+            .ThenByDescending(x => x.TotalTickets)
+            .ThenByDescending(x => x.TotalBookings)
+            .ThenBy(x => x.RouteName)
+            .ToList();
+
+        var grandTotalRevenue = reportItems.Sum(x => x.TotalRevenue);
+        var grandTotalBookings = reportItems.Sum(x => x.TotalBookings);
+        var grandTotalTickets = reportItems.Sum(x => x.TotalTickets);
+
+        foreach (var item in reportItems)
+        {
+            item.Percentage = grandTotalRevenue > 0
+                ? Math.Round((double)(item.TotalRevenue / grandTotalRevenue * 100), 2)
+                : 0;
+        }
+
+        return new RouteRevenueReportViewModel
+        {
+            FromDate = fromDate.Date,
+            ToDate = toDate.Date,
+            GrandTotalRevenue = grandTotalRevenue,
+            GrandTotalBookings = grandTotalBookings,
+            GrandTotalTickets = grandTotalTickets,
+            Items = reportItems
+        };
     }
-
-    return new RouteRevenueReportViewModel
-    {
-        FromDate = fromDate.Date,
-        ToDate = toDate.Date,
-        GrandTotalRevenue = grandTotalRevenue,
-        GrandTotalBookings = grandTotalBookings,
-        GrandTotalTickets = grandTotalTickets,
-        Items = reportItems
-    };
-}
 
     public async Task<PagedSeatAnalyticsResult> GetSeatAnalyticsReportAsync(
         DateTime fromDate,
@@ -279,6 +279,32 @@ public async Task<RouteRevenueReportViewModel> GetRouteRevenueReportAsync(DateTi
             .ThenByDescending(r => r.TotalBookings)
             .ThenBy(r => r.OperatorName)
             .ToList();
+    }
+
+    // ========================================================
+    // TASK 14: HỦY CHUYẾN XE VÀ CẬP NHẬT VÉ (CASCADE UPDATE)
+    // ========================================================
+    public async Task<bool> CancelTripAsync(string tripId)
+    {
+        // 1. Tìm và cập nhật trạng thái chuyến xe (Trips) sử dụng toán tử $set
+        var tripFilter = Builders<Trip>.Filter.Eq(t => t.Id, tripId);
+        var tripUpdate = Builders<Trip>.Update.Set(t => t.Status, "Cancelled");
+        
+        var tripResult = await _dbContext.Trips.UpdateOneAsync(tripFilter, tripUpdate);
+        
+        // Nếu không tìm thấy chuyến để update -> Hủy thất bại
+        if (tripResult.MatchedCount == 0) return false;
+
+        // 2. Cập nhật liên đới (Cascade Update) hàng loạt vé (Booking) sang Cancelled 
+        // và lưu vết chờ hoàn tiền (RefundPending)
+        var bookingFilter = Builders<Booking>.Filter.Eq(b => b.TripId, tripId);
+        var bookingUpdate = Builders<Booking>.Update
+            .Set(b => b.BookingStatus, "Cancelled") 
+            .Set(b => b.IsRefundPending, true); // Đẩy dữ liệu vào danh sách chờ đối soát
+
+        await _dbContext.Bookings.UpdateManyAsync(bookingFilter, bookingUpdate);
+
+        return true;
     }
 
     private static (DateTime FromUtc, DateTime ToUtc) ToUtcDateRange(DateTime fromDate, DateTime toDate)

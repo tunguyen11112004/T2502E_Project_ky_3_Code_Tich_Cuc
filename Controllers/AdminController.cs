@@ -162,8 +162,6 @@ namespace Bus_ticket.Controllers
             return RedirectToAction("CrawlNews");
         }
         
-        
-        
         [HttpGet]
         public async Task<IActionResult> EditNews(string id)
         {
@@ -254,9 +252,6 @@ namespace Bus_ticket.Controllers
             return View(newsList);
         }
         
-        // ====================================================================
-        // 🎯 ĐÃ THÊM: HÀM DUYỆT TIN TỨC (STATUS = 1)
-        // ====================================================================
         [HttpPost]
         public async Task<IActionResult> ApproveNews(string id)
         {
@@ -279,9 +274,6 @@ namespace Bus_ticket.Controllers
             return RedirectToAction("ManageNews");
         }
 
-        // ====================================================================
-        // 🎯 ĐÃ THÊM: HÀM XÓA BÀI VIẾT RÁC
-        // ====================================================================
         [HttpPost]
         public async Task<IActionResult> DeleteNews(string id)
         {
@@ -301,7 +293,6 @@ namespace Bus_ticket.Controllers
 
             return RedirectToAction("ManageNews");
         }
-        // ====================================================================
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -568,7 +559,6 @@ namespace Bus_ticket.Controllers
 
             try
             {
-                // Bộ lọc tìm kiếm: Khớp chính xác bộ ba: Loại xe + Điểm đi + Điểm đến
                 var filter = Builders<PriceConfig>.Filter.And(
                     Builders<PriceConfig>.Filter.Eq(p => p.BusType, busType),
                     Builders<PriceConfig>.Filter.Eq(p => p.DeparturePoint, departurePoint),
@@ -790,6 +780,50 @@ namespace Bus_ticket.Controllers
             TempData["SuccessMessage"] =
                 "Đã xóa chuyến xe. Dữ liệu đặt vé và lịch sử liên kết vẫn được giữ nguyên.";
             return RedirectToAction(nameof(PriceConfig));
+        }
+
+        // ====================================================================
+        // 🎯 TASK 14: HỦY CHUYẾN XE (CANCEL TRIP) VÀ CASCADE UPDATE VÉ
+        // ====================================================================
+        [HttpPost]
+        public async Task<IActionResult> CancelTrip(string tripId)
+        {
+            if (string.IsNullOrEmpty(tripId))
+            {
+                return Json(new { success = false, message = "Mã chuyến xe không hợp lệ." });
+            }
+
+            try
+            {
+                // 1. Cập nhật trạng thái chuyến xe (Trips) thành Cancelled
+                var tripFilter = Builders<Trip>.Filter.Eq(t => t.Id, tripId);
+                var tripUpdate = Builders<Trip>.Update
+                    .Set(t => t.Status, "Cancelled")
+                    .Set(t => t.UpdatedAt, DateTime.UtcNow)
+                    .Set(t => t.UpdatedBy, User.Identity?.Name ?? "Admin");
+                    
+                var tripResult = await _dbContext.Trips.UpdateOneAsync(tripFilter, tripUpdate);
+                
+                if (tripResult.MatchedCount == 0)
+                {
+                    return Json(new { success = false, message = "Không tìm thấy chuyến xe để hủy." });
+                }
+
+                // 2. Cascade Update: Cập nhật toàn bộ vé (Bookings) thuộc chuyến này
+                // Đánh dấu IsRefundPending = true để Admin đối soát hoàn tiền
+                var bookingFilter = Builders<Booking>.Filter.Eq(b => b.TripId, tripId);
+                var bookingUpdate = Builders<Booking>.Update
+                    .Set(b => b.BookingStatus, "Cancelled") 
+                    .Set(b => b.IsRefundPending, true);
+
+                await _dbContext.Bookings.UpdateManyAsync(bookingFilter, bookingUpdate);
+
+                return Json(new { success = true, message = "Đã hủy chuyến và tự động cập nhật trạng thái các vé liên quan." });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Lỗi hệ thống: " + ex.Message });
+            }
         }
 
         private async Task<BusRoute> FindOrCreateRouteAsync(

@@ -90,7 +90,23 @@
                             <td class="px-6 py-4 text-xs text-gray-400">@trip.BookedSeats/@trip.TotalSeats</td>
                             <td class="px-6 py-4 text-xs @TripStatusHelper.GetBadgeClass(trip.Status)">@TripStatusHelper.GetDisplayName(trip.Status)</td>
                             <td class="px-6 py-4">
-                                <div class="flex justify-center gap-2">
+                                <div class="flex items-center justify-center gap-2">
+                                    <!-- TASK 14: Thêm nút Hủy chuyến -->
+                                    @if (trip.Status != "Cancelled")
+                                    {
+                                        <button type="button"
+                                                onclick="setCancelTripId('@trip.Id')"
+                                                data-modal-target="popup-modal-cancel"
+                                                data-modal-toggle="popup-modal-cancel"
+                                                class="px-3 py-1.5 text-xs font-semibold rounded bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-colors">
+                                            Hủy chuyến
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <span class="px-3 py-1.5 text-xs font-semibold rounded bg-gray-500/10 text-gray-500 border border-gray-600/50">Đã hủy</span>
+                                    }
+                                    
                                     <a asp-controller="Admin" asp-action="EditTrip" asp-route-id="@trip.Id"
                                        class="px-3 py-1.5 text-xs font-semibold rounded bg-amber-400/10 text-amber-400 hover:bg-amber-400 hover:text-gray-900 transition-colors">
                                         Sửa
@@ -172,8 +188,67 @@
     </div>
 </div>
 
+<!-- TASK 14: Modal Xác nhận Hủy Chuyến (Thiết kế phẳng, không mũi tên) -->
+<div id="popup-modal-cancel" tabindex="-1" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full bg-gray-900/80 backdrop-blur-sm">
+    <div class="relative p-4 w-full max-w-md max-h-full">
+        <div class="relative bg-white rounded-lg shadow dark:bg-[#1e1e24] dark:border dark:border-gray-700/50">
+            <div class="p-6 text-center">
+                <!-- Icon Cảnh báo thiết kế phẳng -->
+                <svg class="mx-auto mb-4 text-red-500 w-12 h-12" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <h3 class="mb-5 text-lg font-normal text-gray-700 dark:text-gray-300">Bạn có chắc chắn muốn hủy chuyến xe này?</h3>
+                <p class="mb-5 text-sm text-red-500 font-medium">Toàn bộ vé đã đặt sẽ bị hủy và chuyển vào danh sách chờ hoàn tiền!</p>
+                
+                <button onclick="confirmCancelTrip()" type="button" class="text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm inline-flex items-center px-5 py-2.5 text-center mr-2 transition-colors">
+                    Xác nhận Hủy
+                </button>
+                <button data-modal-hide="popup-modal-cancel" type="button" class="text-gray-900 bg-white hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-gray-200 rounded-lg border border-gray-200 text-sm font-medium px-5 py-2.5 hover:text-gray-900 focus:z-10 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700 transition-colors">
+                    Đóng lại
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
+    // Xử lý auto-submit khi chọn ngày
     document.getElementById('searchDate')?.addEventListener('change', function () {
         document.getElementById('filterForm')?.submit();
     });
+
+    // Biến lưu tạm ID chuyến xe cần hủy
+    let tripIdToCancel = "";
+
+    function setCancelTripId(id) {
+        tripIdToCancel = id;
+    }
+
+    // Xử lý API bằng Fetch (JS thuần) thay thế cho jQuery
+    function confirmCancelTrip() {
+        const formData = new FormData();
+        formData.append('tripId', tripIdToCancel);
+
+        fetch('/Admin/CancelTrip', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.success) {
+                // Tự động đóng modal bằng JS thuần
+                const closeBtn = document.querySelector('[data-modal-hide="popup-modal-cancel"]');
+                if(closeBtn) closeBtn.click();
+                
+                // Tải lại trang để thấy cập nhật trạng thái "Đã hủy"
+                location.reload(); 
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Lỗi khi gọi API:', error);
+            alert('Có lỗi xảy ra khi kết nối đến máy chủ!');
+        });
+    }
 </script>
