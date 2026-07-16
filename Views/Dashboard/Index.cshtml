@@ -44,9 +44,47 @@
                                   "RouteRevenuePartial",
                                   "/Dashboard/RouteRevenue",
                                   "/Dashboard/RouteRevenuePartial");
+
+    var canViewTicketStatusStatistics = isAdmin
+                                        || SidebarPermissionService.HasPermission(
+                                            permissionNames,
+                                            "Dashboard",
+                                            "Report",
+                                            "Ticket",
+                                            "TicketStatus",
+                                            "TicketStatusStatistics",
+                                            "TicketStatusStatisticsPartial",
+                                            "/Dashboard/TicketStatusStatistics",
+                                            "/Dashboard/TicketStatusStatisticsPartial"
+                                        );
+    var canViewVehicleRevenueStatistics = isAdmin
+                                          || SidebarPermissionService.HasPermission(
+                                              permissionNames,
+                                              "Dashboard",
+                                              "Report",
+                                              "Vehicle",
+                                              "VehicleRevenue",
+                                              "Vehicle Revenue",
+                                              "VehicleRevenueStatistics",
+                                              "VehicleRevenueStatisticsPartial",
+                                              "/Dashboard/VehicleRevenueStatistics",
+                                              "/Dashboard/VehicleRevenueStatisticsPartial"
+                                          );
+    var canViewLowOccupancyTrips = isAdmin
+                                   || SidebarPermissionService.HasPermission(
+                                       permissionNames,
+                                       "Dashboard",
+                                       "Report",
+                                       "LowOccupancy",
+                                       "LowOccupancyTrips",
+                                       "Low Occupancy Trips",
+                                       "LowOccupancyTripsPartial",
+                                       "/Dashboard/LowOccupancyTripsPartial",
+                                       "/Dashboard/ExportLowOccupancyTrips"
+                                   );
 }
 
-<div class="p-6 space-y-6">
+<div class="p-5 space-y-4">
     <div>
         <h1 class="text-2xl font-bold text-gray-950 dark:text-white mb-1">Xin chào Admin!</h1>
         <p class="text-sm text-gray-600 dark:text-gray-400">
@@ -54,16 +92,20 @@
         </p>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+    <div class="rounded-2xl border border-gray-700/60 bg-[#151922] p-3 shadow-xl">
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
         @if (canViewOperatorRevenue)
         {
             <button type="button"
                     onclick="loadStatistic('OperatorRevenue')"
-                    class="dashboard-stat-button p-4 bg-blue-500 text-white rounded-lg text-left transition hover:bg-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-300"
+                    class="dashboard-stat-button min-h-[72px] rounded-xl border border-gray-700/70 border-t-4 border-t-blue-500 bg-[#1e1e24] px-4 py-3 text-left transition hover:bg-[#252530] focus:outline-none focus:ring-2 focus:ring-blue-400"
                     data-stat-type="OperatorRevenue">
-                <h3 class="font-semibold text-blue-100">Xếp hạng doanh thu nhà xe</h3>
-                <p class="text-2xl font-bold mt-1">Nhà xe bán chạy nhất</p>
-                <span class="text-xs text-blue-200 block mt-2">Xem chi tiết doanh thu từng nhà xe →</span>
+                <p class="text-sm font-bold text-white">
+                    Doanh thu nhà xe
+                </p>
+                <p class="mt-1 text-xs text-gray-400">
+                    Xếp hạng nhà xe bán chạy
+                </p>
             </button>
         }
 
@@ -71,11 +113,14 @@
         {
             <button type="button"
                     onclick="loadStatistic('BranchCancellation')"
-                    class="dashboard-stat-button p-4 bg-green-500 text-white rounded-lg text-left transition hover:bg-green-600 focus:outline-none focus:ring-4 focus:ring-green-300"
+                    class="dashboard-stat-button min-h-[72px] rounded-xl border border-gray-700/70 border-t-4 border-t-emerald-500 bg-[#1e1e24] px-4 py-3 text-left transition hover:bg-[#252530] focus:outline-none focus:ring-2 focus:ring-emerald-400"
                     data-stat-type="BranchCancellation">
-                <h3 class="font-semibold text-green-100">Tỷ lệ hủy chuyến</h3>
-                <p class="text-2xl font-bold mt-1">Độ uy tín vận hành</p>
-                <span class="text-xs text-green-200 block mt-2">Xem báo cáo hủy chuyến hệ thống →</span>
+                <p class="text-sm font-bold text-white">
+                    Tỷ lệ hủy chuyến
+                </p>
+                <p class="mt-1 text-xs text-gray-400">
+                    Độ uy tín vận hành
+                </p>
             </button>
         }
 
@@ -83,31 +128,78 @@
         {
             <button type="button"
                     onclick="loadStatistic('SeatAnalytics')"
-                    class="dashboard-stat-button p-4 bg-purple-500 text-white rounded-lg text-left transition hover:bg-purple-600 focus:outline-none focus:ring-4 focus:ring-purple-300"
+                    class="dashboard-stat-button min-h-[72px] rounded-xl border border-gray-700/70 border-t-4 border-t-purple-500 bg-[#1e1e24] px-4 py-3 text-left transition hover:bg-[#252530] focus:outline-none focus:ring-2 focus:ring-purple-400"
                     data-stat-type="SeatAnalytics">
-                <h3 class="font-semibold text-purple-100">Chuyến xe & Ghế trống</h3>
-                <p class="text-2xl font-bold mt-1">Hiệu suất lấp đầy</p>
-                <span class="text-xs text-purple-200 block mt-2">Xem phân tích lấp đầy ghế →</span>
+                <p class="text-sm font-bold text-white">
+                    Hiệu suất lấp đầy
+                </p>
+                <p class="mt-1 text-xs text-gray-400">
+                    Chuyến xe và ghế trống
+                </p>
             </button>
         }
+
         @if (canViewRouteRevenue)
         {
             <button type="button"
                     onclick="loadStatistic('RouteRevenue')"
-                    class="dashboard-stat-button rounded-xl bg-gradient-to-r from-yellow-400 to-orange-500 p-5 text-left shadow-xl hover:scale-[1.02] transition-transform duration-200"
+                    class="dashboard-stat-button min-h-[72px] rounded-xl border border-gray-700/70 border-t-4 border-t-amber-500 bg-[#1e1e24] px-4 py-3 text-left transition hover:bg-[#252530] focus:outline-none focus:ring-2 focus:ring-amber-400"
                     data-stat-type="RouteRevenue">
-                <p class="text-sm font-semibold text-white/90">
+                <p class="text-sm font-bold text-white">
                     Doanh thu tuyến đường
                 </p>
-                <h2 class="mt-3 text-2xl font-bold text-white">
-                    Tuyến bán chạy nhất
-                </h2>
-                <p class="mt-3 text-sm text-white/80">
-                    Xem doanh thu theo từng tuyến →
+                <p class="mt-1 text-xs text-gray-400">
+                    Xếp hạng tuyến bán chạy
+                </p>
+            </button>
+        }
+        
+        @if (canViewVehicleRevenueStatistics)
+        {
+            <button type="button"
+                    onclick="loadStatistic('VehicleRevenueStatistics')"
+                    class="dashboard-stat-button min-h-[72px] rounded-xl border border-gray-700/70 border-t-4 border-t-cyan-500 bg-[#1e1e24] px-4 py-3 text-left transition hover:bg-[#252530] focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                    data-stat-type="VehicleRevenueStatistics">
+                <p class="text-sm font-bold text-white">
+                    Doanh thu phương tiện
+                </p>
+                <p class="mt-1 text-xs text-gray-400">
+                    Theo loại xe và từng xe
+                </p>
+            </button>
+        }
+
+        @if (canViewTicketStatusStatistics)
+        {
+            <button type="button"
+                    onclick="loadStatistic('TicketStatusStatistics')"
+                    class="dashboard-stat-button min-h-[72px] rounded-xl border border-gray-700/70 border-t-4 border-t-rose-500 bg-[#1e1e24] px-4 py-3 text-left transition hover:bg-[#252530] focus:outline-none focus:ring-2 focus:ring-rose-400"
+                    data-stat-type="TicketStatusStatistics">
+                <p class="text-sm font-bold text-white">
+                    Tỷ lệ vé hủy
+                </p>
+                <p class="mt-1 text-xs text-gray-400">
+                    Vé thành công và vé hủy
+                </p>
+            </button>
+        }
+        
+        @if (canViewLowOccupancyTrips)
+        {
+            <button type="button"
+                    onclick="loadStatistic('LowOccupancyTrips')"
+                    class="dashboard-stat-button min-h-[72px] rounded-xl border border-gray-700/70 border-t-4 border-t-orange-500 bg-[#1e1e24] px-4 py-3 text-left transition hover:bg-[#252530] focus:outline-none focus:ring-2 focus:ring-orange-400"
+                    data-stat-type="LowOccupancyTrips">
+                <p class="text-sm font-bold text-white">
+                    Chuyến ít khách
+                </p>
+                <p class="mt-1 text-xs text-gray-400">
+                    Tỷ lệ lấp đầy thấp
                 </p>
             </button>
         }
     </div>
+</div>
 
     <div id="statisticContainer" class="bg-gray-50 dark:bg-gray-900/40 rounded-xl min-h-[250px] p-4 relative border border-dashed border-gray-300 dark:border-gray-700">
         <div id="placeholderText" class="text-center py-16 text-gray-400">
@@ -141,8 +233,11 @@
     function setActiveStatisticButton(type) {
         document.querySelectorAll('.dashboard-stat-button').forEach(button => {
             const isActive = button.dataset.statType === type;
-            button.classList.toggle('ring-4', isActive);
-            button.classList.toggle('ring-white/50', isActive);
+
+            button.classList.toggle('bg-[#2a2a33]', isActive);
+            button.classList.toggle('ring-2', isActive);
+            button.classList.toggle('ring-white/30', isActive);
+            button.classList.toggle('shadow-2xl', isActive);
         });
     }
 
@@ -203,6 +298,7 @@
 
             contentDiv.innerHTML = await response.text();
             executeDynamicScripts(contentDiv);
+            initializeDashboardTablePagination(contentDiv);
         } catch (error) {
             console.error(error);
             alert('Không thể lấy được dữ liệu thống kê, vui lòng kiểm tra lại!');
@@ -409,8 +505,13 @@
         const row = document.getElementById(rowId);
         if (!row) return;
 
+        showDashboardTablePageForRow(row);
+
         row.classList.add('bg-amber-500/20', 'ring-1', 'ring-amber-400');
-        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        setTimeout(() => {
+            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 80);
     }
 
     function renderDashboardPieChart(chartId, labels, data, rowIds, labelText) {
@@ -469,5 +570,207 @@
                 }
             }
         });
+    }
+    const DASHBOARD_TABLE_ROWS_PER_PAGE = 10;
+
+    function getDashboardTableRows(table) {
+        const tbody = table.tBodies && table.tBodies.length > 0
+            ? table.tBodies[0]
+            : null;
+
+        if (!tbody) return [];
+
+        return Array.from(tbody.rows).filter(row => {
+            return !row.hasAttribute('data-dashboard-pagination-ignore');
+        });
+    }
+
+    function buildDashboardPaginationNumbers(currentPage, totalPages) {
+        const pages = new Set();
+
+        pages.add(1);
+        pages.add(totalPages);
+        pages.add(currentPage);
+        pages.add(currentPage - 1);
+        pages.add(currentPage + 1);
+
+        const validPages = Array.from(pages)
+            .filter(page => page >= 1 && page <= totalPages)
+            .sort((a, b) => a - b);
+
+        const result = [];
+
+        for (let i = 0; i < validPages.length; i++) {
+            const page = validPages[i];
+
+            if (i > 0 && page - validPages[i - 1] > 1) {
+                result.push('...');
+            }
+
+            result.push(page);
+        }
+
+        return result;
+    }
+
+    function renderDashboardTablePage(table, page) {
+        const rows = getDashboardTableRows(table);
+        const totalRows = rows.length;
+        const totalPages = Math.ceil(totalRows / DASHBOARD_TABLE_ROWS_PER_PAGE);
+
+        if (totalRows <= DASHBOARD_TABLE_ROWS_PER_PAGE) {
+            rows.forEach(row => {
+                row.style.display = '';
+            });
+
+            const oldPagination = document.querySelector(
+                `[data-dashboard-pagination-for="${table.dataset.dashboardTableId}"]`
+            );
+
+            if (oldPagination) {
+                oldPagination.remove();
+            }
+
+            return;
+        }
+
+        const currentPage = Math.min(Math.max(page, 1), totalPages);
+        table.dataset.dashboardCurrentPage = currentPage.toString();
+
+        const startIndex = (currentPage - 1) * DASHBOARD_TABLE_ROWS_PER_PAGE;
+        const endIndex = startIndex + DASHBOARD_TABLE_ROWS_PER_PAGE;
+
+        rows.forEach((row, index) => {
+            row.style.display = index >= startIndex && index < endIndex
+                ? ''
+                : 'none';
+        });
+
+        const pagination = document.querySelector(
+            `[data-dashboard-pagination-for="${table.dataset.dashboardTableId}"]`
+        );
+
+        if (!pagination) return;
+
+        const fromRow = startIndex + 1;
+        const toRow = Math.min(endIndex, totalRows);
+        const pageItems = buildDashboardPaginationNumbers(currentPage, totalPages);
+
+        const pageButtons = pageItems.map(item => {
+            if (item === '...') {
+                return `
+                <span class="px-2 py-1 text-sm text-gray-500">
+                    ...
+                </span>
+            `;
+            }
+
+            const isActive = item === currentPage;
+
+            return `
+            <button type="button"
+                    data-dashboard-page="${item}"
+                    class="min-w-[34px] rounded-lg px-3 py-1.5 text-sm font-semibold transition
+                           ${isActive
+                ? 'bg-amber-400 text-gray-950'
+                : 'border border-gray-700 text-gray-300 hover:bg-gray-800'}">
+                ${item}
+            </button>
+        `;
+        }).join('');
+
+        pagination.innerHTML = `
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <p class="text-sm text-gray-500">
+                Hiển thị <span class="font-semibold text-gray-300">${fromRow}</span>
+                -
+                <span class="font-semibold text-gray-300">${toRow}</span>
+                /
+                <span class="font-semibold text-gray-300">${totalRows}</span>
+                dòng
+            </p>
+
+            <div class="flex flex-wrap items-center gap-2">
+                <button type="button"
+                        data-dashboard-page="${currentPage - 1}"
+                        ${currentPage <= 1 ? 'disabled' : ''}
+                        class="rounded-lg border border-gray-700 px-3 py-1.5 text-sm font-semibold text-gray-300 transition hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed">
+                    Trước
+                </button>
+
+                ${pageButtons}
+
+                <button type="button"
+                        data-dashboard-page="${currentPage + 1}"
+                        ${currentPage >= totalPages ? 'disabled' : ''}
+                        class="rounded-lg border border-gray-700 px-3 py-1.5 text-sm font-semibold text-gray-300 transition hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed">
+                    Sau
+                </button>
+            </div>
+        </div>
+    `;
+
+        pagination.querySelectorAll('[data-dashboard-page]').forEach(button => {
+            button.addEventListener('click', function () {
+                const nextPage = Number(this.dataset.dashboardPage);
+                if (!nextPage || nextPage < 1 || nextPage > totalPages) return;
+
+                renderDashboardTablePage(table, nextPage);
+            });
+        });
+    }
+
+    function initializeDashboardTablePagination(container) {
+        const tables = Array.from(container.querySelectorAll('table'));
+
+        tables.forEach((table, index) => {
+            const rows = getDashboardTableRows(table);
+
+            if (rows.length <= DASHBOARD_TABLE_ROWS_PER_PAGE) {
+                rows.forEach(row => {
+                    row.style.display = '';
+                });
+
+                return;
+            }
+
+            const tableId = `dashboardTable_${Date.now()}_${index}`;
+            table.dataset.dashboardTableId = tableId;
+
+            const oldPagination = document.querySelector(
+                `[data-dashboard-pagination-for="${tableId}"]`
+            );
+
+            if (oldPagination) {
+                oldPagination.remove();
+            }
+
+            const pagination = document.createElement('div');
+            pagination.dataset.dashboardPaginationFor = tableId;
+            pagination.className = 'dashboard-table-pagination mt-4 border-t border-gray-700/60 pt-4 px-1';
+
+            const tableWrapper = table.closest('.overflow-x-auto');
+
+            if (tableWrapper) {
+                tableWrapper.insertAdjacentElement('afterend', pagination);
+            } else {
+                table.insertAdjacentElement('afterend', pagination);
+            }
+
+            renderDashboardTablePage(table, 1);
+        });
+    }
+
+    function showDashboardTablePageForRow(row) {
+        const table = row.closest('table');
+        if (!table || !table.dataset.dashboardTableId) return;
+
+        const rows = getDashboardTableRows(table);
+        const rowIndex = rows.indexOf(row);
+
+        if (rowIndex < 0) return;
+
+        const targetPage = Math.floor(rowIndex / DASHBOARD_TABLE_ROWS_PER_PAGE) + 1;
+        renderDashboardTablePage(table, targetPage);
     }
 </script>
