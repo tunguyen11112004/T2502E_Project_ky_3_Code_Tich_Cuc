@@ -223,7 +223,7 @@
                     <div class="operator-field">
                         <label class="operator-label block mb-1 text-sm text-gray-400">Hotline <span class="text-red-500">*</span></label>
                         <input type="text" name="PhoneNumber" required maxlength="20" data-required="true" inputmode="tel"
-                               placeholder="19006067 hoặc 0901234567"
+                               placeholder="Ví dụ: 0900123456"
                                class="operator-input block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400" />
                     </div>
                     <div class="operator-field">
@@ -289,7 +289,7 @@
                     <div class="operator-field">
                         <label class="operator-label block mb-1 text-sm text-gray-400">Hotline <span class="text-red-500">*</span></label>
                         <input type="text" name="PhoneNumber" id="editOperatorPhone" required maxlength="20" data-required="true" inputmode="tel"
-                               placeholder="19006067 hoặc 0901234567"
+                               placeholder="Ví dụ: 0900123456"
                                class="operator-input block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400" />
                     </div>
                     <div class="operator-field">
@@ -367,7 +367,9 @@
             }
 
             function getFieldValidation(field) {
-                const value = (field.value || '').trim();
+                const rawValue = field.value ?? '';
+                const value = rawValue.trim();
+
                 if (!value) {
                     return { invalid: true, message: 'Vui lòng điền thông tin' };
                 }
@@ -376,8 +378,15 @@
                     return { invalid: true, message: 'Mã nhà xe phải theo format OP-HL-03' };
                 }
 
-                if (field.name === 'PhoneNumber' && !hotlinePattern.test(normalizeHotline(value))) {
-                    return { invalid: true, message: 'Hotline không hợp lệ (vd: 19006067, 0901234567)' };
+                if (field.name === 'PhoneNumber') {
+                    const normalizedPhone = normalizeHotline(value);
+                    if (!normalizedPhone) {
+                        return { invalid: true, message: 'Vui lòng điền thông tin' };
+                    }
+
+                    if (!hotlinePattern.test(normalizedPhone)) {
+                        return { invalid: true, message: 'Hotline không hợp lệ (ví dụ: 0900123456)' };
+                    }
                 }
 
                 if (field.type === 'email' && !emailPattern.test(value)) {
@@ -473,7 +482,10 @@
 
                 form.addEventListener('submit', function (event) {
                     form.querySelectorAll('[name="PhoneNumber"]').forEach(function (field) {
-                        field.value = normalizeHotline(field.value);
+                        const trimmed = (field.value || '').trim();
+                        if (trimmed) {
+                            field.value = normalizeHotline(trimmed);
+                        }
                     });
 
                     if (!validateOperatorForm(form)) {

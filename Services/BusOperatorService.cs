@@ -295,7 +295,7 @@ public class BusOperatorService
 
         if (!System.Text.RegularExpressions.Regex.IsMatch(busOperator.PhoneNumber, @"^(0\d{8,10}|1900\d{4,6})$"))
         {
-            throw new InvalidOperationException("Hotline không hợp lệ (vd: 19006067, 02437685555, 0901234567).");
+            throw new InvalidOperationException("Hotline không hợp lệ (ví dụ: 0900123456).");
         }
 
         if (string.IsNullOrWhiteSpace(busOperator.Email))

@@ -28,7 +28,7 @@ public class BusOperator
     [BsonElement("phoneNumber")]
     [Required(ErrorMessage = "Hotline là bắt buộc.")]
     [StringLength(20, ErrorMessage = "Hotline không được vượt quá 20 ký tự.")]
-    [RegularExpression(@"^(0\d{8,10}|1900\d{4,6})$", ErrorMessage = "Hotline không hợp lệ (vd: 19006067, 02437685555, 0901234567).")]
+    [RegularExpression(@"^(0\d{8,10}|1900\d{4,6})$", ErrorMessage = "Hotline không hợp lệ (ví dụ: 0900123456).")]
     [Display(Name = "Hotline")]
     public string PhoneNumber { get; set; } = string.Empty;
 
