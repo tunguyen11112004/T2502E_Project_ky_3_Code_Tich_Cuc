@@ -2,6 +2,10 @@ using Bus_ticket.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ClosedXML.Excel;
+using System;
+using System.IO;
+using System.Threading.Tasks;
+using System.Linq;
 
 namespace Bus_ticket.Controllers;
 
@@ -15,6 +19,7 @@ public class DashboardController : Controller
         _dashboardService = dashboardService;
     }
 
+
     [HttpGet]
     [Authorize(Roles = "Admin,Employee")]
     public IActionResult Index()
@@ -22,6 +27,151 @@ public class DashboardController : Controller
         return View();
     }
 
+
+    [HttpGet]
+    [Authorize(Roles = "Admin,Employee")]
+    public async Task<IActionResult> TotalRevenuePartial(DateTime? fromDate, DateTime? toDate)
+    {
+        var (from, to) = NormalizeDateRange(fromDate, toDate, 30);
+        
+        var model = await _dashboardService.GetSystemTotalRevenueAsync(from, to);
+        
+        ViewBag.FromDateValue = from.ToString("yyyy-MM-dd");
+        ViewBag.ToDateValue = to.ToString("yyyy-MM-dd");
+        
+        return PartialView("_TotalRevenuePartial", model);
+    }
+
+
+    [HttpGet]
+    [Authorize(Roles = "Admin,Employee")]
+    public async Task<IActionResult> SoldOutStatsPartial(DateTime? fromDate, DateTime? toDate)
+    {
+        var (from, to) = NormalizeDateRange(fromDate, toDate, 30);
+
+        var model = await _dashboardService.GetSoldOutTripsAsync(from, to);
+        
+        ViewBag.FromDateValue = from.ToString("yyyy-MM-dd");
+        ViewBag.ToDateValue = to.ToString("yyyy-MM-dd");
+
+        return PartialView("_SoldOutStatsPartial", model);
+    }
+
+
+    // ========================================================
+    // XUẤT EXCEL: DANH SÁCH CHÁY GHẾ (MỚI THÊM)
+    // ========================================================
+    [HttpGet]
+    [Authorize(Roles = "Admin,Employee")]
+    public async Task<IActionResult> ExportSoldOutStats(DateTime? startDate, DateTime? endDate)
+    {
+        var (from, to) = NormalizeDateRange(startDate, endDate, 30);
+        var model = await _dashboardService.GetSoldOutTripsAsync(from, to);
+
+        using var workbook = new XLWorkbook();
+        var worksheet = workbook.Worksheets.Add("Chay Ghe");
+        worksheet.Style.Font.FontName = "Arial";
+
+        worksheet.Cell(1, 1).Value = "BÁO CÁO DANH SÁCH CHUYẾN XE CHÁY GHẾ";
+        worksheet.Range(1, 1, 1, 6).Merge();
+        worksheet.Cell(1, 1).Style.Font.Bold = true;
+        worksheet.Cell(1, 1).Style.Font.FontSize = 16;
+        worksheet.Cell(1, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+        worksheet.Cell(3, 1).Value = "Từ ngày:";
+        worksheet.Cell(3, 2).Value = from.ToString("dd/MM/yyyy");
+        worksheet.Cell(4, 1).Value = "Đến ngày:";
+        worksheet.Cell(4, 2).Value = to.ToString("dd/MM/yyyy");
+
+        var headerRow = 6;
+        worksheet.Cell(headerRow, 1).Value = "STT";
+        worksheet.Cell(headerRow, 2).Value = "MÃ CHUYẾN";
+        worksheet.Cell(headerRow, 3).Value = "TUYẾN ĐƯỜNG";
+        worksheet.Cell(headerRow, 4).Value = "BIỂN SỐ XE";
+        worksheet.Cell(headerRow, 5).Value = "THỜI GIAN ĐI";
+        worksheet.Cell(headerRow, 6).Value = "TỶ LỆ LẤP ĐẦY";
+        
+        StyleHeader(worksheet.Range(headerRow, 1, headerRow, 6));
+
+        var row = headerRow + 1;
+        var index = 1;
+        foreach (var item in model)
+        {
+            worksheet.Cell(row, 1).Value = index;
+            worksheet.Cell(row, 2).Value = item.TripCode;
+            worksheet.Cell(row, 3).Value = item.RouteName;
+            worksheet.Cell(row, 4).Value = item.LicensePlate;
+            worksheet.Cell(row, 5).Value = item.DepartureTime.ToString("dd/MM/yyyy HH:mm");
+            worksheet.Cell(row, 6).Value = $"{item.OccupancyRate}% ({item.BookedSeats}/{item.TotalSeats})";
+            row++;
+            index++;
+        }
+
+        worksheet.Columns().AdjustToContents();
+
+        using var stream = new MemoryStream();
+        workbook.SaveAs(stream);
+        var fileName = $"BaoCao_ChayGhe_{from:yyyyMMdd}_{to:yyyyMMdd}.xlsx";
+        return File(stream.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+    }
+
+
+    [HttpGet]
+    [Authorize(Roles = "Admin,Employee")]
+    public async Task<IActionResult> ExportTotalRevenue(DateTime? startDate, DateTime? endDate)
+    {
+        var (from, to) = NormalizeDateRange(startDate, endDate, 30);
+        var data = await _dashboardService.GetSystemTotalRevenueAsync(from, to);
+
+        using var workbook = new XLWorkbook();
+        var worksheet = workbook.Worksheets.Add("Tong Doanh Thu");
+        worksheet.Style.Font.FontName = "Arial";
+
+        worksheet.Cell(1, 1).Value = "BÁO CÁO TỔNG DOANH THU HỆ THỐNG";
+        worksheet.Range(1, 1, 1, 6).Merge();
+        worksheet.Cell(1, 1).Style.Font.Bold = true;
+        worksheet.Cell(1, 1).Style.Font.FontSize = 16;
+        worksheet.Cell(1, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+        worksheet.Cell(3, 1).Value = "Từ ngày:";
+        worksheet.Cell(3, 2).Value = from.ToString("dd/MM/yyyy");
+        worksheet.Cell(4, 1).Value = "Đến ngày:";
+        worksheet.Cell(4, 2).Value = to.ToString("dd/MM/yyyy");
+
+        var headerRow = 6;
+        worksheet.Cell(headerRow, 1).Value = "STT";
+        worksheet.Cell(headerRow, 2).Value = "MÃ VÉ";
+        worksheet.Cell(headerRow, 3).Value = "KHÁCH HÀNG";
+        worksheet.Cell(headerRow, 4).Value = "HẠNG XE";
+        worksheet.Cell(headerRow, 5).Value = "NGÀY THANH TOÁN";
+        worksheet.Cell(headerRow, 6).Value = "SỐ TIỀN";
+        
+        StyleHeader(worksheet.Range(headerRow, 1, headerRow, 6));
+
+
+        var row = headerRow + 1;
+        var index = 1;
+        foreach (var item in data.TableData)
+        {
+            worksheet.Cell(row, 1).Value = index;
+            worksheet.Cell(row, 2).Value = item.BookingCode;
+            worksheet.Cell(row, 3).Value = item.CustomerName;
+            worksheet.Cell(row, 4).Value = item.BusClass;
+            worksheet.Cell(row, 5).Value = item.PaymentDate.ToString("dd/MM/yyyy HH:mm");
+            worksheet.Cell(row, 6).Value = item.Amount;
+            row++;
+            index++;
+        }
+
+        worksheet.Column(6).Style.NumberFormat.Format = "#,##0";
+        worksheet.Columns().AdjustToContents();
+
+        using var stream = new MemoryStream();
+        workbook.SaveAs(stream);
+        var fileName = $"BaoCao_TongDoanhThu_{from:yyyyMMdd}_{to:yyyyMMdd}.xlsx";
+        return File(stream.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+    }
+    
     [HttpGet]
     [Authorize(Roles = "Admin,Employee")]
     public async Task<IActionResult> RouteRevenue(DateTime? fromDate, DateTime? toDate)
