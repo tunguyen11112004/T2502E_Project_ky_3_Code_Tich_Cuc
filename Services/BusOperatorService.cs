@@ -253,11 +253,21 @@ public class BusOperatorService
     {
         busOperator.OperatorCode = busOperator.OperatorCode.Trim().ToUpperInvariant();
         busOperator.OperatorName = busOperator.OperatorName.Trim();
-        busOperator.PhoneNumber = busOperator.PhoneNumber.Trim();
+        busOperator.PhoneNumber = NormalizeHotline(busOperator.PhoneNumber);
         busOperator.Email = busOperator.Email.Trim();
         busOperator.Address = busOperator.Address.Trim();
         busOperator.ContactPerson = busOperator.ContactPerson.Trim();
         busOperator.Status = NormalizeStatus(busOperator.Status);
+    }
+
+    private static string NormalizeHotline(string? phoneNumber)
+    {
+        if (string.IsNullOrWhiteSpace(phoneNumber))
+        {
+            return string.Empty;
+        }
+
+        return Regex.Replace(phoneNumber.Trim(), @"[\s\-\.\(\)]", string.Empty);
     }
 
     private static string NormalizeStatus(string? status)
@@ -280,7 +290,12 @@ public class BusOperatorService
 
         if (string.IsNullOrWhiteSpace(busOperator.PhoneNumber))
         {
-            throw new InvalidOperationException("Phone number is required.");
+            throw new InvalidOperationException("Hotline là bắt buộc.");
+        }
+
+        if (!System.Text.RegularExpressions.Regex.IsMatch(busOperator.PhoneNumber, @"^(0\d{8,10}|1900\d{4,6})$"))
+        {
+            throw new InvalidOperationException("Hotline không hợp lệ (vd: 19006067, 02437685555, 0901234567).");
         }
 
         if (string.IsNullOrWhiteSpace(busOperator.Email))

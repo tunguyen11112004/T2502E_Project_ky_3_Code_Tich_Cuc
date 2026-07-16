@@ -146,32 +146,50 @@
             </table>
         </div>
 
-        <div class="flex flex-col md:flex-row items-center justify-between gap-3 px-6 py-4 bg-[#141419] border-t border-gray-700/60 text-sm text-gray-400">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 px-6 py-4 bg-[#141419] border-t border-gray-700/60 text-sm text-gray-400">
             <div>Hiển thị @startItem - @endItem trong tổng số @totalItems đối tác nhà xe</div>
-            <div class="flex items-center gap-2">
-                @if (currentPage > 1)
-                {
-                    <a asp-action="Index"
-                       asp-route-page="@(currentPage - 1)"
-                       asp-route-searchTerm="@searchTerm"
-                       asp-route-status="@status"
-                       class="px-3 py-1.5 rounded-md border border-gray-700 hover:bg-gray-800 text-white">
-                        Trước
-                    </a>
-                }
+            <div class="flex items-center justify-end shrink-0">
+                <div class="grid grid-cols-3 gap-2 w-[13.5rem]">
+                    @if (currentPage > 1)
+                    {
+                        <a asp-action="Index"
+                           asp-route-page="@(currentPage - 1)"
+                           asp-route-searchTerm="@searchTerm"
+                           asp-route-status="@status"
+                           class="h-9 flex items-center justify-center rounded-md border border-gray-700 text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-colors">
+                            Trước
+                        </a>
+                    }
+                    else
+                    {
+                        <span class="h-9 flex items-center justify-center rounded-md border border-gray-700/40 text-sm text-gray-600 cursor-not-allowed select-none"
+                              aria-disabled="true">
+                            Trước
+                        </span>
+                    }
 
-                <span class="px-3 py-1.5 rounded-md bg-gray-800 text-white">@currentPage / @(totalPages == 0 ? 1 : totalPages)</span>
+                    <span class="h-9 flex items-center justify-center rounded-md bg-gray-800 text-sm text-white">
+                        @currentPage / @(totalPages == 0 ? 1 : totalPages)
+                    </span>
 
-                @if (currentPage < totalPages)
-                {
-                    <a asp-action="Index"
-                       asp-route-page="@(currentPage + 1)"
-                       asp-route-searchTerm="@searchTerm"
-                       asp-route-status="@status"
-                       class="px-3 py-1.5 rounded-md border border-gray-700 hover:bg-gray-800 text-white">
-                        Sau
-                    </a>
-                }
+                    @if (currentPage < totalPages)
+                    {
+                        <a asp-action="Index"
+                           asp-route-page="@(currentPage + 1)"
+                           asp-route-searchTerm="@searchTerm"
+                           asp-route-status="@status"
+                           class="h-9 flex items-center justify-center rounded-md border border-gray-700 text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-colors">
+                            Sau
+                        </a>
+                    }
+                    else
+                    {
+                        <span class="h-9 flex items-center justify-center rounded-md border border-gray-700/40 text-sm text-gray-600 cursor-not-allowed select-none"
+                              aria-disabled="true">
+                            Sau
+                        </span>
+                    }
+                </div>
             </div>
         </div>
     </div>
@@ -185,46 +203,48 @@
                 <h3 class="text-lg font-semibold text-white">Thêm đối tác nhà xe</h3>
                 <button type="button" class="px-3 py-1.5 text-sm font-semibold text-gray-300 bg-gray-800 border border-gray-700 rounded-lg hover:bg-gray-700" data-modal-hide="createOperatorModal">Đóng</button>
             </div>
-            <form asp-controller="BusOperators" asp-action="Create" method="post" class="p-5 space-y-4">
+            <form id="createOperatorForm" asp-controller="BusOperators" asp-action="Create" method="post" class="p-5 space-y-4" novalidate>
                 @Html.AntiForgeryToken()
-                <input type="hidden" name="searchTerm" value="@searchTerm" />
-                <input type="hidden" name="status" value="@status" />
-                <input type="hidden" name="page" value="@currentPage" />
+                <input type="hidden" name="returnSearchTerm" value="@searchTerm" />
+                <input type="hidden" name="returnStatus" value="@status" />
+                <input type="hidden" name="returnPage" value="@currentPage" />
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block mb-1 text-sm text-gray-400">Tên nhà xe</label>
-                        <input type="text" name="OperatorName" id="createOperatorName" required maxlength="150"
-                               class="block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400" />
+                    <div class="operator-field">
+                        <label class="operator-label block mb-1 text-sm text-gray-400">Tên nhà xe <span class="text-red-500">*</span></label>
+                        <input type="text" name="OperatorName" id="createOperatorName" required maxlength="150" data-required="true"
+                               class="operator-input block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400" />
                     </div>
-                    <div>
-                        <label class="block mb-1 text-sm text-gray-400">Mã nhà xe</label>
-                        <input type="text" name="OperatorCode" id="createOperatorCode" value="@suggestedOperatorCode" required maxlength="30"
-                               class="block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400" />
+                    <div class="operator-field">
+                        <label class="operator-label block mb-1 text-sm text-gray-400">Mã nhà xe <span class="text-red-500">*</span></label>
+                        <input type="text" name="OperatorCode" id="createOperatorCode" value="@suggestedOperatorCode" required maxlength="30" data-required="true"
+                               class="operator-input block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400" />
                     </div>
-                    <div>
-                        <label class="block mb-1 text-sm text-gray-400">Hotline</label>
-                        <input type="text" name="PhoneNumber" required maxlength="20"
-                               class="block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400" />
+                    <div class="operator-field">
+                        <label class="operator-label block mb-1 text-sm text-gray-400">Hotline <span class="text-red-500">*</span></label>
+                        <input type="text" name="PhoneNumber" required maxlength="20" data-required="true" inputmode="tel"
+                               placeholder="19006067 hoặc 0901234567"
+                               class="operator-input block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400" />
                     </div>
-                    <div>
-                        <label class="block mb-1 text-sm text-gray-400">Email</label>
-                        <input type="email" name="Email" required maxlength="120"
-                               class="block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400" />
+                    <div class="operator-field">
+                        <label class="operator-label block mb-1 text-sm text-gray-400">Email <span class="text-red-500">*</span></label>
+                        <input type="email" name="Email" required maxlength="120" data-required="true"
+                               class="operator-input block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400" />
                     </div>
-                    <div class="md:col-span-2">
-                        <label class="block mb-1 text-sm text-gray-400">Địa chỉ</label>
-                        <input type="text" name="Address" required maxlength="255"
-                               class="block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400" />
+                    <div class="operator-field md:col-span-2">
+                        <label class="operator-label block mb-1 text-sm text-gray-400">Địa chỉ <span class="text-red-500">*</span></label>
+                        <input type="text" name="Address" required maxlength="255" data-required="true"
+                               class="operator-input block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400" />
                     </div>
-                    <div>
-                        <label class="block mb-1 text-sm text-gray-400">Người liên hệ</label>
-                        <input type="text" name="ContactPerson" required maxlength="120"
-                               class="block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400" />
+                    <div class="operator-field">
+                        <label class="operator-label block mb-1 text-sm text-gray-400">Người liên hệ <span class="text-red-500">*</span></label>
+                        <input type="text" name="ContactPerson" required maxlength="120" data-required="true"
+                               class="operator-input block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400" />
                     </div>
-                    <div>
-                        <label class="block mb-1 text-sm text-gray-400">Trạng thái</label>
-                        <select name="Status" class="block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400">
+                    <div class="operator-field">
+                        <label class="operator-label block mb-1 text-sm text-gray-400">Trạng thái <span class="text-red-500">*</span></label>
+                        <select name="Status" required data-required="true"
+                                class="operator-input block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400">
                             <option value="Active" selected>Active</option>
                             <option value="Inactive">Inactive</option>
                         </select>
@@ -248,47 +268,49 @@
                 <h3 class="text-lg font-semibold text-white">Sửa đối tác nhà xe</h3>
                 <button type="button" class="px-3 py-1.5 text-sm font-semibold text-gray-300 bg-gray-800 border border-gray-700 rounded-lg hover:bg-gray-700" data-modal-hide="editOperatorModal">Đóng</button>
             </div>
-            <form id="editOperatorForm" asp-controller="BusOperators" asp-action="Edit" method="post" class="p-5 space-y-4">
+            <form id="editOperatorForm" asp-controller="BusOperators" asp-action="Edit" method="post" class="p-5 space-y-4" novalidate>
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="Id" id="editOperatorId" />
-                <input type="hidden" name="searchTerm" value="@searchTerm" />
-                <input type="hidden" name="status" value="@status" />
-                <input type="hidden" name="page" value="@currentPage" />
+                <input type="hidden" name="returnSearchTerm" value="@searchTerm" />
+                <input type="hidden" name="returnStatus" value="@status" />
+                <input type="hidden" name="returnPage" value="@currentPage" />
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block mb-1 text-sm text-gray-400">Tên nhà xe</label>
-                        <input type="text" name="OperatorName" id="editOperatorName" required maxlength="150"
-                               class="block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400" />
+                    <div class="operator-field">
+                        <label class="operator-label block mb-1 text-sm text-gray-400">Tên nhà xe <span class="text-red-500">*</span></label>
+                        <input type="text" name="OperatorName" id="editOperatorName" required maxlength="150" data-required="true"
+                               class="operator-input block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400" />
                     </div>
-                    <div>
-                        <label class="block mb-1 text-sm text-gray-400">Mã nhà xe</label>
-                        <input type="text" name="OperatorCode" id="editOperatorCode" required maxlength="30"
-                               class="block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400" />
+                    <div class="operator-field">
+                        <label class="operator-label block mb-1 text-sm text-gray-400">Mã nhà xe <span class="text-red-500">*</span></label>
+                        <input type="text" name="OperatorCode" id="editOperatorCode" required maxlength="30" data-required="true"
+                               class="operator-input block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400" />
                     </div>
-                    <div>
-                        <label class="block mb-1 text-sm text-gray-400">Hotline</label>
-                        <input type="text" name="PhoneNumber" id="editOperatorPhone" required maxlength="20"
-                               class="block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400" />
+                    <div class="operator-field">
+                        <label class="operator-label block mb-1 text-sm text-gray-400">Hotline <span class="text-red-500">*</span></label>
+                        <input type="text" name="PhoneNumber" id="editOperatorPhone" required maxlength="20" data-required="true" inputmode="tel"
+                               placeholder="19006067 hoặc 0901234567"
+                               class="operator-input block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400" />
                     </div>
-                    <div>
-                        <label class="block mb-1 text-sm text-gray-400">Email</label>
-                        <input type="email" name="Email" id="editOperatorEmail" required maxlength="120"
-                               class="block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400" />
+                    <div class="operator-field">
+                        <label class="operator-label block mb-1 text-sm text-gray-400">Email <span class="text-red-500">*</span></label>
+                        <input type="email" name="Email" id="editOperatorEmail" required maxlength="120" data-required="true"
+                               class="operator-input block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400" />
                     </div>
-                    <div class="md:col-span-2">
-                        <label class="block mb-1 text-sm text-gray-400">Địa chỉ</label>
-                        <input type="text" name="Address" id="editOperatorAddress" required maxlength="255"
-                               class="block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400" />
+                    <div class="operator-field md:col-span-2">
+                        <label class="operator-label block mb-1 text-sm text-gray-400">Địa chỉ <span class="text-red-500">*</span></label>
+                        <input type="text" name="Address" id="editOperatorAddress" required maxlength="255" data-required="true"
+                               class="operator-input block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400" />
                     </div>
-                    <div>
-                        <label class="block mb-1 text-sm text-gray-400">Người liên hệ</label>
-                        <input type="text" name="ContactPerson" id="editOperatorContact" required maxlength="120"
-                               class="block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400" />
+                    <div class="operator-field">
+                        <label class="operator-label block mb-1 text-sm text-gray-400">Người liên hệ <span class="text-red-500">*</span></label>
+                        <input type="text" name="ContactPerson" id="editOperatorContact" required maxlength="120" data-required="true"
+                               class="operator-input block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400" />
                     </div>
-                    <div>
-                        <label class="block mb-1 text-sm text-gray-400">Trạng thái</label>
-                        <select name="Status" id="editOperatorStatus" class="block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400">
+                    <div class="operator-field">
+                        <label class="operator-label block mb-1 text-sm text-gray-400">Trạng thái <span class="text-red-500">*</span></label>
+                        <select name="Status" id="editOperatorStatus" required data-required="true"
+                                class="operator-input block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400">
                             <option value="Active">Active</option>
                             <option value="Inactive">Inactive</option>
                         </select>
@@ -313,9 +335,9 @@
             <form id="deleteOperatorForm" asp-controller="BusOperators" asp-action="Delete" method="post" class="flex justify-end gap-3">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="id" id="deleteOperatorId" />
-                <input type="hidden" name="searchTerm" value="@searchTerm" />
-                <input type="hidden" name="status" value="@status" />
-                <input type="hidden" name="page" value="@currentPage" />
+                <input type="hidden" name="returnSearchTerm" value="@searchTerm" />
+                <input type="hidden" name="returnStatus" value="@status" />
+                <input type="hidden" name="returnPage" value="@currentPage" />
                 <button type="button" class="px-4 py-2.5 text-sm font-semibold text-gray-300 bg-gray-800 border border-gray-700 rounded-lg hover:bg-gray-700" data-modal-hide="deleteOperatorModal">Hủy</button>
                 <button type="submit" class="px-4 py-2.5 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-500 rounded-lg">Xác nhận</button>
             </form>
@@ -326,6 +348,143 @@
 @section Scripts {
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            const operatorCodePattern = /^OP-[A-Z]{2}-\d{2}$/;
+            const emailPattern = /^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/;
+            const hotlinePattern = /^(0\d{8,10}|1900\d{4,6})$/;
+
+            function normalizeHotline(value) {
+                return (value || '').trim().replace(/[\s\-\.\(\)]/g, '');
+            }
+
+            function ensureErrorElement(wrapper) {
+                let errorEl = wrapper.querySelector('.operator-error');
+                if (!errorEl) {
+                    errorEl = document.createElement('p');
+                    errorEl.className = 'operator-error hidden text-xs text-red-400 mt-1';
+                    wrapper.appendChild(errorEl);
+                }
+                return errorEl;
+            }
+
+            function getFieldValidation(field) {
+                const value = (field.value || '').trim();
+                if (!value) {
+                    return { invalid: true, message: 'Vui lòng điền thông tin' };
+                }
+
+                if (field.name === 'OperatorCode' && !operatorCodePattern.test(value.toUpperCase())) {
+                    return { invalid: true, message: 'Mã nhà xe phải theo format OP-HL-03' };
+                }
+
+                if (field.name === 'PhoneNumber' && !hotlinePattern.test(normalizeHotline(value))) {
+                    return { invalid: true, message: 'Hotline không hợp lệ (vd: 19006067, 0901234567)' };
+                }
+
+                if (field.type === 'email' && !emailPattern.test(value)) {
+                    return { invalid: true, message: 'Email không đúng định dạng' };
+                }
+
+                return { invalid: false, message: '' };
+            }
+
+            function clearFieldError(field) {
+                const wrapper = field.closest('.operator-field');
+                if (!wrapper) return;
+
+                const label = wrapper.querySelector('.operator-label');
+                const errorEl = ensureErrorElement(wrapper);
+
+                field.classList.remove('border-red-500', 'ring-2', 'ring-red-500/40', 'focus:ring-red-500', 'focus:border-red-500');
+                field.classList.add('border-gray-700', 'focus:ring-amber-400', 'focus:border-amber-400');
+                if (label) {
+                    label.classList.remove('text-red-400');
+                    label.classList.add('text-gray-400');
+                }
+                errorEl.textContent = '';
+                errorEl.classList.add('hidden');
+            }
+
+            function setFieldError(field, message) {
+                const wrapper = field.closest('.operator-field');
+                if (!wrapper) return;
+
+                const label = wrapper.querySelector('.operator-label');
+                const errorEl = ensureErrorElement(wrapper);
+
+                field.classList.remove('border-gray-700', 'focus:ring-amber-400', 'focus:border-amber-400');
+                field.classList.add('border-red-500', 'ring-2', 'ring-red-500/40', 'focus:ring-red-500', 'focus:border-red-500');
+                if (label) {
+                    label.classList.remove('text-gray-400');
+                    label.classList.add('text-red-400');
+                }
+                errorEl.textContent = message;
+                errorEl.classList.remove('hidden');
+            }
+
+            function validateOperatorForm(form) {
+                let isValid = true;
+                let firstInvalid = null;
+
+                form.querySelectorAll('[data-required]').forEach(function (field) {
+                    const validation = getFieldValidation(field);
+                    if (validation.invalid) {
+                        setFieldError(field, validation.message);
+                        isValid = false;
+                        if (!firstInvalid) {
+                            firstInvalid = field;
+                        }
+                    } else {
+                        clearFieldError(field);
+                    }
+                });
+
+                if (!isValid && firstInvalid) {
+                    firstInvalid.focus();
+                }
+
+                return isValid;
+            }
+
+            function bindOperatorFormValidation(form) {
+                if (!form) return;
+
+                form.querySelectorAll('.operator-field').forEach(function (wrapper) {
+                    ensureErrorElement(wrapper);
+                });
+
+                form.querySelectorAll('[data-required]').forEach(function (field) {
+                    field.addEventListener('input', function () {
+                        const validation = getFieldValidation(field);
+                        if (validation.invalid) {
+                            setFieldError(field, validation.message);
+                        } else {
+                            clearFieldError(field);
+                        }
+                    });
+                    field.addEventListener('change', function () {
+                        const validation = getFieldValidation(field);
+                        if (validation.invalid) {
+                            setFieldError(field, validation.message);
+                        } else {
+                            clearFieldError(field);
+                        }
+                    });
+                });
+
+                form.addEventListener('submit', function (event) {
+                    form.querySelectorAll('[name="PhoneNumber"]').forEach(function (field) {
+                        field.value = normalizeHotline(field.value);
+                    });
+
+                    if (!validateOperatorForm(form)) {
+                        event.preventDefault();
+                    }
+                });
+            }
+
+            bindOperatorFormValidation(document.getElementById('createOperatorForm'));
+            bindOperatorFormValidation(document.getElementById('editOperatorForm'));
+
             const createNameInput = document.getElementById('createOperatorName');
             const createCodeInput = document.getElementById('createOperatorCode');
 

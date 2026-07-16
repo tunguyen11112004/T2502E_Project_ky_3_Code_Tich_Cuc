@@ -46,11 +46,13 @@ public class BusOperatorsController : Controller
     public async Task<IActionResult> Create(BusOperator model)
     {
         RemoveSystemModelStateKeys();
+        NormalizeModelForValidation(model);
+        RevalidateModel(model);
 
         if (!ModelState.IsValid)
         {
             TempData["OpenCreateModal"] = true;
-            TempData["ErrorMessage"] = "Vui lòng kiểm tra lại thông tin nhà xe.";
+            TempData["ErrorMessage"] = GetFirstValidationError() ?? "Vui lòng kiểm tra lại thông tin nhà xe.";
             return RedirectToIndexWithQuery();
         }
 
@@ -73,11 +75,13 @@ public class BusOperatorsController : Controller
     public async Task<IActionResult> Edit(string id, BusOperator model)
     {
         RemoveSystemModelStateKeys();
+        NormalizeModelForValidation(model);
+        RevalidateModel(model);
 
         if (!ModelState.IsValid)
         {
             TempData["OpenEditModalId"] = id;
-            TempData["ErrorMessage"] = "Vui lòng kiểm tra lại thông tin nhà xe.";
+            TempData["ErrorMessage"] = GetFirstValidationError() ?? "Vui lòng kiểm tra lại thông tin nhà xe.";
             return RedirectToIndexWithQuery();
         }
 
@@ -124,10 +128,62 @@ public class BusOperatorsController : Controller
     {
         return RedirectToAction(nameof(Index), new
         {
-            searchTerm = Request.Query["searchTerm"].ToString(),
-            status = Request.Query["status"].ToString(),
-            page = Request.Query["page"].ToString()
+            searchTerm = GetReturnQueryValue("returnSearchTerm", "searchTerm"),
+            status = GetReturnQueryValue("returnStatus", "status"),
+            page = GetReturnQueryValue("returnPage", "page")
         });
+    }
+
+    private string GetReturnQueryValue(string formKey, string queryKey)
+    {
+        var formValue = Request.Form[formKey].ToString();
+        if (!string.IsNullOrEmpty(formValue))
+        {
+            return formValue;
+        }
+
+        return Request.Query[queryKey].ToString();
+    }
+
+    private static void NormalizeModelForValidation(BusOperator model)
+    {
+        model.OperatorCode = model.OperatorCode.Trim().ToUpperInvariant();
+        model.OperatorName = model.OperatorName.Trim();
+        model.PhoneNumber = NormalizeHotline(model.PhoneNumber);
+        model.Email = model.Email.Trim();
+        model.Address = model.Address.Trim();
+        model.ContactPerson = model.ContactPerson.Trim();
+        model.Status = string.IsNullOrWhiteSpace(model.Status) ? "Active" : model.Status.Trim();
+    }
+
+    private string? GetFirstValidationError()
+    {
+        return ModelState.Values
+            .SelectMany(entry => entry.Errors)
+            .Select(error => error.ErrorMessage)
+            .FirstOrDefault(message => !string.IsNullOrWhiteSpace(message));
+    }
+
+    private static string NormalizeHotline(string? phoneNumber)
+    {
+        if (string.IsNullOrWhiteSpace(phoneNumber))
+        {
+            return string.Empty;
+        }
+
+        return System.Text.RegularExpressions.Regex.Replace(phoneNumber.Trim(), @"[\s\-\.\(\)]", string.Empty);
+    }
+
+    private void RevalidateModel(BusOperator model)
+    {
+        ModelState.Remove(nameof(BusOperator.OperatorCode));
+        ModelState.Remove(nameof(BusOperator.OperatorName));
+        ModelState.Remove(nameof(BusOperator.PhoneNumber));
+        ModelState.Remove(nameof(BusOperator.Email));
+        ModelState.Remove(nameof(BusOperator.Address));
+        ModelState.Remove(nameof(BusOperator.ContactPerson));
+        ModelState.Remove(nameof(BusOperator.Status));
+        TryValidateModel(model);
     }
 
     private string GetCurrentActor()
