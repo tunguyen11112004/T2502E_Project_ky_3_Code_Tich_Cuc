@@ -30,6 +30,9 @@ builder.Services.AddSingleton<CrawlerProducer>();
 builder.Services.AddScoped<NewsScraperService>();
 builder.Services.AddHostedService<ArticleProcessorConsumer>();
 builder.Services.AddScoped<DashboardService>();
+builder.Services.AddScoped<TicketStatisticsService>();
+builder.Services.AddScoped<VehicleRevenueStatisticsService>();
+builder.Services.AddScoped<LowOccupancyTripsService>();
 
 // Cookie Authentication
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

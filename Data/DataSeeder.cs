@@ -1131,6 +1131,10 @@ namespace Bus_ticket.Data
                 "Dashboard/SeatAnalyticsPartial", "GET");
             AddPermission("64f1a2b3c4d5e6f7a8b9cb09", "Export.SeatAnalytics", "Xuất Excel hiệu suất lấp đầy ghế",
                 "Dashboard/ExportSeatAnalytics", "GET");
+            AddPermission("64f1a2b3c4d5e6f7a8b9cb10", "View.TicketStatusStatistics", "Xem báo cáo vé thành công và vé hủy",
+                "Dashboard/TicketStatusStatisticsPartial", "GET");
+            AddPermission("64f1a2b3c4d5e6f7a8b9cb11", "Export.TicketStatusStatistics", "Xuất Excel báo cáo vé thành công và vé hủy",
+                "Dashboard/ExportTicketStatusStatistics", "GET");
 
             await _context.Permissions.InsertManyAsync(permissions);
             Console.WriteLine($"--> Đã seeding thành công trọn bộ {permissions.Count} quyền hệ thống!");
@@ -1148,7 +1152,9 @@ namespace Bus_ticket.Data
                 new Permission { Id = "64f1a2b3c4d5e6f7a8b9cb06", Name = "View.BranchCancellation", Description = "Xem báo cáo tỷ lệ hủy chuyến theo nhà xe", Link = "Dashboard/BranchCancellationPartial", Method = "GET" },
                 new Permission { Id = "64f1a2b3c4d5e6f7a8b9cb07", Name = "Export.BranchCancellation", Description = "Xuất Excel tỷ lệ hủy chuyến", Link = "Dashboard/ExportBranchCancellation", Method = "GET" },
                 new Permission { Id = "64f1a2b3c4d5e6f7a8b9cb08", Name = "View.SeatAnalytics", Description = "Xem báo cáo hiệu suất lấp đầy ghế", Link = "Dashboard/SeatAnalyticsPartial", Method = "GET" },
-                new Permission { Id = "64f1a2b3c4d5e6f7a8b9cb09", Name = "Export.SeatAnalytics", Description = "Xuất Excel hiệu suất lấp đầy ghế", Link = "Dashboard/ExportSeatAnalytics", Method = "GET" }
+                new Permission { Id = "64f1a2b3c4d5e6f7a8b9cb09", Name = "Export.SeatAnalytics", Description = "Xuất Excel hiệu suất lấp đầy ghế", Link = "Dashboard/ExportSeatAnalytics", Method = "GET" },
+                new Permission { Id = "64f1a2b3c4d5e6f7a8b9cb10", Name = "View.TicketStatusStatistics", Description = "Xem báo cáo vé thành công và vé hủy", Link = "Dashboard/TicketStatusStatisticsPartial", Method = "GET" },
+                new Permission { Id = "64f1a2b3c4d5e6f7a8b9cb11", Name = "Export.TicketStatusStatistics", Description = "Xuất Excel báo cáo vé thành công và vé hủy", Link = "Dashboard/ExportTicketStatusStatistics", Method = "GET" }
             };
 
             var existingIds = (await _context.Permissions.Find(new BsonDocument()).ToListAsync())
@@ -1188,7 +1194,9 @@ namespace Bus_ticket.Data
                     "64f1a2b3c4d5e6f7a8b9cb06",
                     "64f1a2b3c4d5e6f7a8b9cb07",
                     "64f1a2b3c4d5e6f7a8b9cb08",
-                    "64f1a2b3c4d5e6f7a8b9cb09"
+                    "64f1a2b3c4d5e6f7a8b9cb09",
+                    "64f1a2b3c4d5e6f7a8b9cb10",
+                    "64f1a2b3c4d5e6f7a8b9cb11"
                 })
             );
         }
@@ -1227,7 +1235,9 @@ namespace Bus_ticket.Data
                         "64f1a2b3c4d5e6f7a8b9cb06",
                         "64f1a2b3c4d5e6f7a8b9cb07",
                         "64f1a2b3c4d5e6f7a8b9cb08",
-                        "64f1a2b3c4d5e6f7a8b9cb09"
+                        "64f1a2b3c4d5e6f7a8b9cb09",
+                        "64f1a2b3c4d5e6f7a8b9cb10",
+                        "64f1a2b3c4d5e6f7a8b9cb11"
                     },
                     CreatedBy = "SystemSeeder",
                     CreatedAt = DateTime.UtcNow,

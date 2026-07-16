@@ -19,15 +19,17 @@
 
 <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
     <div class="overflow-x-auto">
-        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-            <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
-                <tr>
-                    <th scope="col" class="px-6 py-4">MÃ CHUYẾN</th>
-                    <th scope="col" class="px-6 py-4">TUYẾN ĐƯỜNG</th>
-                    <th scope="col" class="px-6 py-4">BIỂN SỐ XE</th>
-                    <th scope="col" class="px-6 py-4">THỜI GIAN ĐI</th>
-                    <th scope="col" class="px-6 py-4">TỶ LỆ LẤP ĐẦY</th>
-                </tr>
+        <table class="w-full min-w-[1200px] text-sm text-left text-gray-300">
+            <thead class="text-xs uppercase bg-gray-700 text-gray-300">
+            <tr>
+                <th class="px-6 py-4">Mã chuyến</th>
+                <th class="px-6 py-4">Tuyến đường</th>
+                <th class="px-6 py-4">Loại xe</th>
+                <th class="px-6 py-4">Nhà xe</th>
+                <th class="px-6 py-4">Biển số xe</th>
+                <th class="px-6 py-4">Thời gian đi</th>
+                <th class="px-6 py-4">Tỷ lệ lấp đầy</th>
+            </tr>
             </thead>
             <tbody>
                 @if (Model != null && Model.Any())
@@ -37,6 +39,13 @@
                         <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                             <td class="px-6 py-4 font-semibold text-gray-900 dark:text-white">@item.TripCode</td>
                             <td class="px-6 py-4">@item.RouteName</td>
+                            <td class="px-6 py-4">
+                                @item.BusType
+                            </td>
+
+                            <td class="px-6 py-4">
+                                @item.OperatorName
+                            </td>
                             <td class="px-6 py-4">
                                 <span class="bg-gray-100 text-gray-800 text-xs font-semibold px-2.5 py-1 rounded dark:bg-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600">
                                     @item.LicensePlate

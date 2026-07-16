@@ -1,0 +1,219 @@
+@model Bus_ticket.ViewModels.TicketStatusStatisticsViewModel
+@using System.Text.Json
+
+@{
+    var fromDateValue = ViewBag.FromDateValue != null
+        ? ((DateTime)ViewBag.FromDateValue).ToString("yyyy-MM-dd")
+        : Model.FromDate.ToString("yyyy-MM-dd");
+
+    var toDateValue = ViewBag.ToDateValue != null
+        ? ((DateTime)ViewBag.ToDateValue).ToString("yyyy-MM-dd")
+        : Model.ToDate.ToString("yyyy-MM-dd");
+
+    var items = Model.Items
+        .OrderByDescending(x => x.TicketCount)
+        .ThenByDescending(x => x.BookingCount)
+        .ThenBy(x => x.StatusLabel)
+        .ToList();
+
+    var chartLabels = JsonSerializer.Serialize(items.Select(x => x.StatusLabel));
+    var chartData = JsonSerializer.Serialize(items.Select(x => x.TicketCount));
+    var chartRows = JsonSerializer.Serialize(items.Select((x, i) => $"ticket-status-row-{i}"));
+}
+
+<div class="p-4 sm:p-6 lg:p-8 space-y-6 max-w-full overflow-x-hidden animate-fade-in">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold tracking-tight text-white">
+                Thống kê vé thành công và vé hủy
+            </h1>
+            <p class="text-sm text-gray-400 mt-1">
+                So sánh số lượng vé đặt thành công và vé đã hủy. Click lát biểu đồ để highlight dòng tương ứng.
+            </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3 self-end sm:self-center">
+            <input id="date_range_TicketStatusStatistics"
+                   type="text"
+                   readonly
+                   class="min-w-[260px] rounded-lg border border-gray-700 bg-gray-900 px-3 py-2.5 text-sm text-white cursor-pointer focus:border-amber-400 focus:ring-2 focus:ring-amber-400"
+                   placeholder="Chọn khoảng ngày" />
+
+            <a asp-controller="Dashboard"
+               asp-action="ExportTicketStatusStatistics"
+               asp-route-fromDate="@fromDateValue"
+               asp-route-toDate="@toDateValue"
+               class="inline-flex items-center justify-center px-4 py-2.5 text-sm font-semibold text-gray-900 bg-emerald-400 hover:bg-emerald-500 rounded-lg transition-colors duration-200 shadow-sm whitespace-nowrap">
+                Xuất Excel
+            </a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div class="bg-[#1e1e24] border border-gray-700/50 rounded-xl p-5 shadow-xl">
+            <p class="text-sm text-gray-400">Vé thành công</p>
+            <p class="text-2xl font-bold text-emerald-400 mt-2">
+                @Model.SuccessfulTickets.ToString("N0")
+            </p>
+            <p class="text-xs text-gray-500 mt-2">
+                @Model.SuccessfulBookings.ToString("N0") booking thành công
+            </p>
+        </div>
+
+        <div class="bg-[#1e1e24] border border-gray-700/50 rounded-xl p-5 shadow-xl">
+            <p class="text-sm text-gray-400">Vé hủy</p>
+            <p class="text-2xl font-bold text-red-400 mt-2">
+                @Model.CancelledTickets.ToString("N0")
+            </p>
+            <p class="text-xs text-gray-500 mt-2">
+                @Model.CancelledBookings.ToString("N0") booking hủy
+            </p>
+        </div>
+
+        <div class="bg-[#1e1e24] border border-gray-700/50 rounded-xl p-5 shadow-xl">
+            <p class="text-sm text-gray-400">Tổng vé</p>
+            <p class="text-2xl font-bold text-white mt-2">
+                @Model.TotalTickets.ToString("N0")
+            </p>
+            <p class="text-xs text-gray-500 mt-2">
+                Vé thành công + vé hủy
+            </p>
+        </div>
+
+        <div class="bg-[#1e1e24] border border-gray-700/50 rounded-xl p-5 shadow-xl">
+            <p class="text-sm text-gray-400">Tỷ lệ hủy</p>
+            <p class="text-2xl font-bold text-amber-400 mt-2">
+                @Model.CancelledPercentage.ToString("N2")%
+            </p>
+            <p class="text-xs text-gray-500 mt-2">
+                Dựa trên số lượng vé
+            </p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 2xl:grid-cols-[430px_minmax(0,1fr)] gap-6">
+        <div class="bg-[#1e1e24] border border-gray-700/50 rounded-xl p-5 shadow-xl">
+            <h2 class="text-lg font-semibold text-white mb-2">
+                Biểu đồ tỷ lệ vé
+            </h2>
+            <p class="text-sm text-gray-400 mb-4">
+                Click vào lát biểu đồ để highlight dòng tương ứng trong bảng.
+            </p>
+
+            @if (!items.Any() || Model.TotalTickets <= 0)
+            {
+                <div class="py-16 text-center text-gray-500">
+                    Không có dữ liệu vé trong khoảng thời gian này.
+                </div>
+            }
+            else
+            {
+                <div class="h-[360px] max-w-[390px] mx-auto">
+                    <canvas id="ticketStatusPieChart"></canvas>
+                </div>
+            }
+        </div>
+
+        <div class="w-full max-w-full overflow-hidden bg-[#1e1e24] border border-gray-700/50 rounded-xl shadow-xl">
+            <div class="p-5 border-b border-gray-700/60">
+                <h2 class="text-lg font-semibold text-white">
+                    Bảng thống kê trạng thái vé
+                </h2>
+                <p class="text-sm text-gray-400 mt-1">
+                    Dữ liệu tính theo bookingStatus, cancellation info và paymentStatus refunded.
+                </p>
+            </div>
+
+            <div class="w-full overflow-x-auto">
+                <table class="w-full min-w-[820px] text-sm text-left text-gray-300">
+                    <thead class="text-xs uppercase bg-[#141419] text-gray-400 border-b border-gray-700/60">
+                        <tr>
+                            <th class="w-[80px] px-4 py-4 whitespace-nowrap">STT</th>
+                            <th class="w-[260px] px-4 py-4 whitespace-nowrap">Trạng thái</th>
+                            <th class="w-[180px] px-4 py-4 text-right whitespace-nowrap">Số booking</th>
+                            <th class="w-[180px] px-4 py-4 text-right whitespace-nowrap">Số vé</th>
+                            <th class="w-[160px] px-4 py-4 text-right whitespace-nowrap">Tỷ lệ</th>
+                        </tr>
+                    </thead>
+
+                    <tbody class="divide-y divide-gray-700/50">
+                        @if (!items.Any())
+                        {
+                            <tr>
+                                <td colspan="5" class="px-4 py-8 text-center text-gray-500">
+                                    Không có dữ liệu hiển thị.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            for (var i = 0; i < items.Count; i++)
+                            {
+                                var item = items[i];
+
+                                var rowColorClass = item.StatusKey == "successful"
+                                    ? "text-emerald-400"
+                                    : "text-red-400";
+
+                                <tr id="ticket-status-row-@i"
+                                    data-linked-row="true"
+                                    class="hover:bg-gray-800/30 transition-colors duration-150 scroll-mt-24">
+                                    <td class="px-4 py-4 text-gray-400 whitespace-nowrap">
+                                        @(i + 1)
+                                    </td>
+
+                                    <td class="px-4 py-4 font-semibold text-white whitespace-nowrap">
+                                        @item.StatusLabel
+                                    </td>
+
+                                    <td class="px-4 py-4 text-right whitespace-nowrap">
+                                        @item.BookingCount.ToString("N0")
+                                    </td>
+
+                                    <td class="px-4 py-4 text-right font-bold whitespace-nowrap @rowColorClass">
+                                        @item.TicketCount.ToString("N0")
+                                    </td>
+
+                                    <td class="px-4 py-4 text-right font-semibold whitespace-nowrap">
+                                        @item.Percentage.ToString("N2")%
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+
+                    <tfoot class="bg-[#141419] border-t border-gray-700/60">
+                        <tr>
+                            <td colspan="2" class="px-4 py-4 font-bold text-white">
+                                Tổng cộng
+                            </td>
+                            <td class="px-4 py-4 text-right font-bold text-white">
+                                @Model.TotalBookings.ToString("N0")
+                            </td>
+                            <td class="px-4 py-4 text-right font-bold text-amber-400">
+                                @Model.TotalTickets.ToString("N0")
+                            </td>
+                            <td class="px-4 py-4 text-right font-bold text-white">
+                                @(Model.TotalTickets > 0 ? "100.00%" : "0.00%")
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    initializeDashboardDateRangePicker('TicketStatusStatistics', '@fromDateValue', '@toDateValue');
+
+    if (document.getElementById('ticketStatusPieChart')) {
+        renderDashboardPieChart(
+            'ticketStatusPieChart',
+            @Html.Raw(chartLabels),
+            @Html.Raw(chartData),
+            @Html.Raw(chartRows),
+            'Số vé'
+        );
+    }
+</script>
