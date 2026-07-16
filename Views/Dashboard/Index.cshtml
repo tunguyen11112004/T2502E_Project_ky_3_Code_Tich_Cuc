@@ -33,17 +33,22 @@
         "LapDay",
         "/Dashboard/SeatAnalyticsPartial"
     );
-    var canViewRouteRevenue = isAdmin
-                              || SidebarPermissionService.HasPermission(
-                                  permissionNames,
-                                  "Dashboard",
-                                  "Report",
-                                  "Revenue",
-                                  "Route",
-                                  "RouteRevenue",
-                                  "RouteRevenuePartial",
-                                  "/Dashboard/RouteRevenue",
-                                  "/Dashboard/RouteRevenuePartial");
+    
+    var canViewRouteRevenue = isAdmin || SidebarPermissionService.HasPermission(
+        permissionNames,
+        "Dashboard",
+        "Report",
+        "Revenue",
+        "Route",
+        "RouteRevenue",
+        "RouteRevenuePartial",
+        "/Dashboard/RouteRevenue",
+        "/Dashboard/RouteRevenuePartial"
+    );
+
+    // Quyền truy cập cho 2 báo cáo mới (Mặc định cho Admin)
+    var canViewTotalRevenue = isAdmin; 
+    var canViewSoldOutStats = isAdmin;
 }
 
 <div class="p-6 space-y-6">
@@ -54,7 +59,22 @@
         </p>
     </div>
 
+    <!-- GRID CÁC NÚT ĐIỀU HƯỚNG BÁO CÁO -->
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        
+        <!-- BUTTON MỚI 1: TỔNG DOANH THU TOÀN HỆ THỐNG (Lên vị trí số 1) -->
+        @if (canViewTotalRevenue)
+        {
+            <button type="button"
+                    onclick="loadStatistic('TotalRevenue')"
+                    class="dashboard-stat-button p-4 bg-teal-500 text-white rounded-lg text-left transition hover:bg-teal-600 focus:outline-none focus:ring-4 focus:ring-teal-300"
+                    data-stat-type="TotalRevenue">
+                <h3 class="font-semibold text-teal-100">Doanh thu toàn hệ thống</h3>
+                <p class="text-2xl font-bold mt-1">Tổng Doanh Thu</p>
+                <span class="text-xs text-teal-200 block mt-2">Xem biểu đồ phân bổ hạng xe →</span>
+            </button>
+        }
+
         @if (canViewOperatorRevenue)
         {
             <button type="button"
@@ -90,6 +110,7 @@
                 <span class="text-xs text-purple-200 block mt-2">Xem phân tích lấp đầy ghế →</span>
             </button>
         }
+        
         @if (canViewRouteRevenue)
         {
             <button type="button"
@@ -107,8 +128,22 @@
                 </p>
             </button>
         }
+
+        <!-- BUTTON MỚI 2: DANH SÁCH CHÁY GHẾ -->
+        @if (canViewSoldOutStats)
+        {
+            <button type="button"
+                    onclick="loadStatistic('SoldOutStats')"
+                    class="dashboard-stat-button p-4 bg-rose-500 text-white rounded-lg text-left transition hover:bg-rose-600 focus:outline-none focus:ring-4 focus:ring-rose-300"
+                    data-stat-type="SoldOutStats">
+                <h3 class="font-semibold text-rose-100">Cảnh báo lấp đầy</h3>
+                <p class="text-2xl font-bold mt-1">Chuyến Cháy Ghế</p>
+                <span class="text-xs text-rose-200 block mt-2">Xem danh sách xe hết chỗ →</span>
+            </button>
+        }
     </div>
 
+    <!-- KHU VỰC HIỂN THỊ DỮ LIỆU ĐỘNG (PARTIAL VIEW) -->
     <div id="statisticContainer" class="bg-gray-50 dark:bg-gray-900/40 rounded-xl min-h-[250px] p-4 relative border border-dashed border-gray-300 dark:border-gray-700">
         <div id="placeholderText" class="text-center py-16 text-gray-400">
             <p>Vui lòng click chọn 1 thẻ thống kê phía trên để hiển thị biểu đồ tròn và bảng dữ liệu chi tiết.</p>
@@ -122,6 +157,7 @@
     </div>
 </div>
 
+<!-- CÁC SCRIPT XỬ LÝ (GIỮ NGUYÊN BẢN CỦA TEAM) -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>

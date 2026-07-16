@@ -1,0 +1,102 @@
+﻿@model Bus_ticket.ViewModels.DashboardRevenueViewModel
+
+<div class="mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div>
+        <h2 class="text-lg font-bold text-gray-900 dark:text-white">Báo cáo Tổng Doanh Thu</h2>
+        <p class="text-sm text-gray-500 dark:text-gray-400">Phân bổ doanh thu theo hạng xe trên toàn hệ thống</p>
+    </div>
+    <div class="flex items-center gap-3">
+        <!-- Input gọi hàm DateRangePicker của team -->
+        <input type="text" id="date_range_TotalRevenue" readonly 
+               class="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-[260px] p-2.5 cursor-pointer shadow-sm" 
+               placeholder="Chọn khoảng ngày...">
+        
+        <!-- Nút Xuất Excel -->
+        <button onclick="exportTotalRevenueExcel()" class="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-lg text-sm px-4 py-2.5 shadow-sm transition-colors">
+            Xuất Excel
+        </button>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Chart Widget -->
+    <div class="lg:col-span-1 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
+        <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4">Tỷ trọng theo Hạng Xe</h3>
+        <div class="relative h-[250px] w-full flex justify-center">
+            <canvas id="totalRevenueChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Table Widget -->
+    <div class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+        <div class="overflow-x-auto h-[320px]">
+            <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400 sticky top-0 z-10 shadow-sm">
+                    <tr>
+                        <th scope="col" class="px-6 py-4">MÃ VÉ</th>
+                        <th scope="col" class="px-6 py-4">KHÁCH HÀNG</th>
+                        <th scope="col" class="px-6 py-4">HẠNG XE</th>
+                        <th scope="col" class="px-6 py-4">NGÀY THANH TOÁN</th>
+                        <th scope="col" class="px-6 py-4 text-right">SỐ TIỀN</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.TableData.Any())
+                    {
+                        @for (var i = 0; i < Model.TableData.Count; i++)
+                        {
+                            var item = Model.TableData[i];
+                            <tr id="row-rev-@i" data-linked-row="true" class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                <td class="px-6 py-3 font-semibold text-gray-900 dark:text-white">@item.BookingCode</td>
+                                <td class="px-6 py-3">@item.CustomerName</td>
+                                <td class="px-6 py-3">
+                                    <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-1 rounded dark:bg-blue-900 dark:text-blue-300">
+                                        @item.BusClass
+                                    </span>
+                                </td>
+                                <td class="px-6 py-3">@item.PaymentDate.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td class="px-6 py-3 font-bold text-teal-600 dark:text-teal-400 text-right">@item.Amount.ToString("N0") đ</td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="5" class="px-6 py-10 text-center text-gray-500">Không có dữ liệu giao dịch trong khoảng thời gian này.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 1. Gắn sự kiện chọn ngày theo logic có sẵn ở Index.cshtml
+    initializeDashboardDateRangePicker('TotalRevenue', '@ViewBag.FromDateValue', '@ViewBag.ToDateValue');
+
+    // 2. Lấy dữ liệu cho biểu đồ
+    var labels = @Html.Raw(Json.Serialize(Model?.ChartData.Select(c => c.Category) ?? new List<string>()));
+    var data = @Html.Raw(Json.Serialize(Model?.ChartData.Select(c => c.TotalRevenue) ?? new List<decimal>()));
+    
+    // 3. Mapping dòng trong bảng để Highlight khi click vào biểu đồ
+    var rowIds = [];
+    @if (Model != null)
+    {
+        foreach(var cat in Model.ChartData.Select(c => c.Category))
+        {
+            var firstMatchIndex = Model.TableData.FindIndex(x => x.BusClass == cat);
+            <text>rowIds.push('row-rev-' + @firstMatchIndex);</text>
+        }
+    }
+
+    // 4. Render Chart (dùng hàm JS cậu đã có)
+    renderDashboardPieChart('totalRevenueChart', labels, data, rowIds, 'Tổng Doanh Thu');
+
+    // 5. Hàm Xuất Excel lấy ngày từ biến global của team
+    function exportTotalRevenueExcel() {
+        var start = currentFromDate || '@ViewBag.FromDateValue';
+        var end = currentToDate || '@ViewBag.ToDateValue';
+        window.location.href = `/Dashboard/ExportTotalRevenue?startDate=${start}&endDate=${end}`;
+    }
+</script>
