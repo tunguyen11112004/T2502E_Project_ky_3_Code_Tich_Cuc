@@ -1,0 +1,75 @@
+﻿@model List<Bus_ticket.ViewModels.SeatAnalyticsViewModel>
+
+<div class="mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div>
+        <h2 class="text-lg font-bold text-gray-900 dark:text-white">Danh Sách Chuyến Xe Cháy Ghế</h2>
+        <p class="text-sm text-gray-500 dark:text-gray-400">Các chuyến xe đã bán hết 100% vé</p>
+    </div>
+    <div class="flex items-center gap-3">
+        <input type="text" id="date_range_SoldOutStats" readonly 
+               class="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-[260px] p-2.5 cursor-pointer shadow-sm" 
+               placeholder="Chọn khoảng ngày...">
+               
+        <!-- NÚT XUẤT EXCEL THÊM VÀO ĐÂY -->
+        <button onclick="exportSoldOutStatsExcel()" class="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-lg text-sm px-4 py-2.5 shadow-sm transition-colors whitespace-nowrap">
+            Xuất Excel
+        </button>
+    </div>
+</div>
+
+<div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+            <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                <tr>
+                    <th scope="col" class="px-6 py-4">MÃ CHUYẾN</th>
+                    <th scope="col" class="px-6 py-4">TUYẾN ĐƯỜNG</th>
+                    <th scope="col" class="px-6 py-4">BIỂN SỐ XE</th>
+                    <th scope="col" class="px-6 py-4">THỜI GIAN ĐI</th>
+                    <th scope="col" class="px-6 py-4">TỶ LỆ LẤP ĐẦY</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    @foreach (var item in Model)
+                    {
+                        <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                            <td class="px-6 py-4 font-semibold text-gray-900 dark:text-white">@item.TripCode</td>
+                            <td class="px-6 py-4">@item.RouteName</td>
+                            <td class="px-6 py-4">
+                                <span class="bg-gray-100 text-gray-800 text-xs font-semibold px-2.5 py-1 rounded dark:bg-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600">
+                                    @item.LicensePlate
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">@item.DepartureTime.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td class="px-6 py-4">
+                                <span class="bg-rose-100 text-rose-800 text-xs font-semibold px-2.5 py-1 rounded dark:bg-rose-900 dark:text-rose-300">
+                                    @item.OccupancyRate% (@item.BookedSeats/@item.TotalSeats)
+                                </span>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="5" class="px-6 py-10 text-center text-gray-500">Không có chuyến xe nào cháy vé trong khoảng thời gian này.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // Gọi hàm khởi tạo lịch có sẵn trong _AdminLayout / Index
+    initializeDashboardDateRangePicker('SoldOutStats', '@ViewBag.FromDateValue', '@ViewBag.ToDateValue');
+
+    // HÀM GỌI API XUẤT EXCEL
+    function exportSoldOutStatsExcel() {
+        var start = currentFromDate || '@ViewBag.FromDateValue';
+        var end = currentToDate || '@ViewBag.ToDateValue';
+        window.location.href = `/Dashboard/ExportSoldOutStats?startDate=${start}&endDate=${end}`;
+    }
+</script>
