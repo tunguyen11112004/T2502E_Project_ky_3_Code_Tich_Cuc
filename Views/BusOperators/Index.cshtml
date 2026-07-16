@@ -29,7 +29,7 @@
         <button type="button"
                 data-modal-target="createOperatorModal"
                 data-modal-toggle="createOperatorModal"
-                class="inline-flex items-center justify-center px-4 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg transition-colors shadow-sm">
+                class="inline-flex shrink-0 whitespace-nowrap items-center justify-center px-4 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg transition-colors shadow-sm">
             + Thêm đối tác
         </button>
     </div>
@@ -67,17 +67,17 @@
 
     <div class="overflow-hidden bg-[#1e1e24] border border-gray-700/50 rounded-xl shadow-xl">
         <div class="overflow-x-auto">
-            <table class="w-full text-sm text-left text-gray-300 whitespace-nowrap">
-                <thead class="text-xs uppercase bg-[#141419] text-gray-400 border-b border-gray-700/60">
+            <table class="w-full min-w-[72rem] text-sm text-left text-gray-300">
+                <thead class="text-xs bg-[#141419] text-gray-400 border-b border-gray-700/60">
                     <tr>
-                        <th class="px-6 py-4">Tên nhà xe</th>
-                        <th class="px-6 py-4">Mã nhà xe</th>
-                        <th class="px-6 py-4">Địa chỉ</th>
-                        <th class="px-6 py-4">Email</th>
-                        <th class="px-6 py-4">Hotline</th>
-                        <th class="px-6 py-4">Người liên hệ</th>
-                        <th class="px-6 py-4">Trạng thái</th>
-                        <th class="px-6 py-4 text-right">Hành động</th>
+                        <th class="px-6 py-4 font-semibold whitespace-nowrap leading-normal">Mã nhà xe</th>
+                        <th class="px-6 py-4 font-semibold whitespace-nowrap leading-normal">Tên nhà xe</th>
+                        <th class="px-6 py-4 font-semibold leading-normal min-w-[10rem]">Địa chỉ</th>
+                        <th class="px-6 py-4 font-semibold whitespace-nowrap leading-normal">Hotline</th>
+                        <th class="px-6 py-4 font-semibold leading-normal min-w-[9rem]">Email</th>
+                        <th class="px-6 py-4 font-semibold whitespace-nowrap leading-normal">Người liên hệ</th>
+                        <th class="px-6 py-4 font-semibold whitespace-nowrap leading-normal">Trạng thái</th>
+                        <th class="px-6 py-4 font-semibold whitespace-nowrap leading-normal text-right min-w-[9.5rem]">Hành động</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-700/50">
@@ -98,19 +98,20 @@
                                 : "bg-rose-500/10 text-rose-400 border-rose-500/20";
 
                             <tr class="hover:bg-gray-800/30 transition-colors">
+                                <td class="px-6 py-4 text-amber-400 font-semibold whitespace-nowrap">@item.OperatorCode</td>
                                 <td class="px-6 py-4 font-semibold text-white">@item.OperatorName</td>
-                                <td class="px-6 py-4 text-amber-400 font-semibold">@item.OperatorCode</td>
-                                <td class="px-6 py-4 text-gray-400 max-w-xs truncate" title="@item.Address">@item.Address</td>
-                                <td class="px-6 py-4 text-gray-400">@item.Email</td>
-                                <td class="px-6 py-4 text-gray-400">@item.PhoneNumber</td>
-                                <td class="px-6 py-4 text-gray-400">@item.ContactPerson</td>
-                                <td class="px-6 py-4">
+                                <td class="px-6 py-4 text-gray-400 max-w-[14rem] truncate leading-normal" title="@item.Address">@item.Address</td>
+                                <td class="px-6 py-4 text-gray-400 whitespace-nowrap">@item.PhoneNumber</td>
+                                <td class="px-6 py-4 text-gray-400 break-all leading-normal">@item.Email</td>
+                                <td class="px-6 py-4 text-gray-400 whitespace-nowrap">@item.ContactPerson</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
                                     <span class="inline-flex items-center px-2.5 py-0.5 text-xs font-semibold rounded-md border @badgeClass">
                                         @item.Status
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 text-right">
-                                    <div class="inline-flex items-center gap-3">
+                                <td class="px-6 py-4 text-right whitespace-nowrap">
+                                    <div class="inline-flex flex-nowrap items-center justify-end gap-4">
+                                        <a asp-controller="BusOperators" asp-action="Details" asp-route-id="@item.Id" class="text-cyan-400 hover:text-cyan-300 font-semibold">Xem</a>
                                         <button type="button"
                                                 class="text-amber-400 hover:text-amber-300 font-semibold btn-edit-operator"
                                                 data-modal-target="editOperatorModal"
@@ -146,50 +147,28 @@
             </table>
         </div>
 
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 px-6 py-4 bg-[#141419] border-t border-gray-700/60 text-sm text-gray-400">
-            <div>Hiển thị @startItem - @endItem trong tổng số @totalItems đối tác nhà xe</div>
-            <div class="flex items-center justify-end shrink-0">
-                <div class="grid grid-cols-3 gap-2 w-[13.5rem]">
-                    @if (currentPage > 1)
-                    {
-                        <a asp-action="Index"
-                           asp-route-page="@(currentPage - 1)"
-                           asp-route-searchTerm="@searchTerm"
-                           asp-route-status="@status"
-                           class="h-9 flex items-center justify-center rounded-md border border-gray-700 text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-colors">
-                            Trước
-                        </a>
-                    }
-                    else
-                    {
-                        <span class="h-9 flex items-center justify-center rounded-md border border-gray-700/40 text-sm text-gray-600 cursor-not-allowed select-none"
-                              aria-disabled="true">
-                            Trước
-                        </span>
-                    }
+        <div class="flex flex-col md:flex-row items-center justify-between gap-3 px-6 py-4 bg-[#141419] border-t border-gray-700/60 text-sm text-gray-400">
+            <div class="min-w-0">Hiển thị @startItem - @endItem trong tổng số @totalItems đối tác nhà xe</div>
+            <div class="flex items-center gap-2 shrink-0">
+                @if (currentPage > 1)
+                {
+                    <a asp-action="Index"
+                       asp-route-page="@(currentPage - 1)"
+                       asp-route-searchTerm="@searchTerm"
+                       asp-route-status="@status"
+                       class="px-3 py-1.5 rounded-md border border-gray-700 hover:bg-gray-800">Trước</a>
+                }
 
-                    <span class="h-9 flex items-center justify-center rounded-md bg-gray-800 text-sm text-white">
-                        @currentPage / @(totalPages == 0 ? 1 : totalPages)
-                    </span>
+                <span class="px-3 py-1.5 rounded-md bg-gray-800 text-white">@currentPage / @(totalPages == 0 ? 1 : totalPages)</span>
 
-                    @if (currentPage < totalPages)
-                    {
-                        <a asp-action="Index"
-                           asp-route-page="@(currentPage + 1)"
-                           asp-route-searchTerm="@searchTerm"
-                           asp-route-status="@status"
-                           class="h-9 flex items-center justify-center rounded-md border border-gray-700 text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-colors">
-                            Sau
-                        </a>
-                    }
-                    else
-                    {
-                        <span class="h-9 flex items-center justify-center rounded-md border border-gray-700/40 text-sm text-gray-600 cursor-not-allowed select-none"
-                              aria-disabled="true">
-                            Sau
-                        </span>
-                    }
-                </div>
+                @if (currentPage < totalPages)
+                {
+                    <a asp-action="Index"
+                       asp-route-page="@(currentPage + 1)"
+                       asp-route-searchTerm="@searchTerm"
+                       asp-route-status="@status"
+                       class="px-3 py-1.5 rounded-md border border-gray-700 hover:bg-gray-800">Sau</a>
+                }
             </div>
         </div>
     </div>

@@ -17,7 +17,7 @@ public class BusOperatorsController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> Index(string? searchTerm, string? status, int page = 1, int pageSize = 10)
+    public async Task<IActionResult> Index(string? searchTerm, string? status, int page = 1, int pageSize = 10, string? editId = null)
     {
         var result = await _busOperatorService.GetPagedAsync(searchTerm, status, page, pageSize);
 
@@ -29,9 +29,21 @@ public class BusOperatorsController : Controller
         ViewBag.TotalItems = result.TotalItems;
         ViewBag.SuggestedOperatorCode = await _busOperatorService.GenerateOperatorCodeAsync();
         ViewBag.OpenCreateModal = TempData["OpenCreateModal"] is true;
-        ViewBag.OpenEditModalId = TempData["OpenEditModalId"] as string;
+        ViewBag.OpenEditModalId = TempData["OpenEditModalId"] as string ?? editId;
 
         return View(result.Items);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Details(string id)
+    {
+        var busOperator = await _busOperatorService.GetByIdAsync(id);
+        if (busOperator == null)
+        {
+            return NotFound();
+        }
+
+        return View(busOperator);
     }
 
     [HttpGet]

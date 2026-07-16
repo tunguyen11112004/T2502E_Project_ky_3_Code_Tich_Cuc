@@ -6,6 +6,9 @@
     <title>@ViewData["Title"] - Admin Bus Ticket</title>
     
     <link rel="stylesheet" href="/admin-assets/css/style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.css" rel="stylesheet" />
     
@@ -14,10 +17,17 @@
     <script>
         tailwind.config = {
             darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'],
+                    },
+                },
+            },
         }
     </script>
 </head>
-<body class="dark bg-gray-50 dark:bg-gray-900">
+<body class="dark bg-gray-50 dark:bg-gray-900 font-sans antialiased">
 @*Nav-bar*@
 <partial name="_NavbarPartial" />
 
