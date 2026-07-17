@@ -603,135 +603,171 @@ namespace Bus_ticket.Controllers
             return RedirectToAction(nameof(PriceConfig));
         }
 
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SaveTrip(
             string? tripId,
-            string routeId,
-            string busId,
-            DateTime departureTime,
-            DateTime arrivalTime,
+            string? routeId,         
+            string? busId,           
+            DateTime? departureTime, 
+            DateTime? arrivalTime,   
             decimal baseFare,
-            string status)
+            string? status)
         {
-            if (string.IsNullOrWhiteSpace(routeId)
-                || string.IsNullOrWhiteSpace(busId)
-                || baseFare <= 0)
-            {
-                return RedirectTripFormError(tripId, "Tuyến đường, biển số xe và giá vé là bắt buộc.");
-            }
-
-            if (baseFare > 50_000_000)
+            // 1. Kiểm tra Giá vé cơ bản
+            if (baseFare <= 0 || baseFare > 50_000_000)
             {
                 return RedirectTripFormError(tripId, "Giá vé không hợp lệ (tối đa 50.000.000đ).");
             }
 
-            if (arrivalTime <= departureTime)
-            {
-                return RedirectTripFormError(tripId, "Giờ đến phải sau giờ đi.");
-            }
-
-            var route = await _dbContext.BusRoutes.Find(r => r.Id == routeId).FirstOrDefaultAsync();
-            if (route == null)
-            {
-                return RedirectTripFormError(tripId, "Tuyến đường không tồn tại trong hệ thống.");
-            }
-
-            var departurePoint = route.DeparturePoint;
-            var destinationPoint = route.DestinationPoint;
-
-            var bus = await _dbContext.Buses.Find(b => b.Id == busId).FirstOrDefaultAsync();
-            if (bus == null)
-            {
-                return RedirectTripFormError(tripId, "Xe không tồn tại trong hệ thống.");
-            }
-
-            var scheduleError = await ValidateBusScheduleAsync(
-                busId, tripId, routeId, departureTime, arrivalTime, route);
-            if (scheduleError != null)
-            {
-                return RedirectTripFormError(tripId, scheduleError);
-            }
-
             var userName = User.Identity?.Name ?? "Admin";
-
-            var busClass = !string.IsNullOrWhiteSpace(bus.BusClassId)
-                ? await _dbContext.BusClasses.Find(bc => bc.Id == bus.BusClassId).FirstOrDefaultAsync()
-                : null;
-            var busTypeLabel = ResolvePriceBusType(busClass, bus);
-
-            await UpsertPriceConfigAsync(busTypeLabel, departurePoint, destinationPoint, baseFare);
-            await SyncTripFaresFromPriceConfigAsync(busTypeLabel, departurePoint, destinationPoint, baseFare);
-
             var tripStatus = string.IsNullOrWhiteSpace(status) ? "Scheduled" : status.Trim();
 
-            if (string.IsNullOrWhiteSpace(tripId))
-            {
-                var realtimeSeats = await BuildRealtimeSeatsForBusAsync(bus);
-                if (realtimeSeats.Count == 0)
-                {
-                    return RedirectTripFormError(tripId, "Xe chưa có sơ đồ ghế. Cấu hình layout trong BusClasses trước.");
-                }
-
-                var trip = new Trip
-                {
-                    Id = ObjectId.GenerateNewId().ToString(),
-                    TripCode = GenerateTripCode(departureTime),
-                    BusId = busId,
-                    RouteId = routeId,
-                    BaseFare = baseFare,
-                    DepartureTime = departureTime,
-                    ArrivalTime = arrivalTime,
-                    Status = tripStatus,
-                    RealtimeSeats = realtimeSeats,
-                    CreatedBy = userName,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedBy = userName,
-                    UpdatedAt = DateTime.UtcNow
-                };
-
-                await _dbContext.Trips.InsertOneAsync(trip);
-                TempData["SuccessMessage"] =
-                    $"Đã lưu chuyến {trip.TripCode} — {departurePoint} → {destinationPoint}, xe {bus.LicensePlate}, giá {baseFare:N0}đ. Tra trên Booking cùng tuyến ngày {departureTime.ToLocalTime():dd/MM/yyyy}.";
-            }
-            else
+            // ==========================================
+            // TRƯỜNG HỢP 1: SỬA CHUYẾN XE CŨ
+            // ==========================================
+            if (!string.IsNullOrWhiteSpace(tripId))
             {
                 var existing = await _dbContext.Trips
                     .Find(Builders<Trip>.Filter.And(
                         Builders<Trip>.Filter.Eq(t => t.Id, tripId),
                         TripFilters.NotDeleted))
                     .FirstOrDefaultAsync();
-                if (existing == null)
+
+                if (existing == null) return RedirectTripFormError(tripId, "Chuyến xe không tồn tại hoặc đã bị xóa.");
+
+                var finalRouteId = string.IsNullOrWhiteSpace(routeId) ? existing.RouteId : routeId;
+                var finalBusId = string.IsNullOrWhiteSpace(busId) ? existing.BusId : busId;
+
+                // 🎯 CÁCH ÉP KIỂU ĐỂ TRỊ LỖI TIMEZONE:
+                // Ép giờ từ DB về Local và format ra chuỗi y hệt form HTML (bỏ giây, bỏ mili-giây)
+                var dbDepLocalStr = existing.DepartureTime.ToLocalTime().ToString("yyyy-MM-ddTHH:mm");
+                var dbArrLocalStr = existing.ArrivalTime.ToLocalTime().ToString("yyyy-MM-ddTHH:mm");
+
+                // Lấy giờ form gửi lên cũng format ra chuỗi tương tự
+                var formDepStr = departureTime?.ToString("yyyy-MM-ddTHH:mm") ?? dbDepLocalStr;
+                var formArrStr = arrivalTime?.ToString("yyyy-MM-ddTHH:mm") ?? dbArrLocalStr;
+
+                // CHỈ so sánh bằng chuỗi để biết chính xác Admin có thực sự bấm đổi giờ hay không
+                bool isScheduleChanged = existing.BusId != finalBusId || formDepStr != dbDepLocalStr || formArrStr != dbArrLocalStr;
+                
+                if (isScheduleChanged)
                 {
-                    return RedirectTripFormError(tripId, "Chuyến xe không tồn tại hoặc đã bị xóa.");
+                    var finalDeparture = departureTime ?? existing.DepartureTime.ToLocalTime();
+                    var finalArrival = arrivalTime ?? existing.ArrivalTime.ToLocalTime();
+
+                    if (finalArrival <= finalDeparture) return RedirectTripFormError(tripId, "Giờ đến phải sau giờ đi.");
+                    
+                    var routeToValidate = await _dbContext.BusRoutes.Find(r => r.Id == finalRouteId).FirstOrDefaultAsync();
+                    if (routeToValidate != null)
+                    {
+                        var scheduleError = await ValidateBusScheduleAsync(finalBusId, tripId, finalRouteId, finalDeparture, finalArrival, routeToValidate);
+                        if (scheduleError != null) return RedirectTripFormError(tripId, scheduleError);
+                    }
                 }
 
+                // Nếu KHÔNG đổi giờ, KHÔNG Set lại DepartureTime/ArrivalTime để bảo toàn 100% data cũ trong DB
                 var update = Builders<Trip>.Update
-                    .Set(t => t.RouteId, routeId)
-                    .Set(t => t.BusId, busId)
                     .Set(t => t.BaseFare, baseFare)
-                    .Set(t => t.DepartureTime, departureTime)
-                    .Set(t => t.ArrivalTime, arrivalTime)
+                    .Set(t => t.RouteId, finalRouteId)
+                    .Set(t => t.BusId, finalBusId)
                     .Set(t => t.Status, tripStatus)
                     .Set(t => t.UpdatedBy, userName)
                     .Set(t => t.UpdatedAt, DateTime.UtcNow);
 
-                if (existing.BusId != busId)
+                if (isScheduleChanged)
+                {
+                    // Nếu thực sự có đổi lịch thì mới đè giờ mới vào
+                    update = update
+                        .Set(t => t.DepartureTime, departureTime!.Value)
+                        .Set(t => t.ArrivalTime, arrivalTime!.Value);
+                }
+
+                // Xử lý đổi xe sinh sơ đồ ghế mới
+                if (existing.BusId != finalBusId)
                 {
                     var hasReservedSeats = existing.RealtimeSeats?.Any(s => s.Status is "Booked" or "Holding") ?? false;
                     if (hasReservedSeats)
                     {
-                        return RedirectTripFormError(tripId, "Không thể đổi xe vì chuyến đã có ghế đặt hoặc giữ chỗ.");
+                        return RedirectTripFormError(tripId, "Không thể đổi xe vì chuyến đã có vé. Vui lòng giữ nguyên xe cũ nếu chỉ muốn đổi giá vé!");
                     }
-
-                    update = update.Set(t => t.RealtimeSeats, await BuildRealtimeSeatsForBusAsync(bus));
+                    var newBus = await _dbContext.Buses.Find(b => b.Id == finalBusId).FirstOrDefaultAsync();
+                    if (newBus != null) {
+                        update = update.Set(t => t.RealtimeSeats, await BuildRealtimeSeatsForBusAsync(newBus));
+                    }
                 }
 
                 await _dbContext.Trips.UpdateOneAsync(t => t.Id == tripId, update);
-                TempData["SuccessMessage"] =
-                    $"Đã cập nhật chuyến — biển số {bus.LicensePlate}, giá {baseFare:N0}đ. Booking hiển thị ngay khi tra cứu.";
+
+                // Đồng bộ giá sang cấu hình nền (PriceConfig)
+                var route = await _dbContext.BusRoutes.Find(r => r.Id == finalRouteId).FirstOrDefaultAsync();
+                var busInfo = await _dbContext.Buses.Find(b => b.Id == finalBusId).FirstOrDefaultAsync();
+                if (route != null && busInfo != null)
+                {
+                    var busClass = !string.IsNullOrWhiteSpace(busInfo.BusClassId)
+                        ? await _dbContext.BusClasses.Find(bc => bc.Id == busInfo.BusClassId).FirstOrDefaultAsync() : null;
+                    var busTypeLabel = ResolvePriceBusType(busClass, busInfo);
+
+                    await UpsertPriceConfigAsync(busTypeLabel, route.DeparturePoint, route.DestinationPoint, baseFare);
+                    await SyncTripFaresFromPriceConfigAsync(busTypeLabel, route.DeparturePoint, route.DestinationPoint, baseFare);
+                }
+
+                TempData["SuccessMessage"] = $"Đã cập nhật giá vé mới thành {baseFare:N0}đ thành công!";
+                return RedirectToAction(nameof(PriceConfig));
             }
 
+            // ==========================================
+            // TRƯỜNG HỢP 2: TẠO CHUYẾN MỚI HOÀN TOÀN
+            // ==========================================
+            if (string.IsNullOrWhiteSpace(routeId) || string.IsNullOrWhiteSpace(busId))
+            {
+                return RedirectTripFormError(tripId, "Tuyến đường và biển số xe là bắt buộc khi tạo mới.");
+            }
+
+            if (arrivalTime == null || departureTime == null || arrivalTime <= departureTime)
+            {
+                return RedirectTripFormError(tripId, "Giờ đến và Giờ đi không hợp lệ.");
+            }
+
+            var newRouteObj = await _dbContext.BusRoutes.Find(r => r.Id == routeId).FirstOrDefaultAsync();
+            if (newRouteObj == null) return RedirectTripFormError(tripId, "Tuyến đường không tồn tại.");
+
+            var newBusObj = await _dbContext.Buses.Find(b => b.Id == busId).FirstOrDefaultAsync();
+            if (newBusObj == null) return RedirectTripFormError(tripId, "Xe không tồn tại.");
+
+            var createScheduleError = await ValidateBusScheduleAsync(busId, tripId, routeId, departureTime.Value, arrivalTime.Value, newRouteObj);
+            if (createScheduleError != null) return RedirectTripFormError(tripId, createScheduleError);
+
+            var busClassNew = !string.IsNullOrWhiteSpace(newBusObj.BusClassId)
+                ? await _dbContext.BusClasses.Find(bc => bc.Id == newBusObj.BusClassId).FirstOrDefaultAsync() : null;
+            var newBusTypeLabelForCreate = ResolvePriceBusType(busClassNew, newBusObj);
+
+            await UpsertPriceConfigAsync(newBusTypeLabelForCreate, newRouteObj.DeparturePoint, newRouteObj.DestinationPoint, baseFare);
+            await SyncTripFaresFromPriceConfigAsync(newBusTypeLabelForCreate, newRouteObj.DeparturePoint, newRouteObj.DestinationPoint, baseFare);
+
+            var realtimeSeats = await BuildRealtimeSeatsForBusAsync(newBusObj);
+            if (realtimeSeats.Count == 0) return RedirectTripFormError(tripId, "Xe chưa có sơ đồ ghế. Cấu hình layout trong BusClasses trước.");
+
+            var trip = new Trip
+            {
+                Id = ObjectId.GenerateNewId().ToString(),
+                TripCode = GenerateTripCode(departureTime.Value),
+                BusId = busId,
+                RouteId = routeId,
+                BaseFare = baseFare,
+                DepartureTime = departureTime.Value,
+                ArrivalTime = arrivalTime.Value,
+                Status = tripStatus,
+                RealtimeSeats = realtimeSeats,
+                CreatedBy = userName,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedBy = userName,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            await _dbContext.Trips.InsertOneAsync(trip);
+            TempData["SuccessMessage"] = $"Đã lưu chuyến {trip.TripCode} với giá {baseFare:N0}đ thành công.";
             return RedirectToAction(nameof(PriceConfig));
         }
 
@@ -782,9 +818,7 @@ namespace Bus_ticket.Controllers
             return RedirectToAction(nameof(PriceConfig));
         }
 
-        // ====================================================================
-        // 🎯 TASK 14: HỦY CHUYẾN XE (CANCEL TRIP) VÀ CASCADE UPDATE VÉ
-        // ====================================================================
+
         [HttpPost]
         public async Task<IActionResult> CancelTrip(string tripId)
         {
