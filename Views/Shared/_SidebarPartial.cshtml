@@ -136,7 +136,16 @@
                                        "/Dashboard"
                                    );
 
-    var showDashboardMenu = isAdmin || canViewDashboardOverview || canViewRouteRevenue;
+    var canViewTicketStatusStatistics = isAdmin
+                                        || SidebarPermissionService.HasPermission(
+                                            permissionNames,
+                                            "TicketStatusStatistics",
+                                            "TicketStatusStatisticsPartial",
+                                            "View.TicketStatusStatistics",
+                                            "/Dashboard/TicketStatusStatisticsPartial"
+                                        );
+
+    var showDashboardMenu = isAdmin || canViewDashboardOverview || canViewRouteRevenue || canViewTicketStatusStatistics;
 
     // Đã thêm || isAdmin vào đây để Admin luôn thấy menu CRUD
     var showCrudMenu = canViewBooking
