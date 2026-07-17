@@ -44,9 +44,9 @@
 
             <div>
                 <label class="block mb-1 text-sm font-semibold text-gray-300">Tuyến đường</label>
-                <select name="routeId" id="ddlRoute" required
+                <select name="routeId" id="ddlRoute" @(Model.IsEdit ? "" : "required")
                         class="bg-gray-900 border border-gray-700 text-white text-sm rounded-lg block w-full p-2.5 focus:ring-2 focus:ring-amber-400">
-                    <option value="">-- Chọn tuyến đường --</option>
+                    <option value="">-- @(Model.IsEdit ? "Giữ nguyên tuyến cũ" : "Chọn tuyến đường") --</option>
                     @foreach (var route in Model.Routes)
                     {
                         var routeLabel = $"{route.DeparturePoint} -> {route.DestinationPoint}";
@@ -69,9 +69,9 @@
 
             <div>
                 <label class="block mb-1 text-sm font-semibold text-gray-300">Biển số xe</label>
-                <select name="busId" id="ddlBus" required
+                <select name="busId" id="ddlBus" @(Model.IsEdit ? "" : "required")
                         class="bg-gray-900 border border-gray-700 text-white text-sm rounded-lg block w-full p-2.5 focus:ring-2 focus:ring-amber-400">
-                    <option value="">-- Chọn biển số --</option>
+                    <option value="">-- @(Model.IsEdit ? "Giữ nguyên xe cũ" : "Chọn biển số") --</option>
                     @foreach (var bus in Model.Buses)
                     {
                         if (bus.Id == Model.BusId)
@@ -113,17 +113,20 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label class="block mb-1 text-sm font-semibold text-gray-300">Giờ đi</label>
-                    <input type="datetime-local" name="departureTime" id="txtDepartureTime" required value="@depValue"
+                    <input type="datetime-local" name="departureTime" id="txtDepartureTime" @(Model.IsEdit ? "" : "required") value="@depValue"
                            class="block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400"/>
                 </div>
                 <div>
                     <label class="block mb-1 text-sm font-semibold text-gray-300">Giờ đến</label>
-                    <input type="datetime-local" name="arrivalTime" id="txtArrivalTime" required value="@arrValue"
+                    <input type="datetime-local" name="arrivalTime" id="txtArrivalTime" @(Model.IsEdit ? "" : "required") value="@arrValue"
                            class="block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400"/>
                     <p class="text-xs text-gray-500 mt-1">Tự ước tính theo quãng đường tuyến (~60 km/h, có thể sửa tay)</p>
                 </div>
             </div>
-            <div>
+            @if(Model.IsEdit) { 
+                <p class="text-xs text-amber-500 italic mt-2">* Cứ giữ nguyên ngày giờ cũ và xe nếu chỉ muốn cập nhật thay đổi giá vé</p> 
+            }
+            <div class="mt-4">
                 <label class="block mb-1 text-sm font-semibold text-gray-300">Trạng thái</label>
                 <select name="status" id="ddlTripStatus" class="bg-gray-900 border border-gray-700 text-white text-sm rounded-lg block w-full p-2.5 focus:ring-2 focus:ring-amber-400">
                     @{
@@ -172,6 +175,13 @@
 
     const AVG_BUS_SPEED_KMH = 60;
     const DEFAULT_TRIP_HOURS = 8;
+    const isEdit = @(Model.IsEdit ? "true" : "false");
+
+    // LƯU LẠI GIÁ TRỊ GỐC KHI VỪA LOAD TRANG ĐỂ BYPASS VALIDATE
+    const initialBusId = document.getElementById('ddlBus')?.value || '';
+    const initialRouteId = document.getElementById('ddlRoute')?.value || '';
+    const initialDepTime = document.getElementById('txtDepartureTime')?.value || '';
+    const initialArrTime = document.getElementById('txtArrivalTime')?.value || '';
 
     document.getElementById('ddlRoute')?.addEventListener('change', function () {
         suggestFare();
@@ -192,6 +202,7 @@
     });
     document.getElementById('txtArrivalTime')?.addEventListener('change', checkBusSchedule);
     document.getElementById('txtArrivalTime')?.addEventListener('input', checkBusSchedule);
+    
     document.getElementById('formTrip')?.addEventListener('submit', function (e) {
         if (busScheduleInvalid) {
             e.preventDefault();
@@ -204,14 +215,25 @@
     let busScheduleTimer = null;
 
     async function checkBusSchedule() {
-        const busId = document.getElementById('ddlBus')?.value;
-        const routeId = document.getElementById('ddlRoute')?.value;
-        const departureTime = document.getElementById('txtDepartureTime')?.value;
-        const arrivalTime = document.getElementById('txtArrivalTime')?.value;
+        const busId = document.getElementById('ddlBus')?.value || '';
+        const routeId = document.getElementById('ddlRoute')?.value || '';
+        const departureTime = document.getElementById('txtDepartureTime')?.value || '';
+        const arrivalTime = document.getElementById('txtArrivalTime')?.value || '';
         const tripId = document.querySelector('input[name="tripId"]')?.value || '';
         const warning = document.getElementById('busScheduleWarning');
 
         if (!busId || !routeId || !departureTime || !arrivalTime || !warning) {
+            busScheduleInvalid = false;
+            busScheduleMessage = '';
+            if(warning) {
+                warning.classList.add('hidden');
+                warning.textContent = '';
+            }
+            return;
+        }
+
+        // 🎯 ĐIỂM CHỐT HẠ: Nếu là màn Edit và Admin KHÔNG thay đổi Tuyến/Xe/Giờ thì BỎ QUA check (Bypass)
+        if (isEdit && busId === initialBusId && routeId === initialRouteId && departureTime === initialDepTime && arrivalTime === initialArrTime) {
             busScheduleInvalid = false;
             busScheduleMessage = '';
             warning.classList.add('hidden');
@@ -335,8 +357,6 @@
             document.getElementById('txtBaseFare').value = priceMatch.basePrice;
         }
     }
-
-    const isEdit = @(Model.IsEdit ? "true" : "false");
 
     if (document.getElementById('ddlRoute')?.value && document.getElementById('ddlBus')?.value) {
         suggestFare();
