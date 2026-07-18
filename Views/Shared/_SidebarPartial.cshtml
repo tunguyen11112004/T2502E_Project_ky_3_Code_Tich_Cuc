@@ -56,6 +56,16 @@
         "BusClasses",
         "/BusClasses"
     );
+    var canViewBusOperators = SidebarPermissionService.HasPermission(
+        permissionNames,
+        "BusOperator",
+        "BusOperators",
+        "Operator",
+        "Operators",
+        "Merchant",
+        "Merchants",
+        "/BusOperators"
+    );
 
     var canManageBuses = SidebarPermissionService.HasPermission(
         permissionNames,
@@ -140,6 +150,7 @@
                        || canViewPermissions;
 
     var showSrcAdminFlow = canViewUsers
+                           || canViewBusOperators
                            || canManageBuses
                            || canManageRoutes
                            || canManagePrices;
@@ -265,7 +276,16 @@
                                         </a>
                                     </li>
                                 }
-
+                                
+                                @if (canViewBusOperators)
+                                {
+                                    <li>
+                                        <a asp-controller="BusOperators" asp-action="Index" class="@subMenuItemClass">
+                                            Bus Operators
+                                        </a>
+                                    </li>
+                                }
+                                
                                 @if (canViewBusClasses)
                                 {
                                     <li>
