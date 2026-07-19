@@ -1,0 +1,279 @@
+@model Bus_ticket.ViewModels.LowOccupancyTripsViewModel
+@using System.Text.Json
+
+@{
+    var fromDateValue = ViewBag.FromDateValue != null
+        ? ((DateTime)ViewBag.FromDateValue).ToString("yyyy-MM-dd")
+        : Model.FromDate.ToString("yyyy-MM-dd");
+
+    var toDateValue = ViewBag.ToDateValue != null
+        ? ((DateTime)ViewBag.ToDateValue).ToString("yyyy-MM-dd")
+        : Model.ToDate.ToString("yyyy-MM-dd");
+
+    var lowItems = Model.LowOccupancyTrips
+        .OrderBy(x => x.OccupancyRate)
+        .ThenByDescending(x => x.EmptySeats)
+        .ThenBy(x => x.DepartureTime)
+        .ToList();
+
+    var soldOutItems = Model.SoldOutTimeFrames
+        .OrderBy(x => x.TimeFrame)
+        .ToList();
+
+    var chartItems = lowItems
+        .Take(10)
+        .Select((item, index) => new
+        {
+            Item = item,
+            RowId = $"low-occupancy-row-{index}"
+        })
+        .ToList();
+
+    var chartLabels = JsonSerializer.Serialize(chartItems.Select(x => x.Item.TripCode));
+    var chartData = JsonSerializer.Serialize(chartItems.Select(x => x.Item.EmptySeats));
+    var chartRows = JsonSerializer.Serialize(chartItems.Select(x => x.RowId));
+}
+
+<div class="p-4 sm:p-6 lg:p-8 space-y-6 max-w-full overflow-x-hidden animate-fade-in">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold tracking-tight text-white">
+                Thống kê chuyến xe ít khách
+            </h1>
+            <p class="text-sm text-gray-400 mt-1">
+                Chuyến có tỷ lệ lấp đầy dưới @Model.OccupancyThreshold.ToString("N0")%. Click lát biểu đồ để highlight dòng tương ứng.
+            </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3 self-end sm:self-center">
+            <input id="date_range_LowOccupancyTrips"
+                   type="text"
+                   readonly
+                   class="min-w-[260px] rounded-lg border border-gray-700 bg-gray-900 px-3 py-2.5 text-sm text-white cursor-pointer focus:border-amber-400 focus:ring-2 focus:ring-amber-400"
+                   placeholder="Chọn khoảng ngày" />
+
+            <a asp-controller="Dashboard"
+               asp-action="ExportLowOccupancyTrips"
+               asp-route-fromDate="@fromDateValue"
+               asp-route-toDate="@toDateValue"
+               asp-route-occupancyThreshold="@Model.OccupancyThreshold"
+               class="inline-flex items-center justify-center px-4 py-2.5 text-sm font-semibold text-gray-900 bg-emerald-400 hover:bg-emerald-500 rounded-lg transition-colors duration-200 shadow-sm whitespace-nowrap">
+                Xuất Excel
+            </a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div class="bg-[#1e1e24] border border-gray-700/50 rounded-xl p-5 shadow-xl">
+            <p class="text-sm text-gray-400">Tổng chuyến kiểm tra</p>
+            <p class="text-2xl font-bold text-white mt-2">
+                @Model.TotalTripsChecked.ToString("N0")
+            </p>
+            <p class="text-xs text-gray-500 mt-2">
+                Có sơ đồ ghế realtime
+            </p>
+        </div>
+
+        <div class="bg-[#1e1e24] border border-gray-700/50 rounded-xl p-5 shadow-xl">
+            <p class="text-sm text-gray-400">Chuyến ít khách</p>
+            <p class="text-2xl font-bold text-orange-400 mt-2">
+                @Model.LowOccupancyTripCount.ToString("N0")
+            </p>
+            <p class="text-xs text-gray-500 mt-2">
+                Dưới @Model.OccupancyThreshold.ToString("N0")% lấp đầy
+            </p>
+        </div>
+
+        <div class="bg-[#1e1e24] border border-gray-700/50 rounded-xl p-5 shadow-xl">
+            <p class="text-sm text-gray-400">Ghế trống ở chuyến ít khách</p>
+            <p class="text-2xl font-bold text-amber-400 mt-2">
+                @Model.TotalEmptySeats.ToString("N0")
+            </p>
+            <p class="text-xs text-gray-500 mt-2">
+                Tổng ghế chưa bán
+            </p>
+        </div>
+
+        <div class="bg-[#1e1e24] border border-gray-700/50 rounded-xl p-5 shadow-xl">
+            <p class="text-sm text-gray-400">Tỷ lệ lấp đầy trung bình</p>
+            <p class="text-2xl font-bold text-cyan-400 mt-2">
+                @Model.AverageOccupancyRate.ToString("N2")%
+            </p>
+            <p class="text-xs text-gray-500 mt-2">
+                Toàn bộ chuyến trong khoảng ngày
+            </p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 2xl:grid-cols-[430px_minmax(0,1fr)] gap-6">
+        <div class="bg-[#1e1e24] border border-gray-700/50 rounded-xl p-5 shadow-xl">
+            <h2 class="text-lg font-semibold text-white mb-2">
+                Top 10 chuyến ít khách nhất
+            </h2>
+            <p class="text-sm text-gray-400 mb-4">
+                Pie chart chỉ hiển thị 10 chuyến có tỷ lệ lấp đầy thấp nhất để dễ quan sát. Bảng bên phải vẫn hiển thị đầy đủ dữ liệu.
+            </p>
+            
+            @if (!chartItems.Any() || chartItems.Sum(x => x.Item.EmptySeats) <= 0)
+            {
+                <div class="py-16 text-center text-gray-500">
+                    Không có chuyến ít khách trong khoảng thời gian này.
+                </div>
+            }
+            else
+            {
+                <div class="h-[360px] max-w-[390px] mx-auto">
+                    <canvas id="lowOccupancyPieChart"></canvas>
+                </div>
+            }
+        </div>
+
+        <div class="w-full max-w-full overflow-hidden bg-[#1e1e24] border border-gray-700/50 rounded-xl shadow-xl">
+            <div class="p-5 border-b border-gray-700/60">
+                <h2 class="text-lg font-semibold text-white">
+                    Danh sách chuyến xe ít khách
+                </h2>
+                <p class="text-sm text-gray-400 mt-1">
+                    Sắp xếp theo tỷ lệ lấp đầy thấp nhất.
+                </p>
+            </div>
+
+            <div class="w-full overflow-x-auto">
+                <table class="w-full min-w-[1280px] text-sm text-left text-gray-300">
+                    <thead class="text-xs uppercase bg-[#141419] text-gray-400 border-b border-gray-700/60">
+                        <tr>
+                            <th class="w-[70px] px-4 py-4 whitespace-nowrap">STT</th>
+                            <th class="w-[150px] px-4 py-4 whitespace-nowrap">Mã chuyến</th>
+                            <th class="w-[280px] px-4 py-4 whitespace-nowrap">Tuyến đường</th>
+                            <th class="w-[140px] px-4 py-4 whitespace-nowrap">Xe</th>
+                            <th class="w-[140px] px-4 py-4 whitespace-nowrap">Biển số</th>
+                            <th class="w-[180px] px-4 py-4 whitespace-nowrap">Khởi hành</th>
+                            <th class="w-[120px] px-4 py-4 text-right whitespace-nowrap">Tổng ghế</th>
+                            <th class="w-[120px] px-4 py-4 text-right whitespace-nowrap">Đã đặt</th>
+                            <th class="w-[120px] px-4 py-4 text-right whitespace-nowrap">Ghế trống</th>
+                            <th class="w-[150px] px-4 py-4 text-right whitespace-nowrap">Lấp đầy</th>
+                        </tr>
+                    </thead>
+
+                    <tbody class="divide-y divide-gray-700/50">
+                        @if (!lowItems.Any())
+                        {
+                            <tr>
+                                <td colspan="10" class="px-4 py-8 text-center text-gray-500">
+                                    Không có dữ liệu chuyến ít khách.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            for (var i = 0; i < lowItems.Count; i++)
+                            {
+                                var item = lowItems[i];
+
+                                <tr id="low-occupancy-row-@i"
+                                    data-linked-row="true"
+                                    class="hover:bg-gray-800/30 transition-colors duration-150 scroll-mt-24">
+                                    <td class="px-4 py-4 text-gray-400 whitespace-nowrap">@(i + 1)</td>
+                                    <td class="px-4 py-4 font-semibold text-white whitespace-nowrap">@item.TripCode</td>
+                                    <td class="px-4 py-4 whitespace-nowrap">@item.RouteName</td>
+                                    <td class="px-4 py-4 whitespace-nowrap">@item.BusCode</td>
+                                    <td class="px-4 py-4 whitespace-nowrap">@item.LicensePlate</td>
+                                    <td class="px-4 py-4 whitespace-nowrap">@item.DepartureTime.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td class="px-4 py-4 text-right whitespace-nowrap">@item.TotalSeats.ToString("N0")</td>
+                                    <td class="px-4 py-4 text-right whitespace-nowrap">@item.BookedSeats.ToString("N0")</td>
+                                    <td class="px-4 py-4 text-right font-bold text-orange-400 whitespace-nowrap">@item.EmptySeats.ToString("N0")</td>
+                                    <td class="px-4 py-4 text-right font-semibold text-amber-400 whitespace-nowrap">@item.OccupancyRate.ToString("N2")%</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+
+                    <tfoot class="bg-[#141419] border-t border-gray-700/60">
+                        <tr>
+                            <td colspan="6" class="px-4 py-4 font-bold text-white">
+                                Tổng cộng
+                            </td>
+                            <td class="px-4 py-4 text-right font-bold text-white">
+                                @lowItems.Sum(x => x.TotalSeats).ToString("N0")
+                            </td>
+                            <td class="px-4 py-4 text-right font-bold text-white">
+                                @lowItems.Sum(x => x.BookedSeats).ToString("N0")
+                            </td>
+                            <td class="px-4 py-4 text-right font-bold text-orange-400">
+                                @lowItems.Sum(x => x.EmptySeats).ToString("N0")
+                            </td>
+                            <td class="px-4 py-4 text-right font-bold text-white">
+                                -
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="w-full max-w-full overflow-hidden bg-[#1e1e24] border border-gray-700/50 rounded-xl shadow-xl">
+        <div class="p-5 border-b border-gray-700/60">
+            <h2 class="text-lg font-semibold text-white">
+                Khung giờ thường sold out
+            </h2>
+            <p class="text-sm text-gray-400 mt-1">
+                Gom nhóm những chuyến đã bán hết ghế theo giờ khởi hành.
+            </p>
+        </div>
+
+        <div class="w-full overflow-x-auto">
+            <table class="w-full min-w-[720px] text-sm text-left text-gray-300">
+                <thead class="text-xs uppercase bg-[#141419] text-gray-400 border-b border-gray-700/60">
+                    <tr>
+                        <th class="w-[80px] px-4 py-4 whitespace-nowrap">STT</th>
+                        <th class="w-[180px] px-4 py-4 whitespace-nowrap">Khung giờ</th>
+                        <th class="w-[180px] px-4 py-4 text-right whitespace-nowrap">Số chuyến sold out</th>
+                        <th class="w-[180px] px-4 py-4 text-right whitespace-nowrap">Tổng ghế</th>
+                        <th class="w-[180px] px-4 py-4 text-right whitespace-nowrap">Ghế đã đặt</th>
+                    </tr>
+                </thead>
+
+                <tbody class="divide-y divide-gray-700/50">
+                    @if (!soldOutItems.Any())
+                    {
+                        <tr>
+                            <td colspan="5" class="px-4 py-8 text-center text-gray-500">
+                                Chưa có khung giờ sold out trong khoảng này.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        for (var i = 0; i < soldOutItems.Count; i++)
+                        {
+                            var item = soldOutItems[i];
+
+                            <tr class="hover:bg-gray-800/30 transition-colors duration-150">
+                                <td class="px-4 py-4 text-gray-400 whitespace-nowrap">@(i + 1)</td>
+                                <td class="px-4 py-4 font-semibold text-white whitespace-nowrap">@item.TimeFrame</td>
+                                <td class="px-4 py-4 text-right font-bold text-emerald-400 whitespace-nowrap">@item.SoldOutTripCount.ToString("N0")</td>
+                                <td class="px-4 py-4 text-right whitespace-nowrap">@item.TotalSeats.ToString("N0")</td>
+                                <td class="px-4 py-4 text-right whitespace-nowrap">@item.BookedSeats.ToString("N0")</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    initializeDashboardDateRangePicker('LowOccupancyTrips', '@fromDateValue', '@toDateValue');
+
+    if (document.getElementById('lowOccupancyPieChart')) {
+        renderDashboardPieChart(
+            'lowOccupancyPieChart',
+            @Html.Raw(chartLabels),
+            @Html.Raw(chartData),
+            @Html.Raw(chartRows),
+            'Ghế trống'
+        );
+    }
+</script>

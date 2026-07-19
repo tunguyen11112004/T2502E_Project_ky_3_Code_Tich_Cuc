@@ -1,19 +1,22 @@
 @model List<Bus_ticket.Models.Trip>
 @{
-Layout = "_AdminLayout";
-ViewData["Title"] = "Điều Hành Chuyến Xe & Hành Khách";
-var busList = ViewBag.BusList as List<Bus_ticket.Models.Bus>;
-var routeList = ViewBag.RouteList as List<Bus_ticket.Models.BusRoute>;
-int currentPage = ViewBag.CurrentPage ?? 1;
-int totalPages = ViewBag.TotalPages ?? 1;
-string searchDate = ViewBag.SearchDate ?? "";
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Điều Hành Chuyến Xe & Hành Khách";
+    var busList = ViewBag.BusList as List<Bus_ticket.Models.Bus>;
+    var routeList = ViewBag.RouteList as List<Bus_ticket.Models.BusRoute>;
+    var operatorList = ViewBag.OperatorList as List<Bus_ticket.Models.BusOperator>;
+    var busClassList = ViewBag.BusClassList as List<Bus_ticket.Models.BusClass>;
+    int currentPage = ViewBag.CurrentPage ?? 1;
+    int totalPages = ViewBag.TotalPages ?? 1;
+    string searchDate = ViewBag.SearchDate ?? "";
 }
 
 <div class="p-6 sm:p-8 space-y-6">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
             <h1 class="text-2xl font-bold tracking-tight text-white">Điều Hành & Danh Sách Vé Chuyến</h1>
-            <p class="text-sm text-gray-400 mt-1">Quản lý hành khách theo từng chuyến chạy, in danh sách đón khách gửi tài xế.</p>
+            <p class="text-sm text-gray-400 mt-1">Quản lý hành khách theo từng chuyến chạy, in danh sách đón khách gửi
+                tài xế.</p>
         </div>
         <div>
             <a asp-action="Create" asp-controller="Booking"
@@ -23,22 +26,33 @@ string searchDate = ViewBag.SearchDate ?? "";
         </div>
     </div>
 
-    <form method="get" action="@Url.Action("Index", "Booking")" class="bg-[#1e1e24] p-4 border border-gray-700/50 rounded-xl grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+    <form method="get" action="@Url.Action("Index", "Booking")"
+          class="bg-[#1e1e24] p-4 border border-gray-700/50 rounded-xl grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
         <div>
             <label class="block mb-1 text-xs font-semibold text-gray-400 uppercase">Lọc theo ngày đi</label>
-            <input type="date" name="searchDate" value="@searchDate"
+            <input type="date" name="searchDate" value="@(ViewBag.SearchDate ?? DateTime.Today.ToString("yyyy-MM-dd"))"
                    class="block w-full px-3 py-2 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-1 focus:ring-amber-400 focus:border-amber-400"/>
         </div>
+
         <div>
-            <label class="block mb-1 text-xs font-semibold text-gray-400 uppercase">Tìm nhanh mã xe / tuyến</label>
-            <input type="text" id="searchTripText" placeholder="Nhập từ khóa cần tìm..."
+            <label class="block mb-1 text-xs font-semibold text-gray-400 uppercase">Tìm theo thông tin xe</label>
+            <input type="text" id="searchBusText" placeholder="Biển số, mã xe, loại xe, nhà xe..."
                    class="block w-full px-3 py-2 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-1 focus:ring-amber-400 focus:border-amber-400"/>
         </div>
+
+        <div>
+            <label class="block mb-1 text-xs font-semibold text-gray-400 uppercase">Tìm theo tuyến đường</label>
+            <input type="text" id="searchRouteText" placeholder="Hà Nội, Hải Phòng, Cát Bà..."
+                   class="block w-full px-3 py-2 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-1 focus:ring-amber-400 focus:border-amber-400"/>
+        </div>
+
         <div class="flex gap-2">
-            <button type="submit" class="w-full px-4 py-2 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg transition-colors">
+            <button type="submit"
+                    class="w-full px-4 py-2 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg transition-colors">
                 Lọc dữ liệu
             </button>
-            <a href="@Url.Action("Index", "Booking")" class="px-4 py-2 text-sm font-semibold text-gray-300 bg-gray-800 hover:bg-gray-700 rounded-lg text-center transition-colors">
+            <a href="@Url.Action("Index", "Booking")"
+               class="px-4 py-2 text-sm font-semibold text-gray-300 bg-gray-800 hover:bg-gray-700 rounded-lg text-center transition-colors">
                 Xóa bộ lọc
             </a>
         </div>
@@ -56,6 +70,7 @@ string searchDate = ViewBag.SearchDate ?? "";
                             <th class="px-6 py-4 font-semibold">Tuyến Đường</th>
                             <th class="px-6 py-4 font-semibold">Giờ Đi</th>
                             <th class="px-6 py-4 font-semibold">Giá Vé</th>
+                            <th class="px-6 py-4 font-semibold">Trạng thái</th>
                             <th class="px-6 py-4 font-semibold text-center">Hành Động</th>
                         </tr>
                         </thead>
@@ -66,21 +81,89 @@ string searchDate = ViewBag.SearchDate ?? "";
                             {
                                 var matchedBus = busList?.FirstOrDefault(b => b.Id == trip.BusId);
                                 var matchedRoute = routeList?.FirstOrDefault(r => r.Id == trip.RouteId);
+                                var matchedOperator = operatorList?.FirstOrDefault(o => o.Id == matchedBus?.OperatorId);
+                                var matchedClass = busClassList?.FirstOrDefault(c => c.Id == matchedBus?.BusClassId);
                                 string rName = matchedRoute != null ? $"{matchedRoute.DeparturePoint} → {matchedRoute.DestinationPoint}" : "Tuyến đường mẫu SRC";
 
                                 <tr class="hover:bg-gray-800/30 transition-colors duration-150 cursor-pointer trip-row"
-                                    data-trip-id="@trip.Id" onclick="loadPassengerManifest('@trip.Id', '@matchedBus?.BusCode', '@rName')">
-                                    <td class="px-6 py-4 font-semibold text-amber-400">
-                                        <div class="text-sm font-bold text-amber-400">@matchedBus?.BusCode</div>
-                                        <div class="text-[10px] text-gray-400 font-normal mt-0.5">@matchedBus?.LegacyBusType</div>
+                                    data-trip-id="@trip.Id"
+                                    onclick="loadPassengerManifest('@trip.Id', '@matchedBus?.BusCode', '@rName')">
+
+                                    <td class="px-6 py-4">
+                                        <div class="flex flex-col space-y-1">
+                                            <div
+                                                class="text-sm font-bold text-amber-400 tracking-wide flex items-center gap-1.5">
+                                                <span>@matchedBus?.BusCode</span>
+                                                @if (!string.IsNullOrEmpty(matchedBus?.LicensePlate))
+                                                {
+                                                    <span
+                                                        class="text-xs text-gray-400 font-normal">(@matchedBus.LicensePlate)</span>
+                                                }
+                                            </div>
+
+                                            <div class="flex flex-wrap items-center gap-1.5 text-[10px]">
+                                                <span
+                                                    class="px-2 py-0.5 rounded bg-gray-800 text-gray-300 font-medium border border-gray-700/60">
+                                                    @(matchedClass?.ClassName ?? matchedBus?.LegacyBusType ?? "Xe giường nằm")
+                                                </span>
+                                                <span
+                                                    class="px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 font-semibold border border-amber-500/20">
+                                                    @(matchedOperator?.OperatorName ?? "Nhà xe")
+                                                </span>
+                                            </div>
+                                        </div>
                                     </td>
+
                                     <td class="px-6 py-4 text-gray-300">@rName</td>
+
                                     <td class="px-6 py-4 text-gray-300">
                                         @trip.DepartureTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
                                     </td>
+
                                     <td class="px-6 py-4 font-semibold text-white">
                                         @trip.BaseFare.ToString("N0") đ
                                     </td>
+
+                                    <td class="px-6 py-4">
+                                        @{
+                                            var statusLower = trip.Status?.ToLower() ?? "scheduled";
+                                            switch (statusLower)
+                                            {
+                                                case "scheduled":
+                                                    <span
+                                                        class="px-2.5 py-1 text-xs font-semibold rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                        Sắp chạy
+                    </span>
+                                                    break;
+                                                case "intransit":
+                                                case "active":
+                                                    <span
+                                                        class="px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 animate-pulse">
+                        Đang chạy
+                    </span>
+                                                    break;
+                                                case "completed":
+                                                    <span
+                                                        class="px-2.5 py-1 text-xs font-semibold rounded-full bg-gray-500/10 text-gray-400 border border-gray-700">
+                        Hoàn thành
+                    </span>
+                                                    break;
+                                                case "cancelled":
+                                                    <span
+                                                        class="px-2.5 py-1 text-xs font-semibold rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                        Đã hủy
+                    </span>
+                                                    break;
+                                                default:
+                                                    <span
+                                                        class="px-2.5 py-1 text-xs font-semibold rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                        @trip.Status
+                    </span>
+                                                    break;
+                                            }
+                                        }
+                                    </td>
+
                                     <td class="px-6 py-4 text-center">
                                         <span class="text-xs text-amber-400 hover:underline">Xem khách →</span>
                                     </td>
@@ -102,7 +185,8 @@ string searchDate = ViewBag.SearchDate ?? "";
                 @if (totalPages > 1)
                 {
                     <div class="flex items-center justify-between p-4 bg-[#141419] border-t border-gray-700/60">
-                        <span class="text-xs text-gray-400">Trang <span class="text-white font-semibold">@currentPage</span> / @totalPages</span>
+                        <span class="text-xs text-gray-400">Trang <span
+                                class="text-white font-semibold">@currentPage</span> / @totalPages</span>
                         <div class="inline-flex space-x-1">
                             <a href="@Url.Action("Index", "Booking", new { page = currentPage - 1, searchDate = searchDate })"
                                class="@(currentPage == 1 ? "pointer-events-none opacity-40" : "") px-3 py-1 text-xs font-medium text-gray-400 bg-gray-800 rounded hover:bg-gray-700 hover:text-white">
@@ -153,11 +237,11 @@ string searchDate = ViewBag.SearchDate ?? "";
         <h2 class="text-xl font-bold text-amber-400 mb-4 text-center">Vé vừa đặt thành công</h2>
         <div id="bookingDetails" class="text-sm space-y-2 border-t border-gray-700 pt-4 mb-6"></div>
         <div class="flex gap-3 mt-6">
-            <button onclick="printTicket()" 
+            <button onclick="printTicket()"
                     class="flex-1 bg-amber-500 hover:bg-amber-600 text-gray-900 font-bold py-2 rounded-lg transition-all">
                 In vé
             </button>
-            <button onclick="document.getElementById('successModal').classList.add('hidden')" 
+            <button onclick="document.getElementById('successModal').classList.add('hidden')"
                     class="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-2 rounded-lg transition-all">
                 Đóng
             </button>
@@ -188,7 +272,25 @@ string searchDate = ViewBag.SearchDate ?? "";
                     }
                 });
         });
-        
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const dateInput = document.getElementById('searchDate');
+
+            if (dateInput && dateInput.value) {
+                console.log("Tự động tải danh sách chuyến xe cho ngày: " + dateInput.value);
+
+                // Cách 1: Nếu bạn sử dụng tính năng Submit Form truyền thống để tìm kiếm:
+                // const searchForm = dateInput.closest('form');
+                // if (searchForm) {
+                //     searchForm.submit();
+                // }
+
+                // Cách 2: Nếu bạn đang sử dụng Ajax để tải danh sách chuyến xe/giờ chạy:
+                // Bạn gọi trực tiếp hàm load chuyến xe hiện tại của mình truyền vào ngày hôm nay, ví dụ:
+                // fetchTripsByDate(dateInput.value);
+            }
+        });
+
         function printTicket() {
             // Lấy nội dung của vé từ thẻ div bookingDetails
             const ticketContent = document.getElementById('bookingDetails').innerHTML;
@@ -213,13 +315,34 @@ string searchDate = ViewBag.SearchDate ?? "";
     let currentBusCode = "";
     let currentRouteName = "";
 
-    // Tìm kiếm nhanh text ngay tại client
-    document.getElementById('searchTripText')?.addEventListener('input', function() {
-        const k = this.value.toLowerCase();
+    // Xử lý bộ lọc thông minh Realtime kết hợp cả 2 điều kiện tại Client
+    const searchBusInput = document.getElementById('searchBusText');
+    const searchRouteInput = document.getElementById('searchRouteText');
+
+    function filterTripTable() {
+        const busQuery = searchBusInput ? searchBusInput.value.toLowerCase().trim() : "";
+        const routeQuery = searchRouteInput ? searchRouteInput.value.toLowerCase().trim() : "";
+
         document.querySelectorAll('#tripTableBody .trip-row').forEach(row => {
-            row.style.display = row.textContent.toLowerCase().includes(k) ? '' : 'none';
+            // Lấy dữ liệu text cột Xe (Cột 1 - index 0) và cột Tuyến đường (Cột 2 - index 1)
+            const busCellText = row.cells[0] ? row.cells[0].textContent.toLowerCase() : "";
+            const routeCellText = row.cells[1] ? row.cells[1].textContent.toLowerCase() : "";
+
+            const matchesBus = busCellText.includes(busQuery);
+            const matchesRoute = routeCellText.includes(routeQuery);
+
+            // Dòng hiển thị khi khớp đồng thời cả hai điều kiện lọc
+            if (matchesBus && matchesRoute) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
         });
-    });
+    }
+
+    // Lắng nghe sự kiện gõ chữ trên cả 2 ô tìm kiếm
+    searchBusInput?.addEventListener('input', filterTripTable);
+    searchRouteInput?.addEventListener('input', filterTripTable);
 
     async function loadPassengerManifest(tripId, busCode, routeName) {
         document.querySelectorAll('.trip-row').forEach(r => r.classList.remove('bg-amber-500/10', 'ring-1', 'ring-amber-400/50'));
@@ -255,7 +378,6 @@ string searchDate = ViewBag.SearchDate ?? "";
             currentManifestData.forEach(p => {
                 const item = document.createElement('div');
                 item.className = "p-3 rounded-lg bg-[#141419] border border-gray-700/40 flex items-center justify-between";
-                // ĐÃ KHẮC PHỤC HIỂN THỊ TRỐN LỖI RAZOR BẰNG CÁCH DÙNG PHÉP CỘNG CHUỖI TRUYỀN THỐNG TRÁNH DẤU $
                 item.innerHTML = '<div>' +
                     '<div class="text-xs font-bold text-white">' + p.passengerName + '</div>' +
                     '<div class="text-[11px] text-gray-400">' + p.phone + '</div>' +

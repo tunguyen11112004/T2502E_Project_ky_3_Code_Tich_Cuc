@@ -185,6 +185,10 @@
                             <input type="radio" name="paymentMethod" value="MOMO" class="text-amber-400 focus:ring-0">
                             <span class="ml-3 text-white">MOMO (Quét mã QR)</span>
                         </label>
+                        <label class="flex items-center p-3 bg-gray-900 border border-gray-700 rounded-lg cursor-pointer hover:border-amber-400">
+                            <input type="radio" name="paymentMethod" value="PAYOS" class="text-amber-400 focus:ring-0">
+                            <span class="ml-3 text-white">Thanh toán chuyển khoản QR (PayOS)</span>
+                        </label>
                     </div>
                     <button type="submit"
                             class="w-full mt-6 bg-amber-400 hover:bg-amber-500 text-gray-900 font-bold py-3 rounded-lg transition-all">
@@ -478,36 +482,42 @@
             if (trip.busType && (trip.busType.includes("Giường") || trip.busType.includes("Limousine"))) {
                 busImgUrl = "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=400";
             }
-
+            
             card.innerHTML = `
-                <div class="w-1/3 max-w-[150px] relative overflow-hidden bg-gray-900 border-r border-gray-800 flex-shrink-0">
-                    <img src="${busImgUrl}" alt="Ảnh xe" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
-                </div>
+    <div class="w-1/3 max-w-[150px] relative overflow-hidden bg-gray-900 border-r border-gray-800 flex-shrink-0">
+        <img src="${busImgUrl}" alt="Ảnh xe" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+    </div>
 
-                <div class="w-2/3 flex-1 p-4 flex flex-col justify-between space-y-2">
-                    <div class="flex justify-between items-start gap-1">
-                        <span class="text-[10px] bg-amber-400/10 text-amber-400 px-2 py-0.5 rounded font-bold tracking-wider truncate">
-                            🚌 ${trip.licensePlate || trip.busCode} (${trip.busType || 'Ghế ngồi'})
-                        </span>
-                        <span class="text-sm font-black text-emerald-400 whitespace-nowrap">${fareStr}</span>
-                    </div>
-                    
-                    <div class="flex items-center justify-between gap-2">
-                        <div class="text-white font-bold text-base">
-                            🕒 Giờ chạy: <span class="text-amber-400">${timeStr}</span>
-                        </div>
-                        <div class="text-[10px] text-gray-400 bg-gray-800/80 px-1.5 py-0.5 rounded border border-gray-700/50 whitespace-nowrap">
-                            🪑 Trống: <span class="text-emerald-400 font-bold">${trip.availableSeats ?? 0}</span> chỗ
-                        </div>
-                    </div>
+    <div class="w-2/3 flex-1 p-4 flex flex-col justify-between space-y-2">
+        <div class="flex justify-between items-start gap-1">
+            <div class="flex flex-col gap-1 min-w-0">
+                <span class="text-[10px] bg-amber-400/10 text-amber-400 px-2 py-0.5 rounded font-bold tracking-wider truncate">
+                    🚌 ${trip.licensePlate || trip.busCode} (${trip.busType || 'Ghế ngồi'})
+                </span>
+                <!-- HIỂN THỊ TÊN NHÀ XE Ở ĐÂY -->
+                <span class="text-[10px] text-gray-400 font-semibold px-2">
+                     🏢 Nhà xe: <span class="text-white">${trip.operatorName || 'Chưa xác định'}</span>
+                </span>
+            </div>
+            <span class="text-sm font-black text-emerald-400 whitespace-nowrap">${fareStr}</span>
+        </div>
+        
+        <div class="flex items-center justify-between gap-2">
+            <div class="text-white font-bold text-base">
+                🕒 Giờ chạy: <span class="text-amber-400">${timeStr}</span>
+            </div>
+            <div class="text-[10px] text-gray-400 bg-gray-800/80 px-1.5 py-0.5 rounded border border-gray-700/50 whitespace-nowrap">
+                🪑 Trống: <span class="text-emerald-400 font-bold">${trip.availableSeats ?? 0}</span> chỗ
+            </div>
+        </div>
 
-                    <div class="text-[11px] text-gray-400 flex items-center justify-between bg-gray-900/40 p-2 rounded border border-gray-800 gap-1">
-                        <span class="truncate">🔵 ${dep}</span>
-                        <span class="text-gray-600 font-bold">➔</span>
-                        <span class="truncate text-right">📍 ${dest}</span>
-                    </div>
-                </div>
-            `;
+        <div class="text-[11px] text-gray-400 flex items-center justify-between bg-gray-900/40 p-2 rounded border border-gray-800 gap-1">
+            <span class="truncate">🔵 ${dep}</span>
+            <span class="text-gray-600 font-bold">➔</span>
+            <span class="truncate text-right">📍 ${dest}</span>
+        </div>
+    </div>
+`;
 
             card.addEventListener('click', function () {
                 document.querySelectorAll('#searchResultArea > div').forEach(c => {
@@ -656,9 +666,9 @@
                 if (result.success) {
                     // Nếu Backend trả về link thanh toán (VNPAY hoặc MoMo)
                     if (result.paymentUrl) {
-                        // Xác định tên cổng thanh toán để đặt tiêu đề cho popup
                         const isMomo = result.paymentUrl.includes("momo.vn");
-                        const titleWindow = isMomo ? "MOMOPayment" : "VNPAYPayment";
+                        const isPayOS = result.paymentUrl.includes("pay.payos.vn");
+                        const titleWindow = isMomo ? "MOMOPayment" : (isPayOS ? "PAYOSPayment" : "VNPAYPayment");
 
                         const paymentWindow = window.open(
                             result.paymentUrl,

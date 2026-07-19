@@ -353,38 +353,115 @@ namespace Bus_ticket.Services
                 .Find(t => t.DepartureTime >= fromUtc && t.DepartureTime <= toUtc)
                 .ToListAsync();
 
-            var routes = await _dbContext.BusRoutes.Find(_ => true).ToListAsync();
-            var buses = await _dbContext.Buses.Find(_ => true).ToListAsync();
+            var routes = await _dbContext.BusRoutes
+                .Find(_ => true)
+                .ToListAsync();
 
-            var soldOutTrips = trips.Select(t =>
-            {
-                var route = routes.FirstOrDefault(r => r.Id == t.RouteId);
-                var bus = buses.FirstOrDefault(b => b.Id == t.BusId);
+            var buses = await _dbContext.Buses
+                .Find(_ => true)
+                .ToListAsync();
 
-                var totalSeats = t.RealtimeSeats?.Count ?? 0;
-                var bookedSeats = t.RealtimeSeats?.Count(s => IsBookedSeat(s.Status)) ?? 0;
+            var busClasses = await _dbContext.BusClasses
+                .Find(_ => true)
+                .ToListAsync();
 
-                var occupancyRate = totalSeats > 0
-                    ? Math.Round((double)bookedSeats / totalSeats * 100, 2)
-                    : 0;
+            var operators = await _dbContext.BusOperators
+                .Find(_ => true)
+                .ToListAsync();
 
-                return new SeatAnalyticsViewModel
+            var routeDictionary = routes
+                .Where(x => !string.IsNullOrWhiteSpace(x.Id))
+                .GroupBy(x => x.Id)
+                .ToDictionary(g => g.Key, g => g.First());
+
+            var busDictionary = buses
+                .Where(x => !string.IsNullOrWhiteSpace(x.Id))
+                .GroupBy(x => x.Id)
+                .ToDictionary(g => g.Key, g => g.First());
+
+            var busClassDictionary = busClasses
+                .Where(x => !string.IsNullOrWhiteSpace(x.Id))
+                .GroupBy(x => x.Id)
+                .ToDictionary(g => g.Key, g => g.First());
+
+            var operatorDictionary = operators
+                .Where(x => !string.IsNullOrWhiteSpace(x.Id))
+                .GroupBy(x => x.Id)
+                .ToDictionary(g => g.Key, g => g.First());
+
+            var soldOutTrips = trips
+                .Select(t =>
                 {
-                    TripCode = t.TripCode ?? "N/A",
-                    RouteName = route != null ? $"{route.DeparturePoint} - {route.DestinationPoint}" : "Không xác định",
-                    LicensePlate = bus?.LicensePlate ?? "Chưa gán xe",
-                    DepartureTime = t.DepartureTime.ToLocalTime(),
-                    TotalSeats = totalSeats,
-                    BookedSeats = bookedSeats,
-                    OccupancyRate = occupancyRate,
-                    Status = t.Status
-                };
-            })
-            .Where(x => x.TotalSeats > 0 && x.OccupancyRate >= 100)
-            .OrderByDescending(x => x.DepartureTime)
-            .ToList();
+                    routeDictionary.TryGetValue(t.RouteId, out var route);
+                    busDictionary.TryGetValue(t.BusId, out var bus);
+
+                    BusClass? busClass = null;
+                    if (!string.IsNullOrWhiteSpace(bus?.BusClassId))
+                    {
+                        busClassDictionary.TryGetValue(bus.BusClassId, out busClass);
+                    }
+
+                    BusOperator? busOperator = null;
+                    if (!string.IsNullOrWhiteSpace(bus?.OperatorId))
+                    {
+                        operatorDictionary.TryGetValue(bus.OperatorId, out busOperator);
+                    }
+
+                    var totalSeats = t.RealtimeSeats?.Count ?? 0;
+                    var bookedSeats = t.RealtimeSeats?.Count(s => IsBookedSeat(s.Status)) ?? 0;
+
+                    var occupancyRate = totalSeats > 0
+                        ? Math.Round((double)bookedSeats / totalSeats * 100, 2)
+                        : 0;
+
+                    return new SeatAnalyticsViewModel
+                    {
+                        TripCode = t.TripCode ?? "N/A",
+                        RouteName = route != null
+                            ? $"{route.DeparturePoint} - {route.DestinationPoint}"
+                            : "Không xác định",
+                        BusType = busClass?.BusType ?? "Không xác định",
+                        OperatorName = busOperator?.OperatorName ?? "Không xác định",
+                        LicensePlate = bus?.LicensePlate ?? "Chưa gán xe",
+                        DepartureTime = t.DepartureTime.ToLocalTime(),
+                        TotalSeats = totalSeats,
+                        BookedSeats = bookedSeats,
+                        OccupancyRate = occupancyRate,
+                        Status = t.Status
+                    };
+                })
+                .Where(x => x.TotalSeats > 0 && x.OccupancyRate >= 100)
+                .OrderByDescending(x => x.DepartureTime)
+                .ThenBy(x => x.RouteName)
+                .ToList();
 
             return soldOutTrips;
+        }
+
+        // ========================================================
+        // TASK 14: HỦY CHUYẾN XE VÀ CẬP NHẬT VÉ (CASCADE UPDATE)
+        // ========================================================
+        public async Task<bool> CancelTripAsync(string tripId)
+        {
+            // 1. Tìm và cập nhật trạng thái chuyến xe (Trips) sử dụng toán tử $set
+            var tripFilter = Builders<Trip>.Filter.Eq(t => t.Id, tripId);
+            var tripUpdate = Builders<Trip>.Update.Set(t => t.Status, "Cancelled");
+            
+            var tripResult = await _dbContext.Trips.UpdateOneAsync(tripFilter, tripUpdate);
+            
+            // Nếu không tìm thấy chuyến để update -> Hủy thất bại
+            if (tripResult.MatchedCount == 0) return false;
+
+            // 2. Cập nhật liên đới (Cascade Update) hàng loạt vé (Booking) sang Cancelled 
+            // và lưu vết chờ hoàn tiền (RefundPending)
+            var bookingFilter = Builders<Booking>.Filter.Eq(b => b.TripId, tripId);
+            var bookingUpdate = Builders<Booking>.Update
+                .Set(b => b.BookingStatus, "Cancelled") 
+                .Set(b => b.IsRefundPending, true); // Đẩy dữ liệu vào danh sách chờ đối soát
+
+            await _dbContext.Bookings.UpdateManyAsync(bookingFilter, bookingUpdate);
+
+            return true;
         }
         
         private static (DateTime FromUtc, DateTime ToUtc) ToUtcDateRange(DateTime fromDate, DateTime toDate)

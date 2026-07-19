@@ -6,6 +6,7 @@ using Bus_ticket.Models;
 using Bus_ticket.Services;
 using Bus_ticket.Settings;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using PayOS;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +20,21 @@ builder.Services.AddControllersWithViews();
 builder.Services.Configure<MongoDbSettings>(
     builder.Configuration.GetSection("MongoDbSettings"));
 
+// Đăng ký PayOS Service
+/*builder.Services.AddSingleton(sp => 
+{
+    var configuration = sp.GetRequiredService<IConfiguration>();
+    
+    var clientId = configuration["PayOS:ClientId"] 
+                   ?? throw new ArgumentNullException("PayOS:ClientId missing");
+    var apiKey = configuration["PayOS:ApiKey"] 
+                 ?? throw new ArgumentNullException("PayOS:ApiKey missing");
+    var checksumKey = configuration["PayOS:ChecksumKey"] 
+                      ?? throw new ArgumentNullException("PayOS:ChecksumKey missing");
+
+    return new PayOS(clientId, apiKey, checksumKey);
+});*/
+
 // Services
 builder.Services.AddSingleton<ApplicationDbContext>();
 builder.Services.AddSingleton<UserService>();
@@ -30,6 +46,9 @@ builder.Services.AddSingleton<CrawlerProducer>();
 builder.Services.AddScoped<NewsScraperService>();
 builder.Services.AddHostedService<ArticleProcessorConsumer>();
 builder.Services.AddScoped<DashboardService>();
+builder.Services.AddScoped<TicketStatisticsService>();
+builder.Services.AddScoped<VehicleRevenueStatisticsService>();
+builder.Services.AddScoped<LowOccupancyTripsService>();
 
 // Cookie Authentication
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
