@@ -115,5 +115,6 @@ using (var scope = app.Services.CreateScope())
         Console.WriteLine($"[Error] Lỗi auto-crawler: {ex.Message}");
     }
 }
-
+builder.Services.AddHostedService<RabbitMqConsumerService>();
+builder.Services.AddHostedService<ArticleProcessorConsumer>();
 app.Run();
