@@ -49,7 +49,7 @@ builder.Services.AddScoped<DashboardService>();
 builder.Services.AddScoped<TicketStatisticsService>();
 builder.Services.AddScoped<VehicleRevenueStatisticsService>();
 builder.Services.AddScoped<LowOccupancyTripsService>();
-
+builder.Services.AddScoped<BusOperatorService>();
 // Cookie Authentication
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
