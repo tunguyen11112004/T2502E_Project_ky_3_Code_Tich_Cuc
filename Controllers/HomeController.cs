@@ -94,14 +94,11 @@ public class HomeController : Controller
         var activeBusClasses = _dbContext.BusClasses
             .Find(bc => bc.Status == "Active" && bc.DeletedAt == null)
             .ToList();
-
-        // Lưu song song cả Vi và En ngăn cách nhau bởi dấu '|'
         var staticPriceAndAmenities = new Dictionary<string, (decimal Price, string Amenities, bool IsHot)>
         {
             { "express_seat", (120000, "Ghế ngồi tiêu chuẩn, Quạt gió|Standard seats, Fan cooling", false) },
             { "luxury_sleeper", (180000, "Giường nằm, Wi-Fi, Nước uống|Sleeper berth, Wi-Fi, Drinking water", true) }
         };
-
         var pricingData = activeBusClasses.Select(bc =>
         {
             var key = bc.ClassNameKey?.ToLower() ?? bc.ClassName.ToLower();
@@ -109,30 +106,23 @@ public class HomeController : Controller
             var info = staticPriceAndAmenities.ContainsKey(key) 
                 ? staticPriceAndAmenities[key] 
                 : (150000, "Tiện nghi cơ bản, Điều hòa|Basic amenities, AC", false);
-
-            // Chuẩn hóa tên xe từ DB sang 2 ngôn ngữ
             string viName = bc.ClassName;
             string enName = bc.ClassName;
             if (key.Contains("express")) enName = "Express Seater Class";
             else if (key.Contains("luxury")) enName = "Luxury Limousine Sleeper";
-
-            // Chuẩn hóa loại xe từ DB sang 2 ngôn ngữ
             string viType = bc.BusType;
             string enType = bc.BusType == "Ghế ngồi" ? "Seater Bus" : (bc.BusType == "Giường nằm" ? "Sleeper Bus" : bc.BusType);
-
             return new PriceConfigViewModel
             {
-                // Truyền gộp theo định dạng "Tiếng Việt|Tiếng Anh"
                 ClassName = $"{viName}|{enName}",
                 BusType = $"{viType}|{enType}",
                 ImageUrl = string.IsNullOrEmpty(bc.ImageUrl) ? "/images/default-bus.jpg" : bc.ImageUrl,
                 TotalSeats = bc.TotalSeats,
                 BasePrice = info.Price,
-                Amenities = info.Amenities, // Đã có sẵn dấu '|' ở Dictionary trên
+                Amenities = info.Amenities,
                 IsHot = info.IsHot
             };
         }).OrderBy(x => x.BasePrice).ToList();
-
         return View(pricingData);
     }
 

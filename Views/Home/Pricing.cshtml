@@ -5,8 +5,6 @@
 }
 
 <div class="container mx-auto px-4 py-10 max-w-5xl">
-    
-    <!-- Quy Định Cấu Hình Tính Giá Vé -->
     <div class="bg-blue-50 border-l-4 border-ternaryColor p-6 rounded-r-lg mb-10 shadow-sm">
         <h2 class="text-xl font-bold text-titleColor mb-2 flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-ternaryColor" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -38,7 +36,6 @@
         </ul>
     </div>
 
-    <!-- Bảng thông tin xe & giá thành -->
     <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100">
         <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
             <div>
@@ -64,18 +61,13 @@
                         foreach (var item in Model)
                         {
                             string rowClass = item.IsHot ? "bg-green-50/30 hover:bg-green-50/50" : "hover:bg-gray-50/80";
-                            
-                            // Tách chuỗi ngôn ngữ "Việt|Anh" thành mảng
                             var nameParts = item.ClassName.Split('|');
                             var typeParts = item.BusType.Split('|');
                             var amenityParts = item.Amenities.Split('|');
-
                             string nameVi = nameParts[0];
                             string nameEn = nameParts.Length > 1 ? nameParts[1] : nameParts[0];
-
                             string typeVi = typeParts[0];
                             string enType = typeParts.Length > 1 ? typeParts[1] : typeParts[0];
-
                             <tr class="@rowClass transition-colors">
                                 <td class="p-4 w-32">
                                     <div class="avatar">
@@ -84,10 +76,8 @@
                                         </div>
                                     </div>
                                 </td>
-                                
                                 <td class="p-4">
                                     <div class="font-bold text-gray-800 text-base flex items-center gap-2">
-                                        <!-- In Tên xe theo 2 thẻ data để Javascript tự dịch -->
                                         <span data-vi="@nameVi" data-en="@nameEn">@nameVi</span>
                                         @if (item.IsHot)
                                         {
@@ -105,15 +95,12 @@
                                 <td class="p-4">
                                     @if (amenityParts.Length > 0)
                                     {
-                                        // Cắt nhỏ từng tiện nghi
                                         var itemsVi = amenityParts[0].Split(',');
                                         var itemsEn = amenityParts.Length > 1 ? amenityParts[1].Split(',') : amenityParts[0].Split(',');
-
                                         for (int i = 0; i < itemsVi.Length; i++)
                                         {
                                             string amVi = itemsVi[i].Trim();
                                             string amEn = i < itemsEn.Length ? itemsEn[i].Trim() : amVi;
-
                                             <span class="badge badge-ghost badge-sm mr-1 mb-1 text-gray-600 font-medium" 
                                                   data-vi="@amVi" data-en="@amEn">
                                                 @amVi
@@ -121,7 +108,6 @@
                                         }
                                     }
                                 </td>
-                                
                                 <td class="p-4 text-right font-bold @(item.IsHot ? "text-ternaryColor text-lg" : "text-gray-900 text-base")">
                                     @string.Format("{0:N0}", item.BasePrice) đ
                                 </td>
