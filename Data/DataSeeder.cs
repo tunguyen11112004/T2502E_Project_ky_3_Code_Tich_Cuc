@@ -54,6 +54,14 @@ namespace Bus_ticket.Data
 
         public async Task SeedAllAsync()
         {
+            var isDataAlreadySeeded = _context.Branches != null && await _context.Branches.Find(_ => true).AnyAsync();
+
+            if (isDataAlreadySeeded)
+            {
+                Console.WriteLine("--> [BỎ QUA] Hệ thống đã có dữ liệu mẫu. Không chạy Seeding để tiết kiệm tài nguyên Azure.");
+                return; // Dừng luôn toàn bộ tiến trình phía dưới
+            }
+            
             Console.WriteLine("--> Bắt đầu seeding dữ liệu liên tỉnh chuẩn...");
 
             await SeedPermissions();
