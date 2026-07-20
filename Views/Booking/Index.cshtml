@@ -19,6 +19,10 @@
                 tài xế.</p>
         </div>
         <div>
+            <a asp-action="RefundList" asp-controller="Booking"
+               class="inline-flex items-center justify-center px-4 py-2.5 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg transition-colors duration-200 shadow-sm">
+                <span class="mr-1.5">📋</span> Danh sách vé cần hoàn tiền
+            </a>
             <a asp-action="Create" asp-controller="Booking"
                class="inline-flex items-center justify-center px-4 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg transition-colors duration-200 shadow-sm">
                 + Đặt vé mới tại quầy
@@ -87,7 +91,8 @@
 
                                 <tr class="hover:bg-gray-800/30 transition-colors duration-150 cursor-pointer trip-row"
                                     data-trip-id="@trip.Id"
-                                    onclick="loadPassengerManifest('@trip.Id', '@matchedBus?.BusCode', '@rName')">
+                                    data-departure-time="@trip.DepartureTime.ToLocalTime().ToString("yyyy-MM-ddTHH:mm:ss")"
+                                    onclick="loadPassengerManifest('@trip.Id', '@matchedBus?.BusCode', '@rName', '@trip.DepartureTime.ToLocalTime().ToString("yyyy-MM-ddTHH:mm:ss")')">
 
                                     <td class="px-6 py-4">
                                         <div class="flex flex-col space-y-1">
@@ -249,6 +254,105 @@
     </div>
 </div>
 
+<!-- Modal Hủy Vé & Tính Tiền Hoàn (Đã đồng bộ Dark Mode) -->
+<div id="cancelBookingModal"
+     class="hidden fixed inset-0 z-50 overflow-y-auto bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
+    <div
+        class="bg-[#1e1e24] rounded-xl shadow-2xl max-w-md w-full overflow-hidden transform transition-all border border-gray-700/60 text-gray-300">
+
+        <!-- Header -->
+        <div class="bg-rose-600 px-6 py-4 flex items-center justify-between text-white">
+            <h5 class="text-base font-bold flex items-center gap-2 uppercase tracking-wide">
+                <span>⚠️</span> Xác Nhận Hủy Vé & Hoàn Tiền
+            </h5>
+            <button type="button" onclick="closeCancelModal()"
+                    class="text-white hover:text-gray-300 text-2xl font-bold leading-none transition-colors">&times;
+            </button>
+        </div>
+
+        <form id="formCancelBooking" onsubmit="submitCancelRequest(event)">
+            @Html.AntiForgeryToken()
+            <div class="p-6 space-y-4">
+                <!-- Mã đặt vé ẩn -->
+                <input type="hidden" id="cancelBookingCode" name="bookingCode"/>
+
+                <!-- Khối hiển thị thông tin giá vé trực quan -->
+                <div class="bg-rose-500/10 p-4 rounded-xl border border-rose-500/20 space-y-2.5">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-400">Giá vé ban đầu:</span>
+                        <span id="lblOriginalFare" class="font-semibold text-white">0 đ</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span id="lblFeePercentText" class="text-gray-400">Phí hủy vé quy định:</span>
+                        <span id="lblRefundFee" class="font-semibold text-rose-400">-0 đ</span>
+                    </div>
+                    <div class="border-t border-gray-700 my-2 pt-2 flex justify-between text-base font-bold">
+                        <span class="text-rose-400">Số tiền thực hoàn:</span>
+                        <span id="lblAmountToRefund" class="text-rose-400">0 đ</span>
+                    </div>
+                </div>
+
+                <!-- Lý do hủy -->
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Lý do hủy
+                        vé</label>
+                    <textarea
+                        class="w-full px-3 py-2 bg-gray-950 border border-gray-700 rounded-lg text-sm text-white placeholder-gray-500 focus:ring-1 focus:ring-rose-500 focus:border-rose-500 outline-none transition-all"
+                        name="reason" rows="2" placeholder="Nhập lý do khách trả vé..." required></textarea>
+                </div>
+
+                <!-- Phương thức hoàn tiền -->
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Phương thức
+                        hoàn tiền</label>
+                    <select
+                        class="w-full px-3 py-2 bg-gray-950 border border-gray-700 rounded-lg text-sm text-white focus:ring-1 focus:ring-rose-500 focus:border-rose-500 outline-none transition-all"
+                        id="selectRefundMethod" name="refundMethod" required>
+                        <option value="Cash">Hoàn tại quầy (Tiền mặt)</option>
+                        <option value="Online">Hoàn qua tài khoản (Online)</option>
+                    </select>
+                </div>
+
+                <!-- Khối thông tin ngân hàng -->
+                <div id="divBankInfo" class="hidden bg-gray-950 p-4 rounded-lg border border-gray-700 space-y-3">
+                    <h6 class="text-xs font-bold uppercase text-amber-400 border-b border-gray-800 pb-1.5">Thông Tin Tài
+                        Khoản Nhận Tiền</h6>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Tên ngân hàng</label>
+                        <input type="text"
+                               class="w-full px-3 py-1.5 text-sm bg-gray-900 border border-gray-700 text-white rounded focus:ring-1 focus:ring-rose-500 outline-none"
+                               name="bankName" placeholder="Ví dụ: Vietcombank">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Số tài khoản</label>
+                        <input type="text"
+                               class="w-full px-3 py-1.5 text-sm bg-gray-900 border border-gray-700 text-white rounded focus:ring-1 focus:ring-rose-500 outline-none"
+                               name="accountNo" placeholder="Nhập số tài khoản">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Tên chủ tài khoản</label>
+                        <input type="text"
+                               class="w-full px-3 py-1.5 text-sm bg-gray-900 border border-gray-700 text-white rounded focus:ring-1 focus:ring-rose-500 outline-none"
+                               name="accountName" placeholder="NGUYEN VAN A">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Buttons -->
+            <div class="bg-[#141419] px-6 py-4 flex justify-end space-x-3 border-t border-gray-700/60">
+                <button type="button" onclick="closeCancelModal()"
+                        class="px-4 py-2 border border-gray-700 rounded-lg text-sm font-medium text-gray-300 bg-gray-800 hover:bg-gray-700 transition-colors">
+                    Đóng
+                </button>
+                <button type="submit"
+                        class="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 shadow-lg transition-colors">
+                    Xác Nhận Hủy & Hoàn Danh Sách
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 @if (TempData["NewBookingCode"] != null)
 {
     <script>
@@ -314,6 +418,8 @@
     let currentManifestData = [];
     let currentBusCode = "";
     let currentRouteName = "";
+    let currentTripId = "";
+
 
     // Xử lý bộ lọc thông minh Realtime kết hợp cả 2 điều kiện tại Client
     const searchBusInput = document.getElementById('searchBusText');
@@ -344,8 +450,9 @@
     searchBusInput?.addEventListener('input', filterTripTable);
     searchRouteInput?.addEventListener('input', filterTripTable);
 
-    async function loadPassengerManifest(tripId, busCode, routeName) {
-        document.querySelectorAll('.trip-row').forEach(r => r.classList.remove('bg-amber-500/10', 'ring-1', 'ring-amber-400/50'));
+    async function loadPassengerManifest(tripId, busCode, routeName, tripDepartureTime) {
+        currentTripId = tripId;
+        document.querySelectorAll('#tripTableBody .trip-row').forEach(r => r.classList.remove('bg-amber-500/10', 'ring-1', 'ring-amber-400/50'));
         const targetRow = document.querySelector(`[data-trip-id="${tripId}"]`);
         if (targetRow) targetRow.classList.add('bg-amber-500/10', 'ring-1', 'ring-amber-400/50');
 
@@ -376,16 +483,67 @@
             btnPrint.classList.remove('opacity-50');
 
             currentManifestData.forEach(p => {
+                const fare = p.originalFare || p.finalAmount || 0;
+                // Đảm bảo lấy chính xác chuỗi thời gian khởi hành từ thuộc tính của dòng được chọn
+                const targetRow = document.querySelector(`[data-trip-id="${currentTripId}"]`);
+                const depTime = targetRow ? targetRow.getAttribute('data-departure-time') : (tripDepartureTime || "");
+
+                let isExpired = false;
+                if (depTime.trim() !== "") {
+                    let formattedTimeStr = depTime.replace(' ', 'T');
+                    const departureTime = new Date(formattedTimeStr);
+                    const currentTime = new Date();
+                    if (!isNaN(departureTime.getTime())) {
+                        isExpired = (currentTime >= departureTime);
+                    }
+                }
+
                 const item = document.createElement('div');
                 item.className = "p-3 rounded-lg bg-[#141419] border border-gray-700/40 flex items-center justify-between";
-                item.innerHTML = '<div>' +
-                    '<div class="text-xs font-bold text-white">' + p.passengerName + '</div>' +
-                    '<div class="text-[11px] text-gray-400">' + p.phone + '</div>' +
-                    '<div class="text-[10px] text-gray-500 mt-1">Mã: ' + p.bookingCode + ' | ' + p.paymentStatus + '</div>' +
-                    '</div>' +
-                    '<div class="px-2.5 py-1 text-xs font-black text-amber-400 bg-amber-400/10 rounded border border-amber-400/20 shadow-inner">' +
-                    'Ghế ' + p.seatNumber +
-                    '</div>';
+
+                let cancelButtonHtml = '';
+                if (isExpired) {
+                    cancelButtonHtml = `
+                        <button type="button" disabled 
+                                class="px-2 py-1 text-[11px] font-medium text-gray-500 bg-gray-800 rounded border border-gray-700 cursor-not-allowed opacity-60">
+                            Không thể hủy
+                        </button>`;
+                } else {
+                    // Ép kiểu chữ thường chính xác theo dữ liệu Json trả về
+                    const bCode = p.bookingCode || '';
+                    const pName = p.passengerName || '';
+                    const sNumber = p.seatNumber || '';
+
+                    const safePassengerName = pName.replace(/'/g, "\\'");
+
+                    // Truyền depTime vào dưới dạng chuỗi an toàn
+                    cancelButtonHtml = `
+                        <button type="button" onclick="openCancelModal('${bCode}', '${safePassengerName}', '${sNumber}', ${fare}, '${depTime}')" 
+                                class="px-2 py-1 text-[11px] font-medium text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-600 rounded border border-rose-500/20 transition-all">
+                            Hủy vé
+                        </button>`;
+                }
+
+                // Cập nhật hiển thị text phía dưới
+                const displayCode = p.bookingCode || '';
+                const displayName = p.passengerName || '';
+                const displayPhone = p.phone || '';
+                const displayStatus = p.paymentStatus || '';
+                const displaySeat = p.seatNumber || '';
+
+                item.innerHTML = `
+                    <div>
+                        <div class="text-xs font-bold text-white">${displayName}</div>
+                        <div class="text-[11px] text-gray-400">${displayPhone}</div>
+                        <div class="text-[10px] text-gray-500 mt-1">Mã: ${displayCode} | ${displayStatus}</div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        ${cancelButtonHtml}
+                        <div class="px-2.5 py-1 text-xs font-black text-amber-400 bg-amber-400/10 rounded border border-amber-400/20 shadow-inner">
+                            Ghế ${displaySeat}
+                        </div>
+                    </div>`;
+
                 container.appendChild(item);
             });
         } catch {
@@ -420,4 +578,193 @@
         printWindow.document.close();
         printWindow.print();
     }
+
+    function openCancelModal(bookingCode, passengerName, seatNumber, originalFare, departureTimeInput) {
+        const currentTime = new Date();
+
+        // Chuẩn hóa định dạng thời gian linh hoạt
+        let formattedTimeStr = departureTimeInput;
+        if (departureTimeInput && departureTimeInput.includes('/')) {
+            const [datePart, timePart] = departureTimeInput.trim().split(" ");
+            if (datePart && timePart) {
+                const [day, month, year] = datePart.split("/");
+                const [hours, minutes] = timePart.split(":");
+                formattedTimeStr = `${year}-${month}-${day}T${hours}:${minutes}:00`;
+            }
+        } else if (departureTimeInput) {
+            // Đổi khoảng trắng thành T nếu là chuỗi sql/iso thường
+            formattedTimeStr = departureTimeInput.replace(' ', 'T');
+        }
+
+        const departureTime = new Date(formattedTimeStr);
+
+        if (isNaN(departureTime.getTime())) {
+            console.error("Thời gian khởi hành không đúng định dạng:", departureTimeInput);
+            alert("Lỗi: Định dạng thời gian của chuyến đi không hợp lệ!");
+            return;
+        }
+
+        // Tính toán khoảng cách thời gian (Giờ)
+        const timeDiffMs = departureTime - currentTime;
+        const hoursDifference = timeDiffMs / (1000 * 60 * 60);
+
+        // LOGIC TÍNH PHÍ HOÀN VÉ
+        let feePercent = 0;
+        let percentText = "0%";
+
+        if (hoursDifference >= 48) {
+            feePercent = 0;
+            percentText = "Miễn phí (0%)";
+        } else if (hoursDifference >= 24 && hoursDifference < 48) {
+            feePercent = 0.15;
+            percentText = "15%";
+        } else {
+            feePercent = 0.30;
+            percentText = "30%";
+        }
+
+        const parsedOriginalFare = parseInt(originalFare) || 0;
+        const refundFee = parsedOriginalFare * feePercent;
+        const amountToRefund = parsedOriginalFare - refundFee;
+
+        // Cập nhật giao diện hiển thị
+        if (document.getElementById('lblOriginalFare')) {
+            document.getElementById('lblOriginalFare').innerText = parsedOriginalFare.toLocaleString('vi-VN') + ' đ';
+        }
+        if (document.getElementById('lblFeePercentText')) {
+            document.getElementById('lblFeePercentText').innerText = `Phí hủy vé quy định (${percentText}):`;
+        }
+        if (document.getElementById('lblRefundFee')) {
+            document.getElementById('lblRefundFee').innerText = refundFee > 0 ? '-' + refundFee.toLocaleString('vi-VN') + ' đ' : '0 đ';
+        }
+        if (document.getElementById('lblAmountToRefund')) {
+            document.getElementById('lblAmountToRefund').innerText = amountToRefund.toLocaleString('vi-VN') + ' đ';
+        }
+
+        // Gán dữ liệu vào các thẻ input ẩn
+        if (document.getElementById('cancelBookingCode')) {
+            document.getElementById('cancelBookingCode').value = bookingCode;
+        }
+
+        // Hiển thị modal hủy vé
+        const modal = document.getElementById('cancelBookingModal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+    }
+
+    function calculateRefundValues(originalFare, departureTimeInput) {
+        // 1. Xác định thời gian hiện tại và thời gian xe chạy
+        const currentTime = new Date();
+        const departureTime = new Date(departureTimeInput); // Truyền vào định dạng ISO, vd: '2026-07-25T14:00:00'
+
+        // 2. Tính khoảng thời gian chênh lệch (quy đổi ra giờ)
+        const timeDiffMs = departureTime - currentTime;
+        const hoursDifference = timeDiffMs / (1000 * 60 * 60);
+
+        // 3. Xét tỷ lệ khấu trừ theo 3 mốc thời gian
+        let feePercent = 0;
+
+        if (hoursDifference >= 48) {
+            // Mức 1: Từ 48 giờ trở lên -> Miễn phí hoàn (0%)
+            feePercent = 0;
+        } else if (hoursDifference >= 24 && hoursDifference < 48) {
+            // Mức 2: Từ 24 giờ đến dưới 48 giờ -> Khấu trừ 15%
+            feePercent = 0.15;
+        } else {
+            // Mức 3: Trong vòng 24 giờ -> Khấu trừ 30%
+            // (Nếu hoursDifference < 0 tức là xe đã chạy, tùy nghiệp vụ bạn có thể block không cho hủy, ở đây mình gộp chung mức 30%)
+            feePercent = 0.30;
+        }
+
+        // 4. Tính toán số tiền
+        const refundFee = originalFare * feePercent;
+        const amountToRefund = originalFare - refundFee;
+
+        // 5. Cập nhật giao diện
+        document.getElementById('lblOriginalFare').innerText = originalFare.toLocaleString('vi-VN') + ' đ';
+
+        // Nếu phí = 0 thì không hiện dấu âm (-) đằng trước cho đẹp
+        const feeText = refundFee > 0 ? '-' + refundFee.toLocaleString('vi-VN') + ' đ' : '0 đ';
+        document.getElementById('lblRefundFee').innerText = feeText;
+
+        document.getElementById('lblAmountToRefund').innerText = amountToRefund.toLocaleString('vi-VN') + ' đ';
+    }
+
+    // 2. Hàm đóng Modal chủ động
+    function closeCancelModal() {
+        const modal = document.getElementById('cancelBookingModal');
+        modal.classList.add('hidden');
+    }
+
+    // 3. Hàm xử lý gửi yêu cầu hủy vé (Đã sửa đổi cho Bước 3)
+    async function submitCancelRequest(event) {
+        event.preventDefault(); // Chặn reload trang mặc định
+
+        const form = document.getElementById('formCancelBooking');
+        if (!form) return;
+
+        const formData = new FormData(form);
+
+        // Gom dữ liệu gửi lên API
+        const requestData = {
+            BookingCode: formData.get('bookingCode'),
+            Reason: formData.get('reason'),
+            RefundMethod: formData.get('refundMethod'),
+            BankName: formData.get('bankName') || "",
+            AccountNumber: formData.get('accountNo') || "",
+            AccountName: formData.get('accountName')?.toUpperCase() || ""
+        };
+
+        try {
+            const response = await fetch('/Booking/RequestCancel', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': form.querySelector('input[name="__RequestVerificationToken"]')?.value
+                },
+                body: JSON.stringify(requestData)
+            });
+
+            const result = await response.json();
+            // Tìm đoạn này trong hàm submitCancelRequest của bạn:
+            if (result.success) {
+                alert('Đã ghi nhận yêu cầu hủy vé! Vé đã được chuyển sang danh sách chờ hoàn tiền.');
+                closeCancelModal();
+
+                // Sửa lại đoạn gọi hàm mượt mà hơn ở đây:
+                if (currentTripId) {
+                    const targetRow = document.querySelector(`[data-trip-id="${currentTripId}"]`);
+                    // Lấy trực tiếp từ thuộc tính data-departure-time
+                    const depTime = targetRow ? targetRow.getAttribute('data-departure-time') : "";
+
+                    loadPassengerManifest(currentTripId, currentBusCode, currentRouteName, depTime);
+                } else {
+                    location.reload();
+                }
+            } else {
+                alert('Lỗi từ hệ thống: ' + result.message);
+            }
+        } catch (error) {
+            console.error("Lỗi gửi request hủy vé:", error);
+            alert('Có lỗi hệ thống xảy ra khi gửi yêu cầu hủy!');
+        }
+    }
+
+    // 4. Lắng nghe sự kiện thay đổi Phương thức hoàn tiền để ẩn/hiện ô Ngân hàng
+    document.addEventListener("DOMContentLoaded", function () {
+        const selectMethod = document.getElementById('selectRefundMethod');
+        const divBankInfo = document.getElementById('divBankInfo');
+
+        if (selectMethod && divBankInfo) {
+            selectMethod.addEventListener('change', function () {
+                if (this.value === 'Online') {
+                    divBankInfo.classList.remove('hidden'); // Hiện phần ngân hàng
+                } else {
+                    divBankInfo.classList.add('hidden');    // Ẩn phần ngân hàng
+                }
+            });
+        }
+    });
 </script>
