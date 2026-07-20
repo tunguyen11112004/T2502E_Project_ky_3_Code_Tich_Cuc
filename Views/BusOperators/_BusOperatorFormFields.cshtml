@@ -1,0 +1,48 @@
+﻿@model Bus_ticket.ViewModels.BusOperatorFormViewModel
+@{
+    string prefix = ViewData["IdPrefix"] as string ?? string.Empty;
+}
+
+<input type="hidden" id="@(prefix)Id" name="Id" value="@Model.Id" />
+<div class="space-y-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">Mã nhà xe</label>
+            <input type="text" id="@(prefix)OperatorCode" name="OperatorCode" value="@Model.OperatorCode"
+                   class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-3" required />
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">Tên nhà xe</label>
+            <input type="text" id="@(prefix)OperatorName" name="OperatorName" value="@Model.OperatorName"
+                   class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-3" required />
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">Email liên hệ</label>
+            <input type="email" id="@(prefix)ContactEmail" name="ContactEmail" value="@Model.ContactEmail"
+                   class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-3" required />
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">Số điện thoại</label>
+            <input type="text" id="@(prefix)PhoneNumber" name="PhoneNumber" value="@Model.PhoneNumber"
+                   class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-3" required />
+        </div>
+
+        <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-300 mb-2">Mã số thuế</label>
+            <input type="text" id="@(prefix)TaxCode" name="TaxCode" value="@Model.TaxCode"
+                   class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-3" />
+        </div>
+
+        <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-300 mb-2">Trạng thái</label>
+            <select id="@(prefix)Status" name="Status" 
+                    class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-3">
+                <option value="Active" selected="@(Model.Status == "Active")">Hoạt động</option>
+                <option value="Inactive" selected="@(Model.Status == "Inactive")">Ngưng hoạt động</option>
+            </select>
+        </div>
+    </div>
+</div>

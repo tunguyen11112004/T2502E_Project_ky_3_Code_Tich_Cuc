@@ -59,4 +59,11 @@ public class Bus
     [BsonElement("updatedBy")]
     public string UpdatedBy { get; set; }
     
+   
+    [BsonElement("deletedAt")]
+    public DateTime? DeletedAt { get; set; }
+
+    [BsonElement("deletedBy")]
+    public string? DeletedBy { get; set; }
+    
 }

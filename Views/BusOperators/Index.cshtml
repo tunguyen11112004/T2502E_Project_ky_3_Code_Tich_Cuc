@@ -1,91 +1,90 @@
-@model IEnumerable<Bus_ticket.Models.BusOperator>
+﻿@model List<Bus_ticket.ViewModels.BusOperatorListItemViewModel>
+@using Bus_ticket.ViewModels
 @{
     Layout = "_AdminLayout";
-    ViewData["Title"] = "Quản lý Đối tác Nhà xe";
+    ViewData["Title"] = "Quản lý Nhà xe";
 
+    string searchTerm = ViewBag.SearchTerm as string ?? string.Empty;
+    string statusFilter = ViewBag.Status as string ?? string.Empty;
     int currentPage = ViewBag.CurrentPage ?? 1;
     int totalPages = ViewBag.TotalPages ?? 1;
     long totalItems = ViewBag.TotalItems ?? 0;
     int pageSize = ViewBag.PageSize ?? 10;
-    string searchTerm = ViewBag.SearchTerm ?? string.Empty;
-    string status = ViewBag.Status ?? string.Empty;
-    string suggestedOperatorCode = ViewBag.SuggestedOperatorCode ?? "OP-XX-01";
-    bool openCreateModal = ViewBag.OpenCreateModal ?? false;
-    string? openEditModalId = ViewBag.OpenEditModalId as string;
 
     long startItem = totalItems == 0 ? 0 : ((currentPage - 1) * pageSize) + 1;
     long endItem = (currentPage * pageSize) > totalItems ? totalItems : (currentPage * pageSize);
-
-    string? activeSelected = status == "Active" ? "selected" : null;
-    string? inactiveSelected = status == "Inactive" ? "selected" : null;
 }
 
-<div class="p-6 sm:p-8 space-y-6">
+<div class="p-4 sm:p-6 lg:p-8 space-y-6 max-w-full overflow-x-hidden">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-            <h1 class="text-2xl font-bold tracking-tight text-white">Danh sách Đối tác Nhà xe</h1>
-            <p class="text-sm text-gray-400 mt-1">Quản lý thông tin đối tác nhà xe (merchant) trên hệ thống.</p>
+            <h1 class="text-2xl font-bold tracking-tight text-white">Danh mục Đối tác Nhà xe</h1>
+            <p class="text-sm text-gray-400 mt-1">Quản lý thông tin liên hệ và trạng thái hợp tác của các nhà xe.</p>
         </div>
-        <button type="button"
-                data-modal-target="createOperatorModal"
-                data-modal-toggle="createOperatorModal"
-                class="inline-flex shrink-0 whitespace-nowrap items-center justify-center px-4 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg transition-colors shadow-sm">
-            + Thêm đối tác
+
+        <button type="button" onclick="showOperatorModal('modal-operator-create')"
+                class="inline-flex items-center justify-center px-4 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg transition-colors duration-200 shadow-sm">
+            Thêm nhà xe mới
         </button>
     </div>
 
     @if (TempData["SuccessMessage"] != null)
     {
-        <div class="p-4 text-sm text-emerald-400 rounded-lg bg-gray-800 border border-emerald-700">
-            @TempData["SuccessMessage"]
+        <div class="flex items-center p-4 text-sm text-emerald-400 rounded-lg bg-gray-800 border border-emerald-800">
+            <div><span class="font-medium">Thành công!</span> @TempData["SuccessMessage"]</div>
         </div>
     }
-
     @if (TempData["ErrorMessage"] != null)
     {
-        <div class="p-4 text-sm text-red-400 rounded-lg bg-gray-800 border border-red-700">
-            @TempData["ErrorMessage"]
+        <div class="flex items-center p-4 text-sm text-red-400 rounded-lg bg-gray-800 border border-red-800">
+            <div><span class="font-medium">Thất bại!</span> @TempData["ErrorMessage"]</div>
         </div>
     }
 
-    <form method="get" asp-controller="BusOperators" asp-action="Index" class="grid grid-cols-1 md:grid-cols-4 gap-3">
+    <!-- Bộ lọc chi tiết: từ khóa + trạng thái -->
+    <form method="get" asp-action="Index" class="flex flex-col md:flex-row md:items-center gap-3">
         <input type="text" name="searchTerm" value="@searchTerm"
-               class="md:col-span-2 block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400"
-               placeholder="Tìm theo tên, mã, email, số điện thoại..." />
+               placeholder="Tìm theo tên, mã, email hoặc SĐT..."
+               class="w-full md:w-80 px-4 py-2.5 text-sm bg-gray-900 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400 placeholder-gray-500" />
 
         <select name="status"
-                class="block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400">
-            <option value="">Tất cả trạng thái</option>
-            <option value="Active" selected="@activeSelected">Active</option>
-            <option value="Inactive" selected="@inactiveSelected">Inactive</option>
+                class="w-full md:w-56 px-4 py-2.5 text-sm bg-gray-900 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400">
+            <option value="" selected="@(statusFilter == string.Empty)">Tất cả trạng thái</option>
+            <option value="Active" selected="@(statusFilter == "Active")">Đang hợp tác</option>
+            <option value="Inactive" selected="@(statusFilter == "Inactive")">Ngưng hợp tác</option>
         </select>
 
-        <button type="submit" class="px-4 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg transition-colors">
-            Tìm kiếm
+        <button type="submit"
+                class="px-5 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg">
+            Lọc
         </button>
+
+        @if (!string.IsNullOrEmpty(searchTerm) || !string.IsNullOrEmpty(statusFilter))
+        {
+            <a asp-action="Index" class="px-5 py-2.5 text-sm font-semibold text-gray-300 hover:text-white">Xóa lọc</a>
+        }
     </form>
 
-    <div class="overflow-hidden bg-[#1e1e24] border border-gray-700/50 rounded-xl shadow-xl">
-        <div class="overflow-x-auto">
-            <table class="w-full min-w-[72rem] text-sm text-left text-gray-300">
-                <thead class="text-xs bg-[#141419] text-gray-400 border-b border-gray-700/60">
+    <div class="w-full max-w-full overflow-hidden bg-[#1e1e24] border border-gray-700/50 rounded-xl shadow-xl">
+        <div class="w-full overflow-x-auto">
+            <table class="w-full min-w-[960px] table-fixed text-sm text-left text-gray-300">
+                <thead class="text-xs uppercase bg-[#141419] text-gray-400 border-b border-gray-700/60">
                     <tr>
-                        <th class="px-6 py-4 font-semibold whitespace-nowrap leading-normal">Mã nhà xe</th>
-                        <th class="px-6 py-4 font-semibold whitespace-nowrap leading-normal">Tên nhà xe</th>
-                        <th class="px-6 py-4 font-semibold leading-normal min-w-[10rem]">Địa chỉ</th>
-                        <th class="px-6 py-4 font-semibold whitespace-nowrap leading-normal">Hotline</th>
-                        <th class="px-6 py-4 font-semibold leading-normal min-w-[9rem]">Email</th>
-                        <th class="px-6 py-4 font-semibold whitespace-nowrap leading-normal">Người liên hệ</th>
-                        <th class="px-6 py-4 font-semibold whitespace-nowrap leading-normal">Trạng thái</th>
-                        <th class="px-6 py-4 font-semibold whitespace-nowrap leading-normal text-right min-w-[9.5rem]">Hành động</th>
+                        <th class="w-32 px-4 py-4 font-semibold tracking-wider">Mã nhà xe</th>
+                        <th class="w-56 px-4 py-4 font-semibold tracking-wider">Tên nhà xe</th>
+                        <th class="w-56 px-4 py-4 font-semibold tracking-wider">Email liên hệ</th>
+                        <th class="w-36 px-4 py-4 font-semibold tracking-wider">SĐT</th>
+                        <th class="w-40 px-4 py-4 font-semibold tracking-wider">Mã số thuế</th>
+                        <th class="w-32 px-4 py-4 font-semibold tracking-wider">Trạng thái</th>
+                        <th class="w-36 px-4 py-4 font-semibold tracking-wider text-right">Hành động</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-700/50">
-                    @if (!Model.Any())
+                    @if (Model == null || !Model.Any())
                     {
                         <tr>
-                            <td colspan="8" class="px-6 py-10 text-center text-gray-500 bg-[#1e1e24]">
-                                Không có đối tác nhà xe phù hợp.
+                            <td colspan="7" class="px-4 py-10 text-center text-gray-500">
+                                Chưa có nhà xe nào phù hợp.
                             </td>
                         </tr>
                     }
@@ -93,51 +92,39 @@
                     {
                         foreach (var item in Model)
                         {
-                            var badgeClass = item.Status == "Active"
-                                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                                : "bg-rose-500/10 text-rose-400 border-rose-500/20";
-
-                            <tr class="hover:bg-gray-800/30 transition-colors">
-                                <td class="px-6 py-4 text-amber-400 font-semibold whitespace-nowrap">@item.OperatorCode</td>
-                                <td class="px-6 py-4 font-semibold text-white">@item.OperatorName</td>
-                                <td class="px-6 py-4 text-gray-400 max-w-[14rem] truncate leading-normal" title="@item.Address">@item.Address</td>
-                                <td class="px-6 py-4 text-gray-400 whitespace-nowrap">@item.PhoneNumber</td>
-                                <td class="px-6 py-4 text-gray-400 break-all leading-normal">@item.Email</td>
-                                <td class="px-6 py-4 text-gray-400 whitespace-nowrap">@item.ContactPerson</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="inline-flex items-center px-2.5 py-0.5 text-xs font-semibold rounded-md border @badgeClass">
-                                        @item.Status
-                                    </span>
+                            <tr class="hover:bg-gray-800/30 transition-colors duration-150">
+                                <td class="px-4 py-4 font-semibold text-amber-400">@item.OperatorCode</td>
+                                <td class="px-4 py-4 text-white whitespace-normal break-words">@item.OperatorName</td>
+                                <td class="px-4 py-4 whitespace-normal break-words">@item.ContactEmail</td>
+                                <td class="px-4 py-4">@item.PhoneNumber</td>
+                                <td class="px-4 py-4">@item.TaxCode</td>
+                                <td class="px-4 py-4">
+                                    @if (string.Equals(item.Status, "Active", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        <span class="inline-flex items-center px-2.5 py-0.5 text-xs font-semibold rounded-md border bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
+                                            Đang hợp tác
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="inline-flex items-center px-2.5 py-0.5 text-xs font-semibold rounded-md border bg-gray-500/10 text-gray-400 border-gray-500/20">
+                                            Ngưng hợp tác
+                                        </span>
+                                    }
                                 </td>
-                                <td class="px-6 py-4 text-right whitespace-nowrap">
-                                    <div class="inline-flex flex-nowrap items-center justify-end gap-4">
-                                        <a asp-controller="BusOperators" asp-action="Details" asp-route-id="@item.Id" class="text-cyan-400 hover:text-cyan-300 font-semibold">Xem</a>
+                                <td class="px-4 py-4 text-right text-sm font-medium">
+                                    <div class="inline-flex items-center gap-3">
                                         <button type="button"
-                                                class="text-amber-400 hover:text-amber-300 font-semibold btn-edit-operator"
-                                                data-modal-target="editOperatorModal"
-                                                data-modal-toggle="editOperatorModal"
-                                                data-id="@item.Id"
-                                                data-operator-code="@item.OperatorCode"
-                                                data-operator-name="@item.OperatorName"
-                                                data-operator-phone="@item.PhoneNumber"
-                                                data-operator-email="@item.Email"
-                                                data-operator-address="@item.Address"
-                                                data-operator-contact="@item.ContactPerson"
-                                                data-operator-status="@item.Status">
+                                                onclick="openEditOperatorModal('@item.Id')"
+                                                class="text-amber-400 hover:text-amber-300 font-semibold">
                                             Sửa
                                         </button>
-                                        @if (item.Status == "Active")
-                                        {
-                                            <button type="button"
-                                                    class="text-rose-400 hover:text-rose-300 font-semibold btn-delete-operator"
-                                                    data-modal-target="deleteOperatorModal"
-                                                    data-modal-toggle="deleteOperatorModal"
-                                                    data-id="@item.Id"
-                                                    data-operator-name="@item.OperatorName"
-                                                    data-operator-code="@item.OperatorCode">
-                                                Xóa
-                                            </button>
-                                        }
+                                        <span class="text-gray-600">|</span>
+                                        <button type="button"
+                                                onclick="openDeleteOperatorModal('@item.Id', '@item.OperatorName')"
+                                                class="text-rose-400 hover:text-rose-300 font-semibold">
+                                            Ngưng hợp tác
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -147,393 +134,158 @@
             </table>
         </div>
 
-        <div class="flex flex-col md:flex-row items-center justify-between gap-3 px-6 py-4 bg-[#141419] border-t border-gray-700/60 text-sm text-gray-400">
-            <div class="min-w-0">Hiển thị @startItem - @endItem trong tổng số @totalItems đối tác nhà xe</div>
-            <div class="flex items-center gap-2 shrink-0">
-                @if (currentPage > 1)
-                {
+        <div class="flex flex-col sm:flex-row items-center justify-between p-4 bg-[#141419] border-t border-gray-700/60 gap-4">
+            <span class="text-sm text-gray-400">
+                Hiển thị từ <span class="font-semibold text-white">@startItem</span> đến
+                <span class="font-semibold text-white">@endItem</span> trong tổng số
+                <span class="font-semibold text-white">@totalItems</span> nhà xe
+            </span>
+
+            @if (totalPages > 1)
+            {
+                <nav class="inline-flex items-center -space-x-px rounded-md shadow-sm">
                     <a asp-action="Index"
                        asp-route-page="@(currentPage - 1)"
                        asp-route-searchTerm="@searchTerm"
-                       asp-route-status="@status"
-                       class="px-3 py-1.5 rounded-md border border-gray-700 hover:bg-gray-800">Trước</a>
-                }
+                       asp-route-status="@statusFilter"
+                       class="relative inline-flex items-center rounded-l-md px-3 py-2 text-sm font-medium border border-gray-700 bg-gray-900 text-gray-400 hover:bg-gray-800 hover:text-white @(currentPage == 1 ? "pointer-events-none opacity-40" : "")">
+                        Trước
+                    </a>
 
-                <span class="px-3 py-1.5 rounded-md bg-gray-800 text-white">@currentPage / @(totalPages == 0 ? 1 : totalPages)</span>
+                    @for (int i = 1; i <= totalPages; i++)
+                    {
+                        if (i == currentPage)
+                        {
+                            <span class="relative z-10 inline-flex items-center bg-amber-400 px-4 py-2 text-sm font-semibold text-gray-900 border border-amber-400">
+                                @i
+                            </span>
+                        }
+                        else
+                        {
+                            <a asp-action="Index"
+                               asp-route-page="@i"
+                               asp-route-searchTerm="@searchTerm"
+                               asp-route-status="@statusFilter"
+                               class="relative inline-flex items-center border border-gray-700 bg-gray-900 px-4 py-2 text-sm font-medium text-gray-400 hover:bg-gray-800 hover:text-white">
+                                @i
+                            </a>
+                        }
+                    }
 
-                @if (currentPage < totalPages)
-                {
                     <a asp-action="Index"
                        asp-route-page="@(currentPage + 1)"
                        asp-route-searchTerm="@searchTerm"
-                       asp-route-status="@status"
-                       class="px-3 py-1.5 rounded-md border border-gray-700 hover:bg-gray-800">Sau</a>
-                }
-            </div>
+                       asp-route-status="@statusFilter"
+                       class="relative inline-flex items-center rounded-r-md px-3 py-2 text-sm font-medium border border-gray-700 bg-gray-900 text-gray-400 hover:bg-gray-800 hover:text-white @(currentPage == totalPages ? "pointer-events-none opacity-40" : "")">
+                        Tiếp
+                    </a>
+                </nav>
+            }
         </div>
     </div>
 </div>
 
-<div id="createOperatorModal" tabindex="-1" aria-hidden="true"
-     class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
-    <div class="relative p-4 w-full max-w-2xl max-h-full">
-        <div class="relative bg-[#1e1e24] border border-gray-700/50 rounded-xl shadow-xl">
-            <div class="flex items-center justify-between p-5 border-b border-gray-700/60">
-                <h3 class="text-lg font-semibold text-white">Thêm đối tác nhà xe</h3>
-                <button type="button" class="px-3 py-1.5 text-sm font-semibold text-gray-300 bg-gray-800 border border-gray-700 rounded-lg hover:bg-gray-700" data-modal-hide="createOperatorModal">Đóng</button>
-            </div>
-            <form id="createOperatorForm" asp-controller="BusOperators" asp-action="Create" method="post" class="p-5 space-y-4" novalidate>
-                @Html.AntiForgeryToken()
-                <input type="hidden" name="returnSearchTerm" value="@searchTerm" />
-                <input type="hidden" name="returnStatus" value="@status" />
-                <input type="hidden" name="returnPage" value="@currentPage" />
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="operator-field">
-                        <label class="operator-label block mb-1 text-sm text-gray-400">Tên nhà xe <span class="text-red-500">*</span></label>
-                        <input type="text" name="OperatorName" id="createOperatorName" required maxlength="150" data-required="true"
-                               class="operator-input block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400" />
-                    </div>
-                    <div class="operator-field">
-                        <label class="operator-label block mb-1 text-sm text-gray-400">Mã nhà xe <span class="text-red-500">*</span></label>
-                        <input type="text" name="OperatorCode" id="createOperatorCode" value="@suggestedOperatorCode" required maxlength="30" data-required="true"
-                               class="operator-input block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400" />
-                    </div>
-                    <div class="operator-field">
-                        <label class="operator-label block mb-1 text-sm text-gray-400">Hotline <span class="text-red-500">*</span></label>
-                        <input type="text" name="PhoneNumber" required maxlength="20" data-required="true" inputmode="tel"
-                               placeholder="Ví dụ: 0900123456"
-                               class="operator-input block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400" />
-                    </div>
-                    <div class="operator-field">
-                        <label class="operator-label block mb-1 text-sm text-gray-400">Email <span class="text-red-500">*</span></label>
-                        <input type="email" name="Email" required maxlength="120" data-required="true"
-                               class="operator-input block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400" />
-                    </div>
-                    <div class="operator-field md:col-span-2">
-                        <label class="operator-label block mb-1 text-sm text-gray-400">Địa chỉ <span class="text-red-500">*</span></label>
-                        <input type="text" name="Address" required maxlength="255" data-required="true"
-                               class="operator-input block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400" />
-                    </div>
-                    <div class="operator-field">
-                        <label class="operator-label block mb-1 text-sm text-gray-400">Người liên hệ <span class="text-red-500">*</span></label>
-                        <input type="text" name="ContactPerson" required maxlength="120" data-required="true"
-                               class="operator-input block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400" />
-                    </div>
-                    <div class="operator-field">
-                        <label class="operator-label block mb-1 text-sm text-gray-400">Trạng thái <span class="text-red-500">*</span></label>
-                        <select name="Status" required data-required="true"
-                                class="operator-input block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400">
-                            <option value="Active" selected>Active</option>
-                            <option value="Inactive">Inactive</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="flex justify-end gap-3 pt-2">
-                    <button type="button" class="px-4 py-2.5 text-sm font-semibold text-gray-300 bg-gray-800 border border-gray-700 rounded-lg hover:bg-gray-700" data-modal-hide="createOperatorModal">Hủy</button>
-                    <button type="submit" class="px-4 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg">Lưu</button>
-                </div>
-            </form>
+<!-- Modal: Thêm nhà xe -->
+<div id="modal-operator-create" tabindex="-1" aria-hidden="true" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 w-full h-full">
+    <div class="relative w-full max-w-lg mx-4 bg-[#1e1e24] rounded-xl shadow-xl border border-gray-700/50">
+        <div class="flex items-center justify-between p-6 border-b border-gray-700/60">
+            <h3 class="text-xl font-semibold text-white">Thêm Nhà Xe Mới</h3>
+            <button type="button" onclick="hideOperatorModal('modal-operator-create')" class="text-gray-400 hover:text-white text-sm font-semibold">Đóng</button>
         </div>
+        <form asp-action="Create" method="post" class="p-6 space-y-6">
+            @Html.AntiForgeryToken()
+            @await Html.PartialAsync("_BusOperatorFormFields", new BusOperatorFormViewModel())
+            <div class="flex justify-end gap-4">
+                <button type="button" onclick="hideOperatorModal('modal-operator-create')"
+                        class="px-6 py-2.5 text-sm font-semibold text-gray-400 hover:text-white">Hủy</button>
+                <button type="submit"
+                        class="px-6 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg">Lưu</button>
+            </div>
+        </form>
     </div>
 </div>
 
-<div id="editOperatorModal" tabindex="-1" aria-hidden="true"
-     class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
-    <div class="relative p-4 w-full max-w-2xl max-h-full">
-        <div class="relative bg-[#1e1e24] border border-gray-700/50 rounded-xl shadow-xl">
-            <div class="flex items-center justify-between p-5 border-b border-gray-700/60">
-                <h3 class="text-lg font-semibold text-white">Sửa đối tác nhà xe</h3>
-                <button type="button" class="px-3 py-1.5 text-sm font-semibold text-gray-300 bg-gray-800 border border-gray-700 rounded-lg hover:bg-gray-700" data-modal-hide="editOperatorModal">Đóng</button>
-            </div>
-            <form id="editOperatorForm" asp-controller="BusOperators" asp-action="Edit" method="post" class="p-5 space-y-4" novalidate>
-                @Html.AntiForgeryToken()
-                <input type="hidden" name="Id" id="editOperatorId" />
-                <input type="hidden" name="returnSearchTerm" value="@searchTerm" />
-                <input type="hidden" name="returnStatus" value="@status" />
-                <input type="hidden" name="returnPage" value="@currentPage" />
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="operator-field">
-                        <label class="operator-label block mb-1 text-sm text-gray-400">Tên nhà xe <span class="text-red-500">*</span></label>
-                        <input type="text" name="OperatorName" id="editOperatorName" required maxlength="150" data-required="true"
-                               class="operator-input block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400" />
-                    </div>
-                    <div class="operator-field">
-                        <label class="operator-label block mb-1 text-sm text-gray-400">Mã nhà xe <span class="text-red-500">*</span></label>
-                        <input type="text" name="OperatorCode" id="editOperatorCode" required maxlength="30" data-required="true"
-                               class="operator-input block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400" />
-                    </div>
-                    <div class="operator-field">
-                        <label class="operator-label block mb-1 text-sm text-gray-400">Hotline <span class="text-red-500">*</span></label>
-                        <input type="text" name="PhoneNumber" id="editOperatorPhone" required maxlength="20" data-required="true" inputmode="tel"
-                               placeholder="Ví dụ: 0900123456"
-                               class="operator-input block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400" />
-                    </div>
-                    <div class="operator-field">
-                        <label class="operator-label block mb-1 text-sm text-gray-400">Email <span class="text-red-500">*</span></label>
-                        <input type="email" name="Email" id="editOperatorEmail" required maxlength="120" data-required="true"
-                               class="operator-input block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400" />
-                    </div>
-                    <div class="operator-field md:col-span-2">
-                        <label class="operator-label block mb-1 text-sm text-gray-400">Địa chỉ <span class="text-red-500">*</span></label>
-                        <input type="text" name="Address" id="editOperatorAddress" required maxlength="255" data-required="true"
-                               class="operator-input block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400" />
-                    </div>
-                    <div class="operator-field">
-                        <label class="operator-label block mb-1 text-sm text-gray-400">Người liên hệ <span class="text-red-500">*</span></label>
-                        <input type="text" name="ContactPerson" id="editOperatorContact" required maxlength="120" data-required="true"
-                               class="operator-input block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400" />
-                    </div>
-                    <div class="operator-field">
-                        <label class="operator-label block mb-1 text-sm text-gray-400">Trạng thái <span class="text-red-500">*</span></label>
-                        <select name="Status" id="editOperatorStatus" required data-required="true"
-                                class="operator-input block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400">
-                            <option value="Active">Active</option>
-                            <option value="Inactive">Inactive</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="flex justify-end gap-3 pt-2">
-                    <button type="button" class="px-4 py-2.5 text-sm font-semibold text-gray-300 bg-gray-800 border border-gray-700 rounded-lg hover:bg-gray-700" data-modal-hide="editOperatorModal">Hủy</button>
-                    <button type="submit" class="px-4 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg">Cập nhật</button>
-                </div>
-            </form>
+<!-- Modal: Sửa nhà xe -->
+<div id="modal-operator-edit" tabindex="-1" aria-hidden="true" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 w-full h-full">
+    <div class="relative w-full max-w-lg mx-4 bg-[#1e1e24] rounded-xl shadow-xl border border-gray-700/50">
+        <div class="flex items-center justify-between p-6 border-b border-gray-700/60">
+            <h3 class="text-xl font-semibold text-white">Cập nhật Nhà Xe</h3>
+            <button type="button" onclick="hideOperatorModal('modal-operator-edit')" class="text-gray-400 hover:text-white text-sm font-semibold">Đóng</button>
         </div>
+        <form asp-action="Edit" method="post" class="p-6 space-y-6" id="formEditOperator">
+            @Html.AntiForgeryToken()
+            @await Html.PartialAsync("_BusOperatorFormFields", new BusOperatorFormViewModel(), new ViewDataDictionary(ViewData) { { "IdPrefix", "Edit" } })
+            <div class="flex justify-end gap-4">
+                <button type="button" onclick="hideOperatorModal('modal-operator-edit')"
+                        class="px-6 py-2.5 text-sm font-semibold text-gray-400 hover:text-white">Hủy</button>
+                <button type="submit"
+                        class="px-6 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg">Cập nhật</button>
+            </div>
+        </form>
     </div>
 </div>
 
-<div id="deleteOperatorModal" tabindex="-1" aria-hidden="true"
-     class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
-    <div class="relative p-4 w-full max-w-md max-h-full">
-        <div class="relative bg-[#1e1e24] border border-gray-700/50 rounded-xl shadow-xl p-5 space-y-4">
-            <h3 class="text-lg font-semibold text-white">Ngưng hợp tác đối tác</h3>
-            <p class="text-sm text-gray-400">Bạn có chắc muốn chuyển <span id="deleteOperatorLabel" class="text-white font-semibold"></span> sang trạng thái Inactive?</p>
-            <form id="deleteOperatorForm" asp-controller="BusOperators" asp-action="Delete" method="post" class="flex justify-end gap-3">
+<!-- Modal: Xác nhận ngưng hợp tác (xóa mềm) -->
+<div id="modal-operator-delete" tabindex="-1" aria-hidden="true" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 w-full h-full">
+    <div class="relative w-full max-w-md mx-4 bg-[#1e1e24] rounded-xl shadow-xl border border-gray-700/50">
+        <div class="p-6 text-center">
+            <h3 class="text-lg font-semibold text-white mb-2">Xác nhận ngưng hợp tác</h3>
+            <p class="text-sm text-gray-400 mb-6">
+                Bạn có chắc muốn ngưng hợp tác với nhà xe
+                <span id="deleteOperatorName" class="font-semibold text-white"></span>?
+                Dữ liệu thống kê liên quan vẫn được bảo toàn.
+            </p>
+            <form asp-action="Delete" method="post" id="formDeleteOperator">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="id" id="deleteOperatorId" />
-                <input type="hidden" name="returnSearchTerm" value="@searchTerm" />
-                <input type="hidden" name="returnStatus" value="@status" />
-                <input type="hidden" name="returnPage" value="@currentPage" />
-                <button type="button" class="px-4 py-2.5 text-sm font-semibold text-gray-300 bg-gray-800 border border-gray-700 rounded-lg hover:bg-gray-700" data-modal-hide="deleteOperatorModal">Hủy</button>
-                <button type="submit" class="px-4 py-2.5 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-500 rounded-lg">Xác nhận</button>
+                <div class="flex justify-center gap-4">
+                    <button type="button" onclick="hideOperatorModal('modal-operator-delete')"
+                            class="px-6 py-2.5 text-sm font-semibold text-gray-400 hover:text-white">Hủy</button>
+                    <button type="submit"
+                            class="px-6 py-2.5 text-sm font-semibold text-white bg-rose-500 hover:bg-rose-600 rounded-lg">Xác nhận</button>
+                </div>
             </form>
         </div>
     </div>
 </div>
 
-@section Scripts {
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const operatorCodePattern = /^OP-[A-Z]{2}-\d{2}$/;
-            const emailPattern = /^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/;
-            const hotlinePattern = /^(0\d{8,10}|1900\d{4,6})$/;
+<script>
+    function showOperatorModal(id) {
+        var modal = document.getElementById(id);
+        modal.classList.remove('hidden');
+    }
 
-            function normalizeHotline(value) {
-                return (value || '').trim().replace(/[\s\-\.\(\)]/g, '');
+    function hideOperatorModal(id) {
+        var modal = document.getElementById(id);
+        modal.classList.add('hidden');
+    }
+
+    async function openEditOperatorModal(id) {
+        try {
+            const res = await fetch(`/BusOperators/GetForEdit?id=${id}`);
+            if (!res.ok) {
+                alert('Không tải được dữ liệu nhà xe.');
+                return;
             }
+            const data = await res.json();
 
-            function ensureErrorElement(wrapper) {
-                let errorEl = wrapper.querySelector('.operator-error');
-                if (!errorEl) {
-                    errorEl = document.createElement('p');
-                    errorEl.className = 'operator-error hidden text-xs text-red-400 mt-1';
-                    wrapper.appendChild(errorEl);
-                }
-                return errorEl;
-            }
+            document.getElementById('EditId').value = data.id;
+            document.getElementById('EditOperatorCode').value = data.operatorCode;
+            document.getElementById('EditOperatorName').value = data.operatorName;
+            document.getElementById('EditContactEmail').value = data.contactEmail;
+            document.getElementById('EditPhoneNumber').value = data.phoneNumber;
+            document.getElementById('EditTaxCode').value = data.taxCode;
+            document.getElementById('EditStatus').value = data.status;
 
-            function getFieldValidation(field) {
-                const rawValue = field.value ?? '';
-                const value = rawValue.trim();
+            showOperatorModal('modal-operator-edit');
+        } catch (err) {
+            alert('Có lỗi xảy ra khi tải dữ liệu nhà xe.');
+        }
+    }
 
-                if (!value) {
-                    return { invalid: true, message: 'Vui lòng điền thông tin' };
-                }
-
-                if (field.name === 'OperatorCode' && !operatorCodePattern.test(value.toUpperCase())) {
-                    return { invalid: true, message: 'Mã nhà xe phải theo format OP-HL-03' };
-                }
-
-                if (field.name === 'PhoneNumber') {
-                    const normalizedPhone = normalizeHotline(value);
-                    if (!normalizedPhone) {
-                        return { invalid: true, message: 'Vui lòng điền thông tin' };
-                    }
-
-                    if (!hotlinePattern.test(normalizedPhone)) {
-                        return { invalid: true, message: 'Hotline không hợp lệ (ví dụ: 0900123456)' };
-                    }
-                }
-
-                if (field.type === 'email' && !emailPattern.test(value)) {
-                    return { invalid: true, message: 'Email không đúng định dạng' };
-                }
-
-                return { invalid: false, message: '' };
-            }
-
-            function clearFieldError(field) {
-                const wrapper = field.closest('.operator-field');
-                if (!wrapper) return;
-
-                const label = wrapper.querySelector('.operator-label');
-                const errorEl = ensureErrorElement(wrapper);
-
-                field.classList.remove('border-red-500', 'ring-2', 'ring-red-500/40', 'focus:ring-red-500', 'focus:border-red-500');
-                field.classList.add('border-gray-700', 'focus:ring-amber-400', 'focus:border-amber-400');
-                if (label) {
-                    label.classList.remove('text-red-400');
-                    label.classList.add('text-gray-400');
-                }
-                errorEl.textContent = '';
-                errorEl.classList.add('hidden');
-            }
-
-            function setFieldError(field, message) {
-                const wrapper = field.closest('.operator-field');
-                if (!wrapper) return;
-
-                const label = wrapper.querySelector('.operator-label');
-                const errorEl = ensureErrorElement(wrapper);
-
-                field.classList.remove('border-gray-700', 'focus:ring-amber-400', 'focus:border-amber-400');
-                field.classList.add('border-red-500', 'ring-2', 'ring-red-500/40', 'focus:ring-red-500', 'focus:border-red-500');
-                if (label) {
-                    label.classList.remove('text-gray-400');
-                    label.classList.add('text-red-400');
-                }
-                errorEl.textContent = message;
-                errorEl.classList.remove('hidden');
-            }
-
-            function validateOperatorForm(form) {
-                let isValid = true;
-                let firstInvalid = null;
-
-                form.querySelectorAll('[data-required]').forEach(function (field) {
-                    const validation = getFieldValidation(field);
-                    if (validation.invalid) {
-                        setFieldError(field, validation.message);
-                        isValid = false;
-                        if (!firstInvalid) {
-                            firstInvalid = field;
-                        }
-                    } else {
-                        clearFieldError(field);
-                    }
-                });
-
-                if (!isValid && firstInvalid) {
-                    firstInvalid.focus();
-                }
-
-                return isValid;
-            }
-
-            function bindOperatorFormValidation(form) {
-                if (!form) return;
-
-                form.querySelectorAll('.operator-field').forEach(function (wrapper) {
-                    ensureErrorElement(wrapper);
-                });
-
-                form.querySelectorAll('[data-required]').forEach(function (field) {
-                    field.addEventListener('input', function () {
-                        const validation = getFieldValidation(field);
-                        if (validation.invalid) {
-                            setFieldError(field, validation.message);
-                        } else {
-                            clearFieldError(field);
-                        }
-                    });
-                    field.addEventListener('change', function () {
-                        const validation = getFieldValidation(field);
-                        if (validation.invalid) {
-                            setFieldError(field, validation.message);
-                        } else {
-                            clearFieldError(field);
-                        }
-                    });
-                });
-
-                form.addEventListener('submit', function (event) {
-                    form.querySelectorAll('[name="PhoneNumber"]').forEach(function (field) {
-                        const trimmed = (field.value || '').trim();
-                        if (trimmed) {
-                            field.value = normalizeHotline(trimmed);
-                        }
-                    });
-
-                    if (!validateOperatorForm(form)) {
-                        event.preventDefault();
-                    }
-                });
-            }
-
-            bindOperatorFormValidation(document.getElementById('createOperatorForm'));
-            bindOperatorFormValidation(document.getElementById('editOperatorForm'));
-
-            const createNameInput = document.getElementById('createOperatorName');
-            const createCodeInput = document.getElementById('createOperatorCode');
-
-            if (createNameInput && createCodeInput) {
-                createNameInput.addEventListener('blur', async function () {
-                    const name = createNameInput.value.trim();
-                    if (!name) return;
-
-                    const response = await fetch('/BusOperators/SuggestOperatorCode?operatorName=' + encodeURIComponent(name));
-                    if (!response.ok) return;
-
-                    const data = await response.json();
-                    if (data.code) {
-                        createCodeInput.value = data.code;
-                    }
-                });
-            }
-
-            document.querySelectorAll('.btn-edit-operator').forEach(function (button) {
-                button.addEventListener('click', function () {
-                    const id = button.dataset.id;
-                    document.getElementById('editOperatorId').value = id;
-                    document.getElementById('editOperatorForm').action = '/BusOperators/Edit/' + id;
-                    document.getElementById('editOperatorCode').value = button.dataset.operatorCode || '';
-                    document.getElementById('editOperatorName').value = button.dataset.operatorName || '';
-                    document.getElementById('editOperatorPhone').value = button.dataset.operatorPhone || '';
-                    document.getElementById('editOperatorEmail').value = button.dataset.operatorEmail || '';
-                    document.getElementById('editOperatorAddress').value = button.dataset.operatorAddress || '';
-                    document.getElementById('editOperatorContact').value = button.dataset.operatorContact || '';
-                    document.getElementById('editOperatorStatus').value = button.dataset.operatorStatus || 'Active';
-                });
-            });
-
-            document.querySelectorAll('.btn-delete-operator').forEach(function (button) {
-                button.addEventListener('click', function () {
-                    document.getElementById('deleteOperatorId').value = button.dataset.id || '';
-                    const label = (button.dataset.operatorCode || '') + ' - ' + (button.dataset.operatorName || '');
-                    document.getElementById('deleteOperatorLabel').textContent = label;
-                });
-            });
-
-            @if (openCreateModal)
-            {
-                <text>
-                const createModal = document.getElementById('createOperatorModal');
-                if (createModal) createModal.classList.remove('hidden');
-                </text>
-            }
-
-            @if (!string.IsNullOrWhiteSpace(openEditModalId))
-            {
-                <text>
-                const editButton = document.querySelector('.btn-edit-operator[data-id="@openEditModalId"]');
-                if (editButton) {
-                    editButton.click();
-                }
-                </text>
-            }
-        });
-    </script>
-}
+    function openDeleteOperatorModal(id, name) {
+        document.getElementById('deleteOperatorId').value = id;
+        document.getElementById('deleteOperatorName').textContent = name;
+        showOperatorModal('modal-operator-delete');
+    }
+</script>

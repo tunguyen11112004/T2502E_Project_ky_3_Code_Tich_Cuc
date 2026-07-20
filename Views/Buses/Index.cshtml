@@ -1,0 +1,102 @@
+﻿@model List<Bus_ticket.ViewModels.BusListItemViewModel>
+@using Bus_ticket.ViewModels
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Quản lý Xe khách";
+
+    string searchTerm = ViewBag.SearchTerm as string ?? string.Empty;
+    int currentPage = ViewBag.CurrentPage ?? 1;
+    int totalPages = ViewBag.TotalPages ?? 1;
+    long totalItems = ViewBag.TotalItems ?? 0;
+    int pageSize = ViewBag.PageSize ?? 10;
+    var createForm = ViewBag.CreateForm as BusFormViewModel ?? new BusFormViewModel();
+}
+
+<div class="p-6 space-y-6">
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-white">Danh mục Xe khách</h1>
+            <p class="text-gray-400">Quản lý biển số, loại xe, chi nhánh...</p>
+        </div>
+        <button data-modal-target="modal-bus-create" data-modal-toggle="modal-bus-create"
+                class="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-medium">
+            + Thêm xe mới
+        </button>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="p-4 bg-green-900 text-green-300 rounded-lg">@TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="p-4 bg-red-900 text-red-300 rounded-lg">@TempData["ErrorMessage"]</div>
+    }
+
+    <!-- Search -->
+    <form asp-action="Index" method="get" class="max-w-md">
+        <input type="text" name="searchTerm" value="@searchTerm" 
+               placeholder="Tìm theo biển số hoặc mã xe..." 
+               class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white" />
+    </form>
+
+    <!-- Table -->
+    <div class="bg-gray-900 rounded-xl overflow-hidden">
+        <table class="w-full text-sm text-left text-gray-300">
+            <thead class="bg-gray-800">
+                <tr>
+                    <th class="px-6 py-4">Mã xe</th>
+                    <th class="px-6 py-4">Biển số</th>
+                    <th class="px-6 py-4">Loại xe</th>
+                    <th class="px-6 py-4">Chi nhánh</th>
+                    <th class="px-6 py-4">Nhà xe</th>
+                    <th class="px-6 py-4">Số ghế</th>
+                    <th class="px-6 py-4">Trạng thái</th>
+                    <th class="px-6 py-4 text-right">Hành động</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-700">
+                @foreach (var item in Model)
+                {
+                    <tr class="hover:bg-gray-800">
+                        <td class="px-6 py-4 font-medium">@item.BusCode</td>
+                        <td class="px-6 py-4">@item.LicensePlate</td>
+                        <td class="px-6 py-4">@item.BusClassName</td>
+                        <td class="px-6 py-4">@item.BranchName</td>
+                        <td class="px-6 py-4">@item.OperatorName</td>
+                        <td class="px-6 py-4">@item.TotalSeats</td>
+                        <td class="px-6 py-4">
+                            <span class="px-3 py-1 rounded-full text-xs @(item.Status == "Active" ? "bg-green-900 text-green-400" : "bg-gray-700 text-gray-400")">
+                                @item.Status
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <button onclick="openEditBusModal('@item.Id')" class="text-amber-400 hover:text-amber-300 mr-4">Sửa</button>
+                            <button onclick="openDeleteBusModal('@item.Id', '@item.LicensePlate')" class="text-red-400 hover:text-red-300">Xóa</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Phân trang -->
+    <!-- ... (giống BusClasses) -->
+</div>
+
+<!-- Modal Create & Edit -->
+<!-- (Tôi sẽ đưa phần modal trong tin nhắn tiếp theo nếu bạn muốn tách) -->
+
+<script>
+    // JS cho modal Edit và Delete
+    async function openEditBusModal(id) {
+        const res = await fetch(`/Buses/GetForEdit?id=${id}`);
+        const data = await res.json();
+        // Populate form edit...
+        // Sử dụng Flowbite modal
+    }
+
+    function openDeleteBusModal(id, plate) {
+        // Set hidden id và show modal
+    }
+</script>

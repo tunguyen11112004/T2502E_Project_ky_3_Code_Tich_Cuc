@@ -1,214 +1,214 @@
-using System.Security.Claims;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Bus_ticket.Data;
+using Bus_ticket.Helpers;
 using Bus_ticket.Models;
-using Bus_ticket.Services;
+using Bus_ticket.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using MongoDB.Bson;
+using MongoDB.Driver;
 
 namespace Bus_ticket.Controllers;
 
 [Authorize(Roles = "Admin,Employee")]
 public class BusOperatorsController : Controller
 {
-    private readonly BusOperatorService _busOperatorService;
+    private readonly ApplicationDbContext _context;
 
-    public BusOperatorsController(BusOperatorService busOperatorService)
+    public BusOperatorsController(ApplicationDbContext context)
     {
-        _busOperatorService = busOperatorService;
+        _context = context;
     }
 
-    [HttpGet]
-    public async Task<IActionResult> Index(string? searchTerm, string? status, int page = 1, int pageSize = 10, string? editId = null)
+    public async Task<IActionResult> Index(string? searchTerm, string? status, int page = 1, int pageSize = 10)
     {
-        var result = await _busOperatorService.GetPagedAsync(searchTerm, status, page, pageSize);
+        var filter = Builders<BusOperator>.Filter.Empty;
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var keyword = searchTerm.Trim();
+            var regex = new BsonRegularExpression(keyword, "i");
+            filter &= Builders<BusOperator>.Filter.Or(
+                Builders<BusOperator>.Filter.Regex(o => o.OperatorName, regex),
+                Builders<BusOperator>.Filter.Regex(o => o.OperatorCode, regex),
+                Builders<BusOperator>.Filter.Regex(o => o.ContactEmail, regex),
+                Builders<BusOperator>.Filter.Regex(o => o.PhoneNumber, regex));
+        }
+
+        if (!string.IsNullOrWhiteSpace(status))
+        {
+            filter &= Builders<BusOperator>.Filter.Eq(o => o.Status, status);
+        }
+
+        long totalItems = await _context.BusOperators.CountDocumentsAsync(filter);
+        int totalPages = (int)Math.Ceiling((double)totalItems / pageSize);
+        if (page < 1) page = 1;
+        if (page > totalPages && totalPages > 0) page = totalPages;
+
+        var operators = await _context.BusOperators
+            .Find(filter)
+            .SortBy(o => o.OperatorName)
+            .Skip((page - 1) * pageSize)
+            .Limit(pageSize)
+            .ToListAsync();
+
+        var items = operators.Select(o => new BusOperatorListItemViewModel
+        {
+            Id = o.Id,
+            OperatorCode = o.OperatorCode,
+            OperatorName = o.OperatorName,
+            ContactEmail = o.ContactEmail,
+            PhoneNumber = o.PhoneNumber,
+            TaxCode = string.IsNullOrWhiteSpace(o.TaxCode) ? "—" : o.TaxCode,
+            Status = o.Status
+        }).ToList();
 
         ViewBag.SearchTerm = searchTerm ?? string.Empty;
         ViewBag.Status = status ?? string.Empty;
-        ViewBag.CurrentPage = result.CurrentPage;
-        ViewBag.PageSize = result.PageSize;
-        ViewBag.TotalPages = result.TotalPages;
-        ViewBag.TotalItems = result.TotalItems;
-        ViewBag.SuggestedOperatorCode = await _busOperatorService.GenerateOperatorCodeAsync();
-        ViewBag.OpenCreateModal = TempData["OpenCreateModal"] is true;
-        ViewBag.OpenEditModalId = TempData["OpenEditModalId"] as string ?? editId;
+        ViewBag.CurrentPage = page;
+        ViewBag.PageSize = pageSize;
+        ViewBag.TotalPages = totalPages;
+        ViewBag.TotalItems = totalItems;
 
-        return View(result.Items);
-    }
-
-    [HttpGet]
-    public async Task<IActionResult> Details(string id)
-    {
-        var busOperator = await _busOperatorService.GetByIdAsync(id);
-        if (busOperator == null)
-        {
-            return NotFound();
-        }
-
-        return View(busOperator);
-    }
-
-    [HttpGet]
-    public async Task<IActionResult> SuggestOperatorCode(string? operatorName)
-    {
-        var code = await _busOperatorService.GenerateOperatorCodeAsync(operatorName);
-        return Json(new { code });
+        return View(items);
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(BusOperator model)
+    public async Task<IActionResult> Create(BusOperatorFormViewModel model)
     {
-        RemoveSystemModelStateKeys();
-        NormalizeModelForValidation(model);
-        RevalidateModel(model);
+        ModelState.Remove(nameof(model.Id));
+
+        if (await IsDuplicateCodeAsync(model.OperatorCode))
+        {
+            ModelState.AddModelError(nameof(model.OperatorCode), "Mã nhà xe đã tồn tại.");
+        }
 
         if (!ModelState.IsValid)
         {
-            TempData["OpenCreateModal"] = true;
-            TempData["ErrorMessage"] = GetFirstValidationError() ?? "Vui lòng kiểm tra lại thông tin nhà xe.";
-            return RedirectToIndexWithQuery();
+            TempData["ErrorMessage"] = "Thêm nhà xe thất bại. Vui lòng kiểm tra dữ liệu.";
+            return RedirectToAction(nameof(Index));
         }
 
-        try
-        {
-            await _busOperatorService.CreateAsync(model, GetCurrentActor());
-            TempData["SuccessMessage"] = "Thêm đối tác nhà xe thành công.";
-        }
-        catch (InvalidOperationException ex)
-        {
-            TempData["OpenCreateModal"] = true;
-            TempData["ErrorMessage"] = ex.Message;
-        }
+        var currentUser = User.Identity?.Name ?? "Admin";
 
-        return RedirectToIndexWithQuery();
+        var op = new BusOperator
+        {
+            Id = ObjectId.GenerateNewId().ToString(),
+            OperatorCode = model.OperatorCode.Trim(),
+            OperatorName = model.OperatorName.Trim(),
+            ContactEmail = model.ContactEmail.Trim(),
+            PhoneNumber = model.PhoneNumber.Trim(),
+            TaxCode = string.IsNullOrWhiteSpace(model.TaxCode) ? null : model.TaxCode.Trim(),
+            Status = NormalizeStatus(model.Status),
+            CreatedAt = DateTime.UtcNow,
+            CreatedBy = currentUser,
+            UpdatedAt = DateTime.UtcNow,
+            UpdatedBy = currentUser
+        };
+
+        await _context.BusOperators.InsertOneAsync(op);
+        TempData["SuccessMessage"] = "Thêm nhà xe thành công!";
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetForEdit(string id)
+    {
+        if (string.IsNullOrEmpty(id)) return NotFound();
+
+        var op = await _context.BusOperators.Find(o => o.Id == id).FirstOrDefaultAsync();
+        if (op == null) return NotFound();
+
+        return Json(new
+        {
+            id = op.Id,
+            operatorCode = op.OperatorCode,
+            operatorName = op.OperatorName,
+            contactEmail = op.ContactEmail,
+            phoneNumber = op.PhoneNumber,
+            taxCode = op.TaxCode ?? "",
+            status = NormalizeStatus(op.Status)
+        });
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(string id, BusOperator model)
+    public async Task<IActionResult> Edit(BusOperatorFormViewModel model)
     {
-        RemoveSystemModelStateKeys();
-        NormalizeModelForValidation(model);
-        RevalidateModel(model);
+        if (string.IsNullOrEmpty(model.Id)) return NotFound();
+
+        var existing = await _context.BusOperators.Find(o => o.Id == model.Id).FirstOrDefaultAsync();
+        if (existing == null) return NotFound();
+
+        if (await IsDuplicateCodeAsync(model.OperatorCode, model.Id))
+        {
+            TempData["ErrorMessage"] = "Mã nhà xe đã tồn tại trên một nhà xe khác.";
+            return RedirectToAction(nameof(Index));
+        }
 
         if (!ModelState.IsValid)
         {
-            TempData["OpenEditModalId"] = id;
-            TempData["ErrorMessage"] = GetFirstValidationError() ?? "Vui lòng kiểm tra lại thông tin nhà xe.";
-            return RedirectToIndexWithQuery();
+            TempData["ErrorMessage"] = "Cập nhật nhà xe thất bại. Vui lòng kiểm tra dữ liệu.";
+            return RedirectToAction(nameof(Index));
         }
 
-        try
-        {
-            var updated = await _busOperatorService.UpdateAsync(id, model);
-            if (updated == null)
-            {
-                TempData["ErrorMessage"] = "Không tìm thấy đối tác nhà xe.";
-            }
-            else
-            {
-                TempData["SuccessMessage"] = "Cập nhật đối tác nhà xe thành công.";
-            }
-        }
-        catch (InvalidOperationException ex)
-        {
-            TempData["OpenEditModalId"] = id;
-            TempData["ErrorMessage"] = ex.Message;
-        }
+        var update = Builders<BusOperator>.Update
+            .Set(o => o.OperatorCode, model.OperatorCode.Trim())
+            .Set(o => o.OperatorName, model.OperatorName.Trim())
+            .Set(o => o.ContactEmail, model.ContactEmail.Trim())
+            .Set(o => o.PhoneNumber, model.PhoneNumber.Trim())
+            .Set(o => o.TaxCode, string.IsNullOrWhiteSpace(model.TaxCode) ? null : model.TaxCode.Trim())
+            .Set(o => o.Status, NormalizeStatus(model.Status))
+            .Set(o => o.UpdatedAt, DateTime.UtcNow)
+            .Set(o => o.UpdatedBy, User.Identity?.Name ?? "Admin");
 
-        return RedirectToIndexWithQuery();
+        await _context.BusOperators.UpdateOneAsync(o => o.Id == model.Id, update);
+        TempData["SuccessMessage"] = "Cập nhật nhà xe thành công!";
+        return RedirectToAction(nameof(Index));
     }
 
+    // POST: /BusOperators/Delete/{id}
+    // Ngưng hợp tác (Xóa mềm): không xóa cứng dữ liệu, chỉ chuyển trạng thái sang "Inactive"
+    // để bảo toàn dữ liệu đối soát doanh thu ở các bảng thống kê.
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(string id)
     {
-        var result = await _busOperatorService.SoftDeleteAsync(id);
+        if (string.IsNullOrEmpty(id)) return NotFound();
 
-        if (result.Succeeded)
-        {
-            TempData["SuccessMessage"] = result.Message;
-        }
-        else
-        {
-            TempData["ErrorMessage"] = result.Message;
-        }
+        var op = await _context.BusOperators.Find(o => o.Id == id).FirstOrDefaultAsync();
+        if (op == null) return NotFound();
 
-        return RedirectToIndexWithQuery();
+        var update = Builders<BusOperator>.Update
+            .Set(o => o.Status, "Inactive")
+            .Set(o => o.UpdatedAt, DateTime.UtcNow)
+            .Set(o => o.UpdatedBy, User.Identity?.Name ?? "Admin");
+
+        await _context.BusOperators.UpdateOneAsync(o => o.Id == id, update);
+        TempData["SuccessMessage"] = "Đã ngưng hợp tác với nhà xe.";
+        return RedirectToAction(nameof(Index));
     }
 
-    private IActionResult RedirectToIndexWithQuery()
+    private async Task<bool> IsDuplicateCodeAsync(string operatorCode, string? excludeId = null)
     {
-        return RedirectToAction(nameof(Index), new
-        {
-            searchTerm = GetReturnQueryValue("returnSearchTerm", "searchTerm"),
-            status = GetReturnQueryValue("returnStatus", "status"),
-            page = GetReturnQueryValue("returnPage", "page")
-        });
-    }
+        var codeKey = operatorCode.Trim();
+        var filter = Builders<BusOperator>.Filter.Eq(o => o.OperatorCode, codeKey);
 
-    private string GetReturnQueryValue(string formKey, string queryKey)
-    {
-        var formValue = Request.Form[formKey].ToString();
-        if (!string.IsNullOrEmpty(formValue))
+        if (!string.IsNullOrEmpty(excludeId))
         {
-            return formValue;
+            filter &= Builders<BusOperator>.Filter.Ne(o => o.Id, excludeId);
         }
 
-        return Request.Query[queryKey].ToString();
+        return await _context.BusOperators.Find(filter).AnyAsync();
     }
 
-    private static void NormalizeModelForValidation(BusOperator model)
+    private static string NormalizeStatus(string? status)
     {
-        model.OperatorCode = model.OperatorCode.Trim().ToUpperInvariant();
-        model.OperatorName = model.OperatorName.Trim();
-        model.PhoneNumber = NormalizeHotline(model.PhoneNumber);
-        model.Email = model.Email.Trim();
-        model.Address = model.Address.Trim();
-        model.ContactPerson = model.ContactPerson.Trim();
-        model.Status = string.IsNullOrWhiteSpace(model.Status) ? "Active" : model.Status.Trim();
-    }
-
-    private string? GetFirstValidationError()
-    {
-        return ModelState.Values
-            .SelectMany(entry => entry.Errors)
-            .Select(error => error.ErrorMessage)
-            .FirstOrDefault(message => !string.IsNullOrWhiteSpace(message));
-    }
-
-    private static string NormalizeHotline(string? phoneNumber)
-    {
-        if (string.IsNullOrWhiteSpace(phoneNumber))
-        {
-            return string.Empty;
-        }
-
-        return System.Text.RegularExpressions.Regex.Replace(phoneNumber.Trim(), @"[\s\-\.\(\)]", string.Empty);
-    }
-
-    private void RevalidateModel(BusOperator model)
-    {
-        ModelState.Remove(nameof(BusOperator.OperatorCode));
-        ModelState.Remove(nameof(BusOperator.OperatorName));
-        ModelState.Remove(nameof(BusOperator.PhoneNumber));
-        ModelState.Remove(nameof(BusOperator.Email));
-        ModelState.Remove(nameof(BusOperator.Address));
-        ModelState.Remove(nameof(BusOperator.ContactPerson));
-        ModelState.Remove(nameof(BusOperator.Status));
-        TryValidateModel(model);
-    }
-
-    private string GetCurrentActor()
-    {
-        return User.FindFirstValue(ClaimTypes.Email)
-               ?? User.Identity?.Name
-               ?? "System Admin";
-    }
-
-    private void RemoveSystemModelStateKeys()
-    {
-        ModelState.Remove(nameof(BusOperator.Id));
-        ModelState.Remove(nameof(BusOperator.CreatedAt));
-        ModelState.Remove(nameof(BusOperator.CreatedBy));
+        return string.Equals(status, "Inactive", StringComparison.OrdinalIgnoreCase) ? "Inactive" : "Active";
     }
 }
