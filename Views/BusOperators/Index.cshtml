@@ -1,0 +1,291 @@
+﻿@model List<Bus_ticket.ViewModels.BusOperatorListItemViewModel>
+@using Bus_ticket.ViewModels
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Quản lý Nhà xe";
+
+    string searchTerm = ViewBag.SearchTerm as string ?? string.Empty;
+    string statusFilter = ViewBag.Status as string ?? string.Empty;
+    int currentPage = ViewBag.CurrentPage ?? 1;
+    int totalPages = ViewBag.TotalPages ?? 1;
+    long totalItems = ViewBag.TotalItems ?? 0;
+    int pageSize = ViewBag.PageSize ?? 10;
+
+    long startItem = totalItems == 0 ? 0 : ((currentPage - 1) * pageSize) + 1;
+    long endItem = (currentPage * pageSize) > totalItems ? totalItems : (currentPage * pageSize);
+}
+
+<div class="p-4 sm:p-6 lg:p-8 space-y-6 max-w-full overflow-x-hidden">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold tracking-tight text-white">Danh mục Đối tác Nhà xe</h1>
+            <p class="text-sm text-gray-400 mt-1">Quản lý thông tin liên hệ và trạng thái hợp tác của các nhà xe.</p>
+        </div>
+
+        <button type="button" onclick="showOperatorModal('modal-operator-create')"
+                class="inline-flex items-center justify-center px-4 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg transition-colors duration-200 shadow-sm">
+            Thêm nhà xe mới
+        </button>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="flex items-center p-4 text-sm text-emerald-400 rounded-lg bg-gray-800 border border-emerald-800">
+            <div><span class="font-medium">Thành công!</span> @TempData["SuccessMessage"]</div>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="flex items-center p-4 text-sm text-red-400 rounded-lg bg-gray-800 border border-red-800">
+            <div><span class="font-medium">Thất bại!</span> @TempData["ErrorMessage"]</div>
+        </div>
+    }
+
+    <!-- Bộ lọc chi tiết: từ khóa + trạng thái -->
+    <form method="get" asp-action="Index" class="flex flex-col md:flex-row md:items-center gap-3">
+        <input type="text" name="searchTerm" value="@searchTerm"
+               placeholder="Tìm theo tên, mã, email hoặc SĐT..."
+               class="w-full md:w-80 px-4 py-2.5 text-sm bg-gray-900 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400 placeholder-gray-500" />
+
+        <select name="status"
+                class="w-full md:w-56 px-4 py-2.5 text-sm bg-gray-900 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400">
+            <option value="" selected="@(statusFilter == string.Empty)">Tất cả trạng thái</option>
+            <option value="Active" selected="@(statusFilter == "Active")">Đang hợp tác</option>
+            <option value="Inactive" selected="@(statusFilter == "Inactive")">Ngưng hợp tác</option>
+        </select>
+
+        <button type="submit"
+                class="px-5 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg">
+            Lọc
+        </button>
+
+        @if (!string.IsNullOrEmpty(searchTerm) || !string.IsNullOrEmpty(statusFilter))
+        {
+            <a asp-action="Index" class="px-5 py-2.5 text-sm font-semibold text-gray-300 hover:text-white">Xóa lọc</a>
+        }
+    </form>
+
+    <div class="w-full max-w-full overflow-hidden bg-[#1e1e24] border border-gray-700/50 rounded-xl shadow-xl">
+        <div class="w-full overflow-x-auto">
+            <table class="w-full min-w-[960px] table-fixed text-sm text-left text-gray-300">
+                <thead class="text-xs uppercase bg-[#141419] text-gray-400 border-b border-gray-700/60">
+                    <tr>
+                        <th class="w-32 px-4 py-4 font-semibold tracking-wider">Mã nhà xe</th>
+                        <th class="w-56 px-4 py-4 font-semibold tracking-wider">Tên nhà xe</th>
+                        <th class="w-56 px-4 py-4 font-semibold tracking-wider">Email liên hệ</th>
+                        <th class="w-36 px-4 py-4 font-semibold tracking-wider">SĐT</th>
+                        <th class="w-40 px-4 py-4 font-semibold tracking-wider">Mã số thuế</th>
+                        <th class="w-32 px-4 py-4 font-semibold tracking-wider">Trạng thái</th>
+                        <th class="w-36 px-4 py-4 font-semibold tracking-wider text-right">Hành động</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-700/50">
+                    @if (Model == null || !Model.Any())
+                    {
+                        <tr>
+                            <td colspan="7" class="px-4 py-10 text-center text-gray-500">
+                                Chưa có nhà xe nào phù hợp.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        foreach (var item in Model)
+                        {
+                            <tr class="hover:bg-gray-800/30 transition-colors duration-150">
+                                <td class="px-4 py-4 font-semibold text-amber-400">@item.OperatorCode</td>
+                                <td class="px-4 py-4 text-white whitespace-normal break-words">@item.OperatorName</td>
+                                <td class="px-4 py-4 whitespace-normal break-words">@item.ContactEmail</td>
+                                <td class="px-4 py-4">@item.PhoneNumber</td>
+                                <td class="px-4 py-4">@item.TaxCode</td>
+                                <td class="px-4 py-4">
+                                    @if (string.Equals(item.Status, "Active", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        <span class="inline-flex items-center px-2.5 py-0.5 text-xs font-semibold rounded-md border bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
+                                            Đang hợp tác
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="inline-flex items-center px-2.5 py-0.5 text-xs font-semibold rounded-md border bg-gray-500/10 text-gray-400 border-gray-500/20">
+                                            Ngưng hợp tác
+                                        </span>
+                                    }
+                                </td>
+                                <td class="px-4 py-4 text-right text-sm font-medium">
+                                    <div class="inline-flex items-center gap-3">
+                                        <button type="button"
+                                                onclick="openEditOperatorModal('@item.Id')"
+                                                class="text-amber-400 hover:text-amber-300 font-semibold">
+                                            Sửa
+                                        </button>
+                                        <span class="text-gray-600">|</span>
+                                        <button type="button"
+                                                onclick="openDeleteOperatorModal('@item.Id', '@item.OperatorName')"
+                                                class="text-rose-400 hover:text-rose-300 font-semibold">
+                                            Ngưng hợp tác
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="flex flex-col sm:flex-row items-center justify-between p-4 bg-[#141419] border-t border-gray-700/60 gap-4">
+            <span class="text-sm text-gray-400">
+                Hiển thị từ <span class="font-semibold text-white">@startItem</span> đến
+                <span class="font-semibold text-white">@endItem</span> trong tổng số
+                <span class="font-semibold text-white">@totalItems</span> nhà xe
+            </span>
+
+            @if (totalPages > 1)
+            {
+                <nav class="inline-flex items-center -space-x-px rounded-md shadow-sm">
+                    <a asp-action="Index"
+                       asp-route-page="@(currentPage - 1)"
+                       asp-route-searchTerm="@searchTerm"
+                       asp-route-status="@statusFilter"
+                       class="relative inline-flex items-center rounded-l-md px-3 py-2 text-sm font-medium border border-gray-700 bg-gray-900 text-gray-400 hover:bg-gray-800 hover:text-white @(currentPage == 1 ? "pointer-events-none opacity-40" : "")">
+                        Trước
+                    </a>
+
+                    @for (int i = 1; i <= totalPages; i++)
+                    {
+                        if (i == currentPage)
+                        {
+                            <span class="relative z-10 inline-flex items-center bg-amber-400 px-4 py-2 text-sm font-semibold text-gray-900 border border-amber-400">
+                                @i
+                            </span>
+                        }
+                        else
+                        {
+                            <a asp-action="Index"
+                               asp-route-page="@i"
+                               asp-route-searchTerm="@searchTerm"
+                               asp-route-status="@statusFilter"
+                               class="relative inline-flex items-center border border-gray-700 bg-gray-900 px-4 py-2 text-sm font-medium text-gray-400 hover:bg-gray-800 hover:text-white">
+                                @i
+                            </a>
+                        }
+                    }
+
+                    <a asp-action="Index"
+                       asp-route-page="@(currentPage + 1)"
+                       asp-route-searchTerm="@searchTerm"
+                       asp-route-status="@statusFilter"
+                       class="relative inline-flex items-center rounded-r-md px-3 py-2 text-sm font-medium border border-gray-700 bg-gray-900 text-gray-400 hover:bg-gray-800 hover:text-white @(currentPage == totalPages ? "pointer-events-none opacity-40" : "")">
+                        Tiếp
+                    </a>
+                </nav>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Thêm nhà xe -->
+<div id="modal-operator-create" tabindex="-1" aria-hidden="true" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 w-full h-full">
+    <div class="relative w-full max-w-lg mx-4 bg-[#1e1e24] rounded-xl shadow-xl border border-gray-700/50">
+        <div class="flex items-center justify-between p-6 border-b border-gray-700/60">
+            <h3 class="text-xl font-semibold text-white">Thêm Nhà Xe Mới</h3>
+            <button type="button" onclick="hideOperatorModal('modal-operator-create')" class="text-gray-400 hover:text-white text-sm font-semibold">Đóng</button>
+        </div>
+        <form asp-action="Create" method="post" class="p-6 space-y-6">
+            @Html.AntiForgeryToken()
+            @await Html.PartialAsync("_BusOperatorFormFields", new BusOperatorFormViewModel())
+            <div class="flex justify-end gap-4">
+                <button type="button" onclick="hideOperatorModal('modal-operator-create')"
+                        class="px-6 py-2.5 text-sm font-semibold text-gray-400 hover:text-white">Hủy</button>
+                <button type="submit"
+                        class="px-6 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg">Lưu</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Sửa nhà xe -->
+<div id="modal-operator-edit" tabindex="-1" aria-hidden="true" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 w-full h-full">
+    <div class="relative w-full max-w-lg mx-4 bg-[#1e1e24] rounded-xl shadow-xl border border-gray-700/50">
+        <div class="flex items-center justify-between p-6 border-b border-gray-700/60">
+            <h3 class="text-xl font-semibold text-white">Cập nhật Nhà Xe</h3>
+            <button type="button" onclick="hideOperatorModal('modal-operator-edit')" class="text-gray-400 hover:text-white text-sm font-semibold">Đóng</button>
+        </div>
+        <form asp-action="Edit" method="post" class="p-6 space-y-6" id="formEditOperator">
+            @Html.AntiForgeryToken()
+            @await Html.PartialAsync("_BusOperatorFormFields", new BusOperatorFormViewModel(), new ViewDataDictionary(ViewData) { { "IdPrefix", "Edit" } })
+            <div class="flex justify-end gap-4">
+                <button type="button" onclick="hideOperatorModal('modal-operator-edit')"
+                        class="px-6 py-2.5 text-sm font-semibold text-gray-400 hover:text-white">Hủy</button>
+                <button type="submit"
+                        class="px-6 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg">Cập nhật</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Xác nhận ngưng hợp tác (xóa mềm) -->
+<div id="modal-operator-delete" tabindex="-1" aria-hidden="true" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 w-full h-full">
+    <div class="relative w-full max-w-md mx-4 bg-[#1e1e24] rounded-xl shadow-xl border border-gray-700/50">
+        <div class="p-6 text-center">
+            <h3 class="text-lg font-semibold text-white mb-2">Xác nhận ngưng hợp tác</h3>
+            <p class="text-sm text-gray-400 mb-6">
+                Bạn có chắc muốn ngưng hợp tác với nhà xe
+                <span id="deleteOperatorName" class="font-semibold text-white"></span>?
+                Dữ liệu thống kê liên quan vẫn được bảo toàn.
+            </p>
+            <form asp-action="Delete" method="post" id="formDeleteOperator">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="deleteOperatorId" />
+                <div class="flex justify-center gap-4">
+                    <button type="button" onclick="hideOperatorModal('modal-operator-delete')"
+                            class="px-6 py-2.5 text-sm font-semibold text-gray-400 hover:text-white">Hủy</button>
+                    <button type="submit"
+                            class="px-6 py-2.5 text-sm font-semibold text-white bg-rose-500 hover:bg-rose-600 rounded-lg">Xác nhận</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function showOperatorModal(id) {
+        var modal = document.getElementById(id);
+        modal.classList.remove('hidden');
+    }
+
+    function hideOperatorModal(id) {
+        var modal = document.getElementById(id);
+        modal.classList.add('hidden');
+    }
+
+    async function openEditOperatorModal(id) {
+        try {
+            const res = await fetch(`/BusOperators/GetForEdit?id=${id}`);
+            if (!res.ok) {
+                alert('Không tải được dữ liệu nhà xe.');
+                return;
+            }
+            const data = await res.json();
+
+            document.getElementById('EditId').value = data.id;
+            document.getElementById('EditOperatorCode').value = data.operatorCode;
+            document.getElementById('EditOperatorName').value = data.operatorName;
+            document.getElementById('EditContactEmail').value = data.contactEmail;
+            document.getElementById('EditPhoneNumber').value = data.phoneNumber;
+            document.getElementById('EditTaxCode').value = data.taxCode;
+            document.getElementById('EditStatus').value = data.status;
+
+            showOperatorModal('modal-operator-edit');
+        } catch (err) {
+            alert('Có lỗi xảy ra khi tải dữ liệu nhà xe.');
+        }
+    }
+
+    function openDeleteOperatorModal(id, name) {
+        document.getElementById('deleteOperatorId').value = id;
+        document.getElementById('deleteOperatorName').textContent = name;
+        showOperatorModal('modal-operator-delete');
+    }
+</script>
