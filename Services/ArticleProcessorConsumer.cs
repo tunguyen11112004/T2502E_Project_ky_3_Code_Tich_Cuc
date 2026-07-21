@@ -15,19 +15,37 @@ namespace Bus_ticket.Services
     public class ArticleProcessorConsumer : BackgroundService
     {
         private const string QueueName = "news_urls_queue";
-        private readonly string _hostName = "localhost";
         private readonly IServiceScopeFactory _scopeFactory;
+        // 1. Thêm biến IConfiguration thay cho biến _hostName gán cứng cũ
+        private readonly Microsoft.Extensions.Configuration.IConfiguration _configuration;
 
-        // Bắt buộc dùng IServiceScopeFactory vì BackgroundService là Singleton, 
-        // trong khi ApplicationDbContext thường là Scoped.
-        public ArticleProcessorConsumer(IServiceScopeFactory scopeFactory)
+        // 2. Inject thêm IConfiguration vào Constructor
+        public ArticleProcessorConsumer(IServiceScopeFactory scopeFactory, Microsoft.Extensions.Configuration.IConfiguration configuration)
         {
             _scopeFactory = scopeFactory;
+            _configuration = configuration;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            var factory = new ConnectionFactory { HostName = _hostName };
+            var factory = new ConnectionFactory();
+
+            // 3. Logic đọc cấu hình CloudAMQP thông minh giống file Consumer gửi mail
+            var rabbitMqUri = _configuration["RabbitMqSettings:Uri"];
+            if (!string.IsNullOrEmpty(rabbitMqUri))
+            {
+                factory.Uri = new Uri(rabbitMqUri);
+            }
+            else
+            {
+                factory.HostName = _configuration["RabbitMQ:HostName"] ?? "localhost";
+                factory.UserName = _configuration["RabbitMQ:UserName"] ?? "guest";
+                factory.Password = _configuration["RabbitMQ:Password"] ?? "guest";
+                if (int.TryParse(_configuration["RabbitMQ:Port"], out int port))
+                {
+                    factory.Port = port;
+                }
+            }
 
             // v7.x+: Sử dụng CreateConnectionAsync() để tạo kết nối bất đồng bộ
             var connection = await factory.CreateConnectionAsync(stoppingToken);

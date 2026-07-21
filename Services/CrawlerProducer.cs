@@ -12,7 +12,14 @@ namespace Bus_ticket.Services
     public class CrawlerProducer
     {
         private const string QueueName = "news_urls_queue";
-        private readonly string _hostName = "localhost"; // Sửa nếu server RabbitMQ ở IP khác
+        // 1. Thêm biến đọc Configuration thay vì _hostName gán cứng cũ
+        private readonly Microsoft.Extensions.Configuration.IConfiguration _configuration;
+
+        // 2. Tạo Constructor để Inject IConfiguration vào Class
+        public CrawlerProducer(Microsoft.Extensions.Configuration.IConfiguration configuration)
+        {
+            _configuration = configuration;
+        }
 
         public async Task StartCrawlingAsync()
         {
@@ -58,7 +65,24 @@ namespace Bus_ticket.Services
 
         private async Task SendToQueueAsync(List<string> links)
         {
-            var factory = new ConnectionFactory { HostName = _hostName };
+            var factory = new ConnectionFactory();
+
+            // 3. Logic nạp Uri thông minh kết nối tới CloudAMQP
+            var rabbitMqUri = _configuration["RabbitMqSettings:Uri"];
+            if (!string.IsNullOrEmpty(rabbitMqUri))
+            {
+                factory.Uri = new Uri(rabbitMqUri);
+            }
+            else
+            {
+                factory.HostName = _configuration["RabbitMQ:HostName"] ?? "localhost";
+                factory.UserName = _configuration["RabbitMQ:UserName"] ?? "guest";
+                factory.Password = _configuration["RabbitMQ:Password"] ?? "guest";
+                if (int.TryParse(_configuration["RabbitMQ:Port"], out int port))
+                {
+                    factory.Port = port;
+                }
+            }
 
             // v7.x+: Mở kết nối và tạo channel dạng bất đồng bộ (Async)
             using var connection = await factory.CreateConnectionAsync();
@@ -75,7 +99,7 @@ namespace Bus_ticket.Services
             // v7.x+: Khởi tạo cấu hình tin nhắn bền vững (Persistent) trực tiếp qua class BasicProperties
             var properties = new BasicProperties
             {
-                DeliveryMode = DeliveryModes.Persistent // Lưu tin nhắn xuống đĩa cứng phòng khi RabbitMQ bị restart
+                DeliveryMode = DeliveryModes.Persistent 
             };
 
             foreach (var link in links)

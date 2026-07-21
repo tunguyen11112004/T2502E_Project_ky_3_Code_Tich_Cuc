@@ -241,17 +241,26 @@
 
         try {
             const response = await fetch(`/Booking/GetCustomerByPhone?phone=${encodeURIComponent(phone)}`);
+
             if (response.ok) {
                 const customer = await response.json();
-                document.getElementById('txtPassengerName').value = customer.fullName || '';
-                document.getElementById('txtPassengerEmail').value = customer.email || '';
-                if (customer.dob) {
-                    document.getElementById('inputDob').value = customer.dob.split('T')[0];
-                    calculateAge();
+
+                // Điền thông tin tự động nếu tìm thấy khách hàng cũ
+                if (customer) {
+                    document.getElementById('txtPassengerName').value = customer.fullName || '';
+                    document.getElementById('txtPassengerEmail').value = customer.email || '';
+
+                    if (customer.dob) {
+                        document.getElementById('inputDob').value = customer.dob.split('T')[0];
+                        calculateAge(); // Tính lại tuổi để áp dụng giảm giá
+                    }
                 }
+            } else {
+                // NẾU LÀ KHÁCH HÀNG MỚI: Giữ nguyên SĐT khách vừa nhập, không làm mất dữ liệu
+                console.log("Đây là khách hàng mới, tiến hành nhập thủ công.");
             }
         } catch (err) {
-            console.error("Lỗi fetch khách hàng:", err);
+            console.error("Lỗi khi kiểm tra số điện thoại:", err);
         }
     });
 

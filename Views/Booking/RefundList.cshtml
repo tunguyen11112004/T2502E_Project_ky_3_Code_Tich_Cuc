@@ -1,0 +1,262 @@
+@model List<Bus_ticket.Models.RefundRequest>
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Danh Sách Đơn Hoàn Tiền";
+}
+
+<div class="p-6 sm:p-8 space-y-6">
+    <div>
+        <h1 class="text-2xl font-bold tracking-tight text-white">📋 Danh Sách Vé Hoàn Tiền & Trả Hàng</h1>
+        <p class="text-sm text-gray-400 mt-1">Quản lý giao dịch hoàn tiền, đối chiếu mã cổng đối tác thanh toán và thực
+            hiện trả tiền cho hành khách.</p>
+    </div>
+
+    <!-- Thanh công cụ & Bộ lọc tích hợp đa năng -->
+    <div
+        class="bg-[#1e1e24] p-4 border border-gray-700/50 rounded-xl flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <form method="get" action="@Url.Action("RefundList", "Booking")"
+              class="grid grid-cols-1 sm:grid-cols-3 gap-4 flex-1">
+            <div>
+                <label class="block mb-1 text-xs font-semibold text-gray-400 uppercase">Lọc theo ngày yêu cầu</label>
+                <input type="date" name="filterDate" value="@ViewBag.FilterDate"
+                       class="block w-full px-3 py-2 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-1 focus:ring-rose-500 focus:border-rose-500"/>
+            </div>
+
+            <div>
+                <label class="block mb-1 text-xs font-semibold text-gray-400 uppercase">Tìm kiếm mã đơn vé</label>
+                <input type="text" name="searchCode" value="@ViewBag.SearchCode" placeholder="Nhập mã đơn BK-..."
+                       class="block w-full px-3 py-2 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-1 focus:ring-rose-500 focus:border-rose-500"/>
+            </div>
+
+            <div class="flex items-end gap-2">
+                <button type="submit"
+                        class="w-full px-4 py-2 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg transition-colors">
+                    Tìm kiếm
+                </button>
+            </div>
+        </form>
+
+        <div class="flex gap-2">
+            <a href="@Url.Action("RefundList", "Booking", new { showAllUnrefunded = true })"
+               class="px-4 py-2 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg text-center transition-colors">
+                ⚠️ Đơn Chưa Hoàn (Tất cả ngày)
+            </a>
+            <a href="@Url.Action("RefundList", "Booking")"
+               class="px-4 py-2 text-sm font-semibold text-gray-300 bg-gray-800 hover:bg-gray-700 rounded-lg text-center transition-colors">
+                Đặt lại
+            </a>
+        </div>
+    </div>
+
+    <!-- Bảng hiển thị dữ liệu -->
+    <div class="overflow-hidden bg-[#1e1e24] border border-gray-700/50 rounded-xl shadow-xl">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left text-gray-300 whitespace-nowrap">
+                <thead class="text-xs uppercase bg-[#141419] text-gray-400 border-b border-gray-700/60">
+                <tr>
+                    <th class="px-6 py-4 font-semibold">Mã Đơn / Ngày Yêu Cầu</th>
+                    <th class="px-6 py-4 font-semibold">Thông Tin Khách</th>
+                    <th class="px-6 py-4 font-semibold">Chi Tiết Tiền (Đã Khấu Trừ)</th>
+                    <th class="px-6 py-4 font-semibold">Hình Thức / Tài Khoản Hoàn</th>
+                    <th class="px-6 py-4 font-semibold">Lý Do</th>
+                    <th class="px-6 py-4 font-semibold text-center">Trạng Thái / Xử Lý</th>
+                </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-700/50">
+                @if (Model != null && Model.Any())
+                {
+                    foreach (var req in Model)
+                    {
+                        <tr class="hover:bg-gray-800/20 transition-colors">
+                            <td class="px-6 py-4">
+                                <div class="text-sm font-bold text-amber-400">@req.BookingCode</div>
+                                <div class="text-xs text-gray-500 mt-0.5">Yêu
+                                    cầu: @req.RequestDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="font-medium text-white">@req.CustomerName</div>
+                                <div class="text-xs text-gray-400">SĐT: @req.CustomerPhone</div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-xs text-gray-400 line-through">
+                                    Gốc: @req.OriginalAmount.ToString("N0") đ
+                                </div>
+                                <div class="text-sm font-bold text-rose-400 mt-0.5">Nhận
+                                    về: @req.RefundAmount.ToString("N0") đ
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-xs">
+                                @if (req.RefundMethod == "Online")
+                                {
+                                    <span
+                                        class="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-semibold">Chuyển khoản</span>
+                                    <div class="text-gray-400 mt-1 font-mono">@req.BankName | @req.AccountNumber</div>
+                                    <div class="text-gray-500 text-[11px] uppercase">Chủ TK: @req.AccountName</div>
+                                }
+                                else
+                                {
+                                    <span
+                                        class="px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20 font-semibold">Tiền mặt tại quầy</span>
+                                }
+                            </td>
+                            <td class="px-6 py-4 text-xs max-w-xs truncate text-gray-400">
+                                @req.Reason
+                            </td>
+
+                            <!-- CỘT XỬ LÝ & XEM CHI TIẾT -->
+                            <td class="px-6 py-4">
+                                <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+
+                                    <!-- NÚT XEM CHI TIẾT TO VÀ ĐẸP (MỞ MODAL) -->
+                                    <button type="button"
+                                            onclick="openRefundModal('@req.BookingCode', '@req.CustomerName', '@req.CustomerPhone', '@req.OriginalAmount.ToString("N0")', '@req.RefundAmount.ToString("N0")', '@req.RefundMethod', '@req.Reason')"
+                                            class="inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 active:scale-95 rounded-lg transition-all shadow-md focus:ring-2 focus:ring-blue-500/50">
+                                        🔍 Xem chi tiết
+                                    </button>
+
+                                    @if (req.Status == "Pending")
+                                    {
+                                        <div class="flex items-center gap-2">
+                                            <span
+                                                class="inline-block px-2.5 py-1 text-xs font-semibold rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 whitespace-nowrap">
+                                                Chờ hoàn
+                                            </span>
+                                            <form asp-action="ConfirmRefund" method="post" class="inline-block m-0"
+                                                  onsubmit="return confirm('Xác nhận đã chuyển tiền hoàn tất cho khách hàng này?')">
+                                                <input type="hidden" name="id" value="@req.Id"/>
+                                                <button type="submit"
+                                                        class="px-4 py-2 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-95 rounded-lg transition-all shadow-md whitespace-nowrap">
+                                                    ✓ Xác nhận đã hoàn
+                                                </button>
+                                            </form>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div
+                                            class="flex flex-col items-center justify-center space-y-0.5 min-w-[120px]">
+                                            <span
+                                                class="px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                                Đã hoàn tiền
+                                            </span>
+                                            @if (req.ProcessedAt.HasValue)
+                                            {
+                                                <span class="text-[10px] text-gray-500 font-medium">
+                                                    Chi: @req.ProcessedAt.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                                                </span>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+                            Không có đơn yêu cầu hoàn tiền nào trong danh sách bộ lọc hiện tại.
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL CHI TIẾT ĐƠN HOÀN TIỀN -->
+<div id="refundModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div class="bg-[#1e1e24] border border-gray-700 rounded-xl w-full max-w-lg shadow-2xl overflow-hidden transform transition-all">
+        
+        <!-- Header -->
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-700/60 bg-[#141419]">
+            <h3 class="text-lg font-bold text-white">📋 Chi Tiết Đơn Hoàn Tiền</h3>
+            <button type="button" onclick="closeRefundModal()" class="text-gray-400 hover:text-white px-3 py-1.5 rounded-lg bg-gray-800 text-xs font-semibold">
+                Đóng
+            </button>
+        </div>
+
+        <!-- Body chứa thông tin -->
+        <div class="p-6 space-y-4 text-sm text-gray-300">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 uppercase mb-1">Mã Đơn Vé</label>
+                    <div id="modalBookingCode" class="px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg font-bold text-amber-400"></div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 uppercase mb-1">Hình Thức Hoàn</label>
+                    <div id="modalMethod" class="px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white"></div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 uppercase mb-1">Tên Khách Hàng</label>
+                    <div id="modalCustomerName" class="px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white"></div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 uppercase mb-1">Số Điện Thoại</label>
+                    <div id="modalCustomerPhone" class="px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white"></div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 uppercase mb-1">Số Tiền Gốc</label>
+                    <div id="modalOriginalAmount" class="px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-gray-400 line-through"></div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 uppercase mb-1">Số Tiền Hoàn Trả</label>
+                    <div id="modalRefundAmount" class="px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg font-bold text-rose-400"></div>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-gray-400 uppercase mb-1">Lý Do Hoàn Tiền</label>
+                <div id="modalReason" class="px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-gray-300 min-h-[60px] whitespace-pre-wrap"></div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="flex justify-end px-6 py-4 bg-[#141419] border-t border-gray-700/60">
+            <button type="button" onclick="closeRefundModal()" class="px-4 py-2 text-sm font-semibold text-white bg-amber-500 hover:bg-amber-600 rounded-lg transition-colors shadow">
+                Ok, Đã Hiểu
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openRefundModal(code, name, phone, original, refund, method, reason) {
+        // Đổ dữ liệu vào các thẻ trong Modal
+        document.getElementById('modalBookingCode').innerText = code;
+        document.getElementById('modalCustomerName').innerText = name;
+        document.getElementById('modalCustomerPhone').innerText = phone;
+        document.getElementById('modalOriginalAmount').innerText = original + " đ";
+        document.getElementById('modalRefundAmount').innerText = refund + " đ";
+        document.getElementById('modalMethod').innerText = method === "Online" ? "Chuyển khoản" : "Tiền mặt tại quầy";
+        document.getElementById('modalReason').innerText = reason || "Không có lý do chi tiết";
+
+        // Hiển thị Modal (đổi từ hidden sang flex)
+        const modal = document.getElementById('refundModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    function closeRefundModal() {
+        // Ẩn Modal đi
+        const modal = document.getElementById('refundModal');
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+    }
+
+    // Đóng modal nếu người dùng click ra ngoài vùng bảng thông tin
+    window.onclick = function(event) {
+        const modal = document.getElementById('refundModal');
+        if (event.target === modal) {
+            closeRefundModal();
+        }
+    }
+</script>

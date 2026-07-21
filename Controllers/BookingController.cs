@@ -13,6 +13,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Bus_ticket.Interfaces;
+using MongoDB.Bson;
 using PayOS;
 using PayOS.Models;
 using PayOS.Models.V2.PaymentRequests;
@@ -118,8 +119,9 @@ namespace Bus_ticket.Controllers
                 phone = p.PhoneNumber,
                 email = p.Email,
                 bookingCode = b.BookingCode,
-                paymentStatus = b.PaymentStatus == "Paid" ? "Đã thanh toán" : "Chưa thanh toán"
-            })).OrderBy(p => p.seatNumber).ToList();
+                paymentStatus = b.PaymentStatus == "Paid" ? "Đã thanh toán" : "Chưa thanh toán",
+                originalFare = p.FinalSeatPrice // Đảm bảo lấy chính xác giá tiền của TỪNG ghế này
+            })).OrderBy(item => item.seatNumber).ToList();
 
             return Json(passengerList);
         }
@@ -1511,6 +1513,273 @@ namespace Bus_ticket.Controllers
                 t => t.Id == tripId,
                 Builders<Trip>.Update.PushEach(t => t.RealtimeSeats, bookedSeats)
             );
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CancelBooking(
+            string bookingCode,
+            string refundMethod,
+            string reason,
+            string bankName = null,
+            string accountNo = null,
+            string accountName = null)
+        {
+            if (string.IsNullOrEmpty(bookingCode) || string.IsNullOrEmpty(refundMethod))
+            {
+                return Json(new { success = false, message = "Thiếu thông tin yêu cầu hủy vé." });
+            }
+
+            // 1. Tìm đơn hàng xem có tồn tại không
+            var booking = await _dbContext.Bookings.Find(b => b.BookingCode == bookingCode).FirstOrDefaultAsync();
+            if (booking == null)
+            {
+                return Json(new { success = false, message = "Không tìm thấy mã đặt vé này." });
+            }
+
+            if (booking.BookingStatus == "Cancelled")
+            {
+                return Json(new { success = false, message = "Vé này đã được hủy trước đó." });
+            }
+
+            // 2. Validate thông tin dựa theo phương thức hoàn tiền nếu chọn Online
+            if (refundMethod == "Online")
+            {
+                if (string.IsNullOrWhiteSpace(bankName) || string.IsNullOrWhiteSpace(accountNo) ||
+                    string.IsNullOrWhiteSpace(accountName))
+                {
+                    return Json(new
+                    {
+                        success = false, message = "Vui lòng điền đầy đủ thông tin ngân hàng để nhận hoàn tiền Online."
+                    });
+                }
+            }
+
+            // 3. Tính toán tiền hoàn (Ví dụ: phạt 10%, hoàn 90% tùy logic dự án của bạn, ở đây tạm tính hoàn 100%)
+            decimal penaltyPercent = 0;
+            decimal refundAmount = booking.FinalAmount * (1 - (penaltyPercent / 100));
+
+            // Khởi tạo Object CancellationInfo theo cấu trúc Model mới
+            var cancellationObj = new CancellationInfo
+            {
+                CanceledAt = DateTime.UtcNow,
+                Reason = string.IsNullOrWhiteSpace(reason) ? "Khách hàng yêu cầu hủy" : reason.Trim(),
+                PenaltyPercentage = penaltyPercent,
+                RefundAmount = refundAmount,
+                RefundMethod = refundMethod,
+                RefundBankName = refundMethod == "Online" ? bankName.Trim() : null,
+                RefundAccountNo = refundMethod == "Online" ? accountNo.Trim() : null,
+                RefundAccountName = refundMethod == "Online" ? accountName.Trim().ToUpper() : null
+            };
+
+            // 4. Thực hiện cập nhật trạng thái Booking và nhúng Object Cancellation vào
+            var update = Builders<Booking>.Update
+                .Set(b => b.BookingStatus, "Cancelled")
+                .Set(b => b.PaymentStatus, "Refunded") // Cập nhật trạng thái thanh toán nếu cần
+                .Set(b => b.Cancellation, cancellationObj)
+                .Set(b => b.UpdatedAt, DateTime.UtcNow)
+                .Set(b => b.UpdatedBy, User.Identity?.Name ?? "System"); // Lấy tên người thực hiện hủy
+
+            var bookingResult = await _dbContext.Bookings.UpdateOneAsync(b => b.BookingCode == bookingCode, update);
+
+            if (bookingResult.ModifiedCount > 0)
+            {
+                // 5. Giải phóng danh sách ghế thời gian thực (RealtimeSeats) trong Trip
+                if (booking.Passengers != null && booking.Passengers.Any())
+                {
+                    var seatNumbersToRelease = booking.Passengers.Select(p => p.SeatNumber).ToList();
+
+                    var trip = await _dbContext.Trips.Find(t => t.Id == booking.TripId).FirstOrDefaultAsync();
+                    if (trip != null && trip.RealtimeSeats != null)
+                    {
+                        // Lọc bỏ các ghế của đơn hàng này khỏi danh sách đang giữ chỗ
+                        var updatedRealtimeSeats = trip.RealtimeSeats
+                            .Where(s => !seatNumbersToRelease.Contains(s.SeatNumber))
+                            .ToList();
+
+                        await _dbContext.Trips.UpdateOneAsync(
+                            t => t.Id == booking.TripId,
+                            Builders<Trip>.Update.Set(t => t.RealtimeSeats, updatedRealtimeSeats)
+                        );
+                    }
+                }
+
+                return Json(new { success = true, message = "Hủy vé và cập nhật dữ liệu hoàn tiền thành công!" });
+            }
+
+            return Json(new { success = false, message = "Không thể cập nhật trạng thái hủy vé, vui lòng thử lại." });
+        }
+
+        // DTO tiếp nhận dữ liệu từ Client
+        public class CancelRequestInput
+        {
+            public string BookingCode { get; set; }
+            public string Reason { get; set; }
+            public string RefundMethod { get; set; }
+            public string BankName { get; set; }
+            public string AccountNumber { get; set; }
+            public string AccountName { get; set; }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RequestCancel([FromBody] CancelRequestInput input)
+        {
+            if (string.IsNullOrEmpty(input.BookingCode))
+            {
+                return Json(new { success = false, message = "Mã đơn hàng không hợp lệ." });
+            }
+
+            var booking = await _dbContext.Bookings.Find(b => b.BookingCode == input.BookingCode).FirstOrDefaultAsync();
+            if (booking == null)
+            {
+                return Json(new { success = false, message = "Không tìm thấy thông tin đặt vé." });
+            }
+
+            // --- ĐOẠN SỬA ĐỔI: Lấy thông tin Trip để tính giờ chạy chính xác ---
+            var trip = await _dbContext.Trips.Find(t => t.Id == booking.TripId).FirstOrDefaultAsync();
+            decimal feePercent = 0.30m; // Mặc định dưới 24h phạt 30%
+
+            if (trip != null)
+            {
+                var hoursDifference = (trip.DepartureTime - DateTime.UtcNow).TotalHours;
+                if (hoursDifference >= 48) { feePercent = 0m; }
+                else if (hoursDifference >= 24) { feePercent = 0.15m; }
+            }
+
+            decimal originalAmount = booking.FinalAmount;
+            decimal refundFee = originalAmount * feePercent; // Tính theo tỷ lệ thực tế
+            decimal amountToRefund = originalAmount - refundFee;
+
+            // KHỚP CHUẨN MODEL: Kiểm tra nếu là tiền mặt tại quầy
+            bool isCashAtCounter = input.RefundMethod == "Tiền mặt tại quầy" || input.RefundMethod == "Cash";
+            string initialStatus =
+                isCashAtCounter ? "Completed" : "Pending"; // Đổi sang Completed cho đúng model của bạn
+            string paymentStatus = isCashAtCounter ? "Refunded" : "RefundPending";
+
+            // 3. Khởi tạo đối tượng lưu trữ đơn hoàn tiền công khai
+            var refundLog = new RefundRequest
+            {
+                BookingCode = booking.BookingCode,
+                CustomerName = booking.Passengers?.FirstOrDefault()?.Name ?? "Khách hàng mua vé",
+                CustomerPhone = booking.CustomerPhone,
+                OriginalAmount = originalAmount,
+                RefundAmount = amountToRefund,
+                Reason = input.Reason,
+                RefundMethod = input.RefundMethod,
+                BankName = input.BankName,
+                AccountNumber = input.AccountNumber,
+                AccountName = input.AccountName,
+                RequestDate = DateTime.UtcNow,
+                Status = initialStatus,
+                ProcessedAt = isCashAtCounter ? DateTime.UtcNow : null, // Khớp chuẩn trường ProcessedAt
+                ProcessedBy = isCashAtCounter ? "Hệ thống (Tại quầy)" : null
+            };
+
+            // Chèn dữ liệu vào bảng Hoàn Tiền
+            await _dbContext.RefundRequests.InsertOneAsync(refundLog);
+
+            // 4. Cập nhật trạng thái của đơn hàng chính
+            var updateDef = Builders<Booking>.Update
+                .Set(b => b.BookingStatus, "Cancelled")
+                .Set(b => b.PaymentStatus, paymentStatus);
+            await _dbContext.Bookings.UpdateOneAsync(b => b.BookingCode == input.BookingCode, updateDef);
+
+            // 5. Giải phóng trạng thái ghế trong Trip (Giữ nguyên logic cũ của bạn)
+            if (trip != null && trip.RealtimeSeats != null)
+            {
+                var seatNumbersToRelease = booking.Passengers.Select(p => p.SeatNumber).ToList();
+                var updatedSeats = trip.RealtimeSeats.Where(s => !seatNumbersToRelease.Contains(s.SeatNumber)).ToList();
+
+                await _dbContext.Trips.UpdateOneAsync(
+                    t => t.Id == booking.TripId,
+                    Builders<Trip>.Update.Set(t => t.RealtimeSeats, updatedSeats)
+                );
+            }
+
+            return Json(new { success = true });
+        }
+
+        // GET: /Booking/RefundList
+        [HttpGet]
+        public async Task<IActionResult> RefundList(string filterDate = "", string searchCode = "",
+            bool showAllUnrefunded = false)
+        {
+            var filterBuilder = Builders<RefundRequest>.Filter;
+            var filter = filterBuilder.Empty;
+
+            // Tự động lọc theo ngày hiện tại nếu không có bộ lọc kích hoạt chuyên biệt
+            if (string.IsNullOrEmpty(filterDate) && string.IsNullOrEmpty(searchCode) && !showAllUnrefunded)
+            {
+                var localToday = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow,
+                    TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time")).Date;
+                var start = localToday.ToUniversalTime();
+                var end = localToday.AddDays(1).AddTicks(-1).ToUniversalTime();
+                filter = filterBuilder.And(filterBuilder.Gte(r => r.RequestDate, start),
+                    filterBuilder.Lte(r => r.RequestDate, end));
+                ViewBag.FilterDate = localToday.ToString("yyyy-MM-dd");
+            }
+
+            // Áp dụng bộ lọc tìm kiếm theo ngày được chọn
+            if (!string.IsNullOrEmpty(filterDate) && !showAllUnrefunded)
+            {
+                if (DateTime.TryParse(filterDate, out DateTime parsedDate))
+                {
+                    var start = parsedDate.Date.ToUniversalTime();
+                    var end = parsedDate.Date.AddDays(1).AddTicks(-1).ToUniversalTime();
+                    filter = filterBuilder.And(filterBuilder.Gte(r => r.RequestDate, start),
+                        filterBuilder.Lte(r => r.RequestDate, end));
+                    ViewBag.FilterDate = filterDate;
+                }
+            }
+
+            // Bộ lọc tìm mã vé
+            if (!string.IsNullOrEmpty(searchCode))
+            {
+                filter = filterBuilder.And(filter,
+                    filterBuilder.Regex(r => r.BookingCode, new BsonRegularExpression(searchCode, "i")));
+                ViewBag.SearchCode = searchCode;
+            }
+
+            // Bộ lọc tất cả các đơn chưa hoàn không theo ngày đi kèm
+            if (showAllUnrefunded)
+            {
+                filter = filterBuilder.Eq(r => r.Status, "Pending");
+                ViewBag.ShowAllUnrefunded = true;
+            }
+
+            var result = await _dbContext.RefundRequests.Find(filter)
+                .Sort(Builders<RefundRequest>.Sort.Descending(r => r.RequestDate)).ToListAsync();
+            return View(result);
+        }
+
+// POST: /Booking/ConfirmRefund完成
+        [HttpPost]
+        public async Task<IActionResult> ConfirmRefund(string id)
+        {
+            var updateDef = Builders<RefundRequest>.Update
+                .Set(r => r.Status, "Completed")
+                .Set(r => r.ProcessedAt, DateTime.UtcNow)
+                .Set(r => r.ProcessedBy, User.Identity?.Name ?? "Admin-Staff");
+
+            var result = await _dbContext.RefundRequests.UpdateOneAsync(r => r.Id == id, updateDef);
+
+            if (result.ModifiedCount > 0)
+            {
+                var refundReq = await _dbContext.RefundRequests.Find(r => r.Id == id).FirstOrDefaultAsync();
+                if (refundReq != null)
+                {
+                    // Đồng bộ cập nhật trạng thái thanh toán cuối cùng của đơn đặt chỗ gốc
+                    await _dbContext.Bookings.UpdateOneAsync(
+                        b => b.BookingCode == refundReq.BookingCode,
+                        Builders<Booking>.Update.Set(b => b.PaymentStatus, "Refunded")
+                    );
+                }
+
+                return RedirectToAction("RefundList");
+            }
+
+            return BadRequest("Không thể cập nhật trạng thái đơn hoàn.");
         }
     }
 }
