@@ -70,7 +70,7 @@ async function selectDropdownByClick(driver, selectSelector, targetText = 'Ticke
         const optionXpath = `//option[contains(text(), '${targetText}')]`;
         const optionEl = await driver.findElement(By.xpath(optionXpath));
         await optionEl.click();
-        await sleep(600); // Đợi form re-render sau khi chọn role
+        await sleep(600);
     } catch (e) {
         await driver.executeScript(`
             let select = document.querySelector('${selectSelector}');
@@ -126,7 +126,7 @@ async function runAuthAutomation() {
         }
 
         if (adminLogin) {
-            console.log(`Đang chạy ${adminLogin.TestCaseID}: ${adminLogin.Description}...`);
+            console.log(`An đang chạy ${adminLogin.TestCaseID}: ${adminLogin.Description}...`);
             await driver.get(config.app.baseUrl + '/Account/Login');
             await typeRobust(driver, config.selectors.login.email, adminLogin.Email);
             await typeRobust(driver, config.selectors.login.password, adminLogin.Password);
@@ -135,14 +135,13 @@ async function runAuthAutomation() {
             console.log(`${adminLogin.TestCaseID} Pass: Admin đăng nhập thành công.`);
         }
 
-        const selCreate = config.selectors.create;
+        const selCreate = config.selectors.createUser;
 
         for (const scenario of createFailures) {
             console.log(`Đang chạy ${scenario.TestCaseID}: ${scenario.Description}...`);
             await driver.get(config.app.baseUrl + '/Admin/Users/Create');
             await sleep(1000);
 
-            // BƯỚC 1: ĐIỀN CÁC TRƯỜNG DỮ LIỆU BÌNH THƯỜNG
             await typeRobust(driver, selCreate.fullName, scenario.FullName);
             await typeRobust(driver, selCreate.email, scenario.Email);
             await typeRobust(driver, selCreate.password, scenario.Password);
@@ -160,10 +159,8 @@ async function runAuthAutomation() {
             }
             await setDatePicker(driver, selCreate.dob, dobFormatted);
 
-            // BƯỚC 2: CHỌN DYNAMIC ROLE SAU CÙNG (CÓ THỂ GÂY RE-RENDER)
             await selectDropdownByClick(driver, selCreate.roleId, 'TicketAgent');
 
-            // BƯỚC 3: BỒI ĐẮP LẠI (RE-TYPE) CÁC TRƯỜNG DỄ BỊ MẤT STATE NẾU BỊ REFRESH
             if (scenario.Email) {
                 await driver.findElement(By.css(selCreate.email)).clear();
                 await driver.findElement(By.css(selCreate.email)).sendKeys(scenario.Email.toString().trim());
@@ -173,7 +170,6 @@ async function runAuthAutomation() {
                 await driver.findElement(By.css(selCreate.password)).sendKeys(scenario.Password.toString().trim());
             }
 
-            // BƯỚC 4: SUBMIT FORM
             await driver.findElement(By.css(selCreate.submitBtn)).click();
             await sleep(1500);
 
@@ -183,6 +179,11 @@ async function runAuthAutomation() {
             } else {
                 console.log(`${scenario.TestCaseID} Fail: Lọt lỗi lên hệ thống!`);
             }
+
+            // === TỰ ĐỘNG DỌN DẸP NẾU CASE LỖI BỊ LỌT VÀO DB ===
+            if (scenario.Email) {
+                await userCollection.deleteMany({ email: { $regex: new RegExp(`^${scenario.Email}$`, 'i') } });
+            }
         }
 
         if (createSuccess) {
@@ -190,7 +191,6 @@ async function runAuthAutomation() {
             await driver.get(config.app.baseUrl + '/Admin/Users/Create');
             await sleep(1000);
 
-            // BƯỚC 1: ĐIỀN DỮ LIỆU CHO CASE THÀNH CÔNG
             await typeRobust(driver, selCreate.fullName, createSuccess.FullName);
             await typeRobust(driver, selCreate.email, empEmail);
             await typeRobust(driver, selCreate.password, empPass);
@@ -208,16 +208,13 @@ async function runAuthAutomation() {
             }
             await setDatePicker(driver, selCreate.dob, dobFormatted);
 
-            // BƯỚC 2: CHỌN ROLE
             await selectDropdownByClick(driver, selCreate.roleId, 'TicketAgent');
 
-            // BƯỚC 3: BỒI ĐẮP LẠI EMAIL & PASSWORD CHO CHẮC CHẮN
             await driver.findElement(By.css(selCreate.email)).clear();
             await driver.findElement(By.css(selCreate.email)).sendKeys(empEmail);
             await driver.findElement(By.css(selCreate.password)).clear();
             await driver.findElement(By.css(selCreate.password)).sendKeys(empPass);
 
-            // BƯỚC 4: SUBMIT
             await driver.findElement(By.css(selCreate.submitBtn)).click();
             await driver.wait(until.urlContains('/Admin/Users'), 10000);
 
