@@ -2,7 +2,8 @@
 const { MongoClient } = require('mongodb');
 const xlsx = require('xlsx');
 
-const config = require('./test-data.json');
+// Đã sửa thành gọi file config.js chuẩn chỉnh
+const config = require('./config');
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 // ==========================================
@@ -102,12 +103,14 @@ async function runAuthAutomation() {
     const createFailures = excelData.filter(row => row.Category === 'CreateFail');
     const createSuccess = excelData.find(row => row.Category === 'CreateValid');
 
-    const client = new MongoClient(config.database.uri);
+    // Đã sửa đồng bộ biến cấu hình DB theo config.js (config.db.uri)
+    const client = new MongoClient(config.db.uri);
     const driver = await new Builder().forBrowser('chrome').build();
 
     try {
         await client.connect();
-        const userCollection = client.db(config.database.dbName).collection(config.database.collection);
+        // Đã sửa cấu hình DB (config.db.name, config.db.collection)
+        const userCollection = client.db(config.db.name).collection(config.db.collection);
 
         const uniqueId = Date.now();
         const empEmail = `employee_${uniqueId}@gmail.com`;
@@ -126,7 +129,7 @@ async function runAuthAutomation() {
         }
 
         if (adminLogin) {
-            console.log(`An đang chạy ${adminLogin.TestCaseID}: ${adminLogin.Description}...`);
+            console.log(`Đang chạy ${adminLogin.TestCaseID}: ${adminLogin.Description}...`);
             await driver.get(config.app.baseUrl + '/Account/Login');
             await typeRobust(driver, config.selectors.login.email, adminLogin.Email);
             await typeRobust(driver, config.selectors.login.password, adminLogin.Password);
@@ -135,6 +138,7 @@ async function runAuthAutomation() {
             console.log(`${adminLogin.TestCaseID} Pass: Admin đăng nhập thành công.`);
         }
 
+        // Gọi đúng selector tên createUser từ file config.js
         const selCreate = config.selectors.createUser;
 
         for (const scenario of createFailures) {
@@ -239,6 +243,7 @@ async function runAuthAutomation() {
             await sleep(2000);
             console.log("TC_34 Pass: Employee đã đăng nhập thành công!");
 
+            // === XÓA LUÔN ACCOUNT TEST THÀNH CÔNG ===
             if (newEmpRecord) await userCollection.deleteOne(dbQuery);
         }
 
