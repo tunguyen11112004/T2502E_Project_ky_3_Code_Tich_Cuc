@@ -1,0 +1,48 @@
+{
+  "database": {
+    "uri": "mongodb://127.0.0.1:27017",
+    "dbName": "BusTicketDb",
+    "tripsCollection": "trips",
+    "bookingsCollection": "bookings"
+  },
+  "app": {
+    "baseUrl": "http://localhost:5280"
+  },
+  "routes": {
+    "login": "/Account/Login",
+    "bookingCreate": "/Booking/Create",
+    "bookTicket": "/Booking/BookTicket",
+    "seatMap": "/Booking/GetTripSeatMap"
+  },
+  "users": {
+    "admin": {
+      "email": "admin@src.com",
+      "pass": "Admin@123"
+    }
+  },
+  "booking": {
+    "passengerName": "Automation Seat Lock",
+    "passengerPhone": "0912345678",
+    "passengerEmail": "seatlock@test.com",
+    "dob": "2000-01-01",
+    "paymentMethod": "Cash",
+    "finalAmount": "100000"
+  },
+  "selectors": {
+    "login": {
+      "email": "#Email",
+      "password": "#Password",
+      "submitBtn": "button[type='submit']"
+    }
+  },
+  "execution": {
+    "stepDelayMs": 750,
+    "delayBetweenTestsMs": 900,
+    "uiDemoDelayMs": 1200
+  },
+  "bookingSearch": {
+    "origin": "Hà Nội",
+    "destination": "Nghệ An",
+    "date": "2026-07-22"
+  }
+}
