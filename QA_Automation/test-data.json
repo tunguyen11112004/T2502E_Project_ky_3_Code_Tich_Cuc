@@ -1,0 +1,52 @@
+﻿{
+  "database": {
+    "uri": "mongodb://127.0.0.1:27017",
+    "dbName": "BusTicketDb",
+    "collection": "users"
+  },
+  "app": {
+    "baseUrl": "http://localhost:5280"
+  },
+  "users": {
+    "admin": {
+      "email": "admin@src.com",
+      "pass": "Admin@123"
+    },
+    "employeeTemplate": {
+      "fullName": "Nhân viên Bán Vé Test",
+      "emailDomain": "@gmail.com",
+      "pass": "Employee@123",
+      "phone": "02012345678",
+      "qualifications": "Bachelor",
+      "dob": "2000-01-01",
+      "roleValue": "64f1a2b3c4d5e6f7a8b9c098"
+    }
+  },
+  "selectors": {
+    "login": {
+      "email": "#Email",
+      "password": "#Password",
+      "submitBtn": "button[type='submit']"
+    },
+    "create": {
+      "fullName": "#FullName",
+      "email": "#Email",
+      "password": "#Password",
+      "phone": "#PhoneNumber",
+      "qualifications": "#Qualifications",
+      "dob": "#Dob",
+      "roleId": "#RoleId",
+      "submitBtn": "button.bg-blue-600[type='submit']"
+    }
+  },
+  "ddtScenarios": {
+    "loginFailures": [
+      { "id": "TC_02_A", "desc": "Sai mật khẩu", "email": "admin@src.com", "pass": "WrongPassword123" },
+      { "id": "TC_02_B", "desc": "Email không tồn tại", "email": "notfound@src.com", "pass": "Admin@123" }
+    ],
+    "createFailures": [
+      { "id": "TC_06", "desc": "Email sai định dạng (thiếu @)", "email": "employee_test.com" },
+      { "id": "TC_07", "desc": "Email đã tồn tại (trùng Admin)", "email": "admin@src.com" }
+    ]
+  }
+}
