@@ -1,102 +1,328 @@
 ﻿@model List<Bus_ticket.ViewModels.BusListItemViewModel>
 @using Bus_ticket.ViewModels
 @{
-    Layout = "_AdminLayout";
-    ViewData["Title"] = "Quản lý Xe khách";
+Layout = "_AdminLayout";
+ViewData["Title"] = "Quản lý Xe khách";
 
-    string searchTerm = ViewBag.SearchTerm as string ?? string.Empty;
-    int currentPage = ViewBag.CurrentPage ?? 1;
-    int totalPages = ViewBag.TotalPages ?? 1;
-    long totalItems = ViewBag.TotalItems ?? 0;
-    int pageSize = ViewBag.PageSize ?? 10;
-    var createForm = ViewBag.CreateForm as BusFormViewModel ?? new BusFormViewModel();
+string searchTerm = ViewBag.SearchTerm as string ?? string.Empty;
+string branchFilter = ViewBag.BranchId as string ?? string.Empty;
+string operatorFilter = ViewBag.OperatorId as string ?? string.Empty;
+string statusFilter = ViewBag.Status as string ?? string.Empty;
+int currentPage = ViewBag.CurrentPage ?? 1;
+int totalPages = ViewBag.TotalPages ?? 1;
+long totalItems = ViewBag.TotalItems ?? 0;
+int pageSize = ViewBag.PageSize ?? 10;
+var createForm = ViewBag.CreateForm as BusFormViewModel ?? new BusFormViewModel();
+
+long startItem = totalItems == 0 ? 0 : ((currentPage - 1) * pageSize) + 1;
+long endItem = (currentPage * pageSize) > totalItems ? totalItems : (currentPage * pageSize);
 }
 
-<div class="p-6 space-y-6">
-    <div class="flex justify-between items-center">
+<div class="p-4 sm:p-6 lg:p-8 space-y-6 max-w-full overflow-x-hidden">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-            <h1 class="text-2xl font-bold text-white">Danh mục Xe khách</h1>
-            <p class="text-gray-400">Quản lý biển số, loại xe, chi nhánh...</p>
+            <h1 class="text-2xl font-bold tracking-tight text-white">Danh mục Xe khách</h1>
+            <p class="text-sm text-gray-400 mt-1">Quản lý biển số, loại xe, và phân bổ xe cho Chi nhánh / Nhà xe.</p>
         </div>
-        <button data-modal-target="modal-bus-create" data-modal-toggle="modal-bus-create"
-                class="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-medium">
-            + Thêm xe mới
+
+        <button type="button" onclick="showBusModal('modal-bus-create')"
+                class="inline-flex items-center justify-center px-4 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg transition-colors duration-200 shadow-sm">
+            Thêm xe mới
         </button>
     </div>
 
     @if (TempData["SuccessMessage"] != null)
     {
-        <div class="p-4 bg-green-900 text-green-300 rounded-lg">@TempData["SuccessMessage"]</div>
+    <div class="flex items-center p-4 text-sm text-emerald-400 rounded-lg bg-gray-800 border border-emerald-800">
+        <div><span class="font-medium">Thành công!</span> @TempData["SuccessMessage"]</div>
+    </div>
     }
     @if (TempData["ErrorMessage"] != null)
     {
-        <div class="p-4 bg-red-900 text-red-300 rounded-lg">@TempData["ErrorMessage"]</div>
+    <div class="flex items-center p-4 text-sm text-red-400 rounded-lg bg-gray-800 border border-red-800">
+        <div><span class="font-medium">Thất bại!</span> @TempData["ErrorMessage"]</div>
+    </div>
     }
 
-    <!-- Search -->
-    <form asp-action="Index" method="get" class="max-w-md">
-        <input type="text" name="searchTerm" value="@searchTerm" 
-               placeholder="Tìm theo biển số hoặc mã xe..." 
-               class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white" />
+    <!-- Bộ lọc: từ khóa + Chi nhánh + Nhà xe -->
+    <form method="get" asp-action="Index" class="flex flex-col md:flex-row md:items-center gap-3">
+        <input type="text" name="searchTerm" value="@searchTerm"
+               placeholder="Tìm theo biển số hoặc mã xe..."
+               class="w-full md:w-64 px-4 py-2.5 text-sm bg-gray-900 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400 placeholder-gray-500" />
+
+        <select name="branchId"
+                class="w-full md:w-56 px-4 py-2.5 text-sm bg-gray-900 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400">
+            <option value="" selected="@(branchFilter == string.Empty)">Tất cả chi nhánh</option>
+            @foreach (var opt in createForm.BranchOptions)
+            {
+            <option value="@opt.Value" selected="@(opt.Value == branchFilter)">@opt.Text</option>
+            }
+        </select>
+
+        <select name="operatorId"
+                class="w-full md:w-56 px-4 py-2.5 text-sm bg-gray-900 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400">
+            <option value="" selected="@(operatorFilter == string.Empty)">Tất cả nhà xe</option>
+            @foreach (var opt in createForm.OperatorOptions)
+            {
+            <option value="@opt.Value" selected="@(opt.Value == operatorFilter)">@opt.Text</option>
+            }
+        </select>
+
+        <select name="status"
+                class="w-full md:w-48 px-4 py-2.5 text-sm bg-gray-900 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400">
+            <option value="" selected="@(statusFilter == string.Empty)">Tất cả trạng thái</option>
+            <option value="Active" selected="@(statusFilter == "Active")">Hoạt động</option>
+            <option value="Maintenance" selected="@(statusFilter == "Maintenance")">Bảo trì</option>
+            <option value="Inactive" selected="@(statusFilter == "Inactive")">Ngưng hoạt động</option>
+        </select>
+
+        <button type="submit"
+                class="px-5 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg">
+            Lọc
+        </button>
+
+        @if (!string.IsNullOrEmpty(searchTerm) || !string.IsNullOrEmpty(branchFilter) || !string.IsNullOrEmpty(operatorFilter) || !string.IsNullOrEmpty(statusFilter))
+        {
+        <a asp-action="Index" class="px-5 py-2.5 text-sm font-semibold text-gray-300 hover:text-white">Xóa lọc</a>
+        }
     </form>
 
-    <!-- Table -->
-    <div class="bg-gray-900 rounded-xl overflow-hidden">
-        <table class="w-full text-sm text-left text-gray-300">
-            <thead class="bg-gray-800">
+    <div class="w-full max-w-full overflow-hidden bg-[#1e1e24] border border-gray-700/50 rounded-xl shadow-xl">
+        <div class="w-full overflow-x-auto">
+            <table class="w-full min-w-[1040px] table-fixed text-sm text-left text-gray-300">
+                <thead class="text-xs uppercase bg-[#141419] text-gray-400 border-b border-gray-700/60">
                 <tr>
-                    <th class="px-6 py-4">Mã xe</th>
-                    <th class="px-6 py-4">Biển số</th>
-                    <th class="px-6 py-4">Loại xe</th>
-                    <th class="px-6 py-4">Chi nhánh</th>
-                    <th class="px-6 py-4">Nhà xe</th>
-                    <th class="px-6 py-4">Số ghế</th>
-                    <th class="px-6 py-4">Trạng thái</th>
-                    <th class="px-6 py-4 text-right">Hành động</th>
+                    <th class="w-28 px-4 py-4 font-semibold tracking-wider">Mã xe</th>
+                    <th class="w-32 px-4 py-4 font-semibold tracking-wider">Biển số</th>
+                    <th class="w-40 px-4 py-4 font-semibold tracking-wider">Loại xe</th>
+                    <th class="w-20 px-4 py-4 font-semibold tracking-wider">Số ghế</th>
+                    <th class="w-56 px-4 py-4 font-semibold tracking-wider">Trực thuộc Nhà xe / Chi nhánh</th>
+                    <th class="w-32 px-4 py-4 font-semibold tracking-wider">Trạng thái</th>
+                    <th class="w-32 px-4 py-4 font-semibold tracking-wider text-right">Hành động</th>
                 </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-700">
-                @foreach (var item in Model)
+                </thead>
+                <tbody class="divide-y divide-gray-700/50">
+                @if (Model == null || !Model.Any())
                 {
-                    <tr class="hover:bg-gray-800">
-                        <td class="px-6 py-4 font-medium">@item.BusCode</td>
-                        <td class="px-6 py-4">@item.LicensePlate</td>
-                        <td class="px-6 py-4">@item.BusClassName</td>
-                        <td class="px-6 py-4">@item.BranchName</td>
-                        <td class="px-6 py-4">@item.OperatorName</td>
-                        <td class="px-6 py-4">@item.TotalSeats</td>
-                        <td class="px-6 py-4">
-                            <span class="px-3 py-1 rounded-full text-xs @(item.Status == "Active" ? "bg-green-900 text-green-400" : "bg-gray-700 text-gray-400")">
-                                @item.Status
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 text-right">
-                            <button onclick="openEditBusModal('@item.Id')" class="text-amber-400 hover:text-amber-300 mr-4">Sửa</button>
-                            <button onclick="openDeleteBusModal('@item.Id', '@item.LicensePlate')" class="text-red-400 hover:text-red-300">Xóa</button>
-                        </td>
-                    </tr>
+                <tr>
+                    <td colspan="7" class="px-4 py-10 text-center text-gray-500">
+                        Chưa có xe nào phù hợp.
+                    </td>
+                </tr>
                 }
-            </tbody>
-        </table>
-    </div>
+                else
+                {
+                foreach (var item in Model)
+                {
+                <tr class="hover:bg-gray-800/30 transition-colors duration-150">
+                    <td class="px-4 py-4 font-semibold text-amber-400">@item.BusCode</td>
+                    <td class="px-4 py-4 text-white">@item.LicensePlate</td>
+                    <td class="px-4 py-4">@item.BusClassName</td>
+                    <td class="px-4 py-4">@(item.TotalSeats > 0 ? item.TotalSeats.ToString() : "—")</td>
+                    <td class="px-4 py-4 whitespace-normal break-words">
+                        <div class="text-white font-medium mb-1">@item.OperatorName</div>
+                        <span class="inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-md border bg-amber-500/10 text-amber-400 border-amber-500/20 whitespace-normal break-words">
+                                        @item.BranchName
+                                    </span>
+                    </td>
+                    <td class="px-4 py-4">
+                        @if (string.Equals(item.Status, "Active", StringComparison.OrdinalIgnoreCase))
+                        {
+                        <span class="inline-flex items-center px-2.5 py-0.5 text-xs font-semibold rounded-md border bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
+                                            Hoạt động
+                                        </span>
+                        }
+                        else if (string.Equals(item.Status, "Maintenance", StringComparison.OrdinalIgnoreCase))
+                        {
+                        <span class="inline-flex items-center px-2.5 py-0.5 text-xs font-semibold rounded-md border bg-amber-500/10 text-amber-400 border-amber-500/20">
+                                            Bảo trì
+                                        </span>
+                        }
+                        else
+                        {
+                        <span class="inline-flex items-center px-2.5 py-0.5 text-xs font-semibold rounded-md border bg-gray-500/10 text-gray-400 border-gray-500/20">
+                                            Ngưng
+                                        </span>
+                        }
+                    </td>
+                    <td class="px-4 py-4 text-right text-sm font-medium">
+                        <div class="inline-flex items-center gap-3">
+                            <button type="button"
+                                    onclick="openEditBusModal('@item.Id')"
+                                    class="text-amber-400 hover:text-amber-300 font-semibold">
+                                Sửa
+                            </button>
+                            <span class="text-gray-600">|</span>
+                            <button type="button"
+                                    onclick="openDeleteBusModal('@item.Id', '@item.LicensePlate')"
+                                    class="text-rose-400 hover:text-rose-300 font-semibold">
+                                Xóa
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                }
+                }
+                </tbody>
+            </table>
+        </div>
 
-    <!-- Phân trang -->
-    <!-- ... (giống BusClasses) -->
+        <div class="flex flex-col sm:flex-row items-center justify-between p-4 bg-[#141419] border-t border-gray-700/60 gap-4">
+            <span class="text-sm text-gray-400">
+                Hiển thị từ <span class="font-semibold text-white">@startItem</span> đến
+                <span class="font-semibold text-white">@endItem</span> trong tổng số
+                <span class="font-semibold text-white">@totalItems</span> xe
+            </span>
+
+            @if (totalPages > 1)
+            {
+            <nav class="inline-flex items-center -space-x-px rounded-md shadow-sm">
+                <a asp-action="Index"
+                   asp-route-page="@(currentPage - 1)"
+                   asp-route-searchTerm="@searchTerm"
+                   asp-route-branchId="@branchFilter"
+                   asp-route-operatorId="@operatorFilter"
+                   asp-route-status="@statusFilter"
+                   class="relative inline-flex items-center rounded-l-md px-3 py-2 text-sm font-medium border border-gray-700 bg-gray-900 text-gray-400 hover:bg-gray-800 hover:text-white @(currentPage == 1 ? "pointer-events-none opacity-40" : "")">
+                    Trước
+                </a>
+
+                @for (int i = 1; i <= totalPages; i++)
+                {
+                if (i == currentPage)
+                {
+                <span class="relative z-10 inline-flex items-center bg-amber-400 px-4 py-2 text-sm font-semibold text-gray-900 border border-amber-400">
+                                @i
+                            </span>
+                }
+                else
+                {
+                <a asp-action="Index"
+                   asp-route-page="@i"
+                   asp-route-searchTerm="@searchTerm"
+                   asp-route-branchId="@branchFilter"
+                   asp-route-operatorId="@operatorFilter"
+                   asp-route-status="@statusFilter"
+                   class="relative inline-flex items-center border border-gray-700 bg-gray-900 px-4 py-2 text-sm font-medium text-gray-400 hover:bg-gray-800 hover:text-white">
+                    @i
+                </a>
+                }
+                }
+
+                <a asp-action="Index"
+                   asp-route-page="@(currentPage + 1)"
+                   asp-route-searchTerm="@searchTerm"
+                   asp-route-branchId="@branchFilter"
+                   asp-route-operatorId="@operatorFilter"
+                   asp-route-status="@statusFilter"
+                   class="relative inline-flex items-center rounded-r-md px-3 py-2 text-sm font-medium border border-gray-700 bg-gray-900 text-gray-400 hover:bg-gray-800 hover:text-white @(currentPage == totalPages ? "pointer-events-none opacity-40" : "")">
+                    Tiếp
+                </a>
+            </nav>
+            }
+        </div>
+    </div>
 </div>
 
-<!-- Modal Create & Edit -->
-<!-- (Tôi sẽ đưa phần modal trong tin nhắn tiếp theo nếu bạn muốn tách) -->
+<!-- Modal: Thêm xe mới -->
+<div id="modal-bus-create" tabindex="-1" aria-hidden="true" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 w-full h-full">
+    <div class="relative w-full max-w-2xl mx-4 bg-[#1e1e24] rounded-xl shadow-xl border border-gray-700/50 max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between p-6 border-b border-gray-700/60">
+            <h3 class="text-xl font-semibold text-white">Thêm Xe Mới</h3>
+            <button type="button" onclick="hideBusModal('modal-bus-create')" class="text-gray-400 hover:text-white text-sm font-semibold">Đóng</button>
+        </div>
+        <form asp-action="Create" method="post" class="p-6 space-y-6">
+            @Html.AntiForgeryToken()
+            @await Html.PartialAsync("_BusFormFields", createForm)
+            <div class="flex justify-end gap-4">
+                <button type="button" onclick="hideBusModal('modal-bus-create')"
+                        class="px-6 py-2.5 text-sm font-semibold text-gray-400 hover:text-white">Hủy</button>
+                <button type="submit"
+                        class="px-6 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg">Lưu</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Sửa xe -->
+<div id="modal-bus-edit" tabindex="-1" aria-hidden="true" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 w-full h-full">
+    <div class="relative w-full max-w-2xl mx-4 bg-[#1e1e24] rounded-xl shadow-xl border border-gray-700/50 max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between p-6 border-b border-gray-700/60">
+            <h3 class="text-xl font-semibold text-white">Cập nhật Xe</h3>
+            <button type="button" onclick="hideBusModal('modal-bus-edit')" class="text-gray-400 hover:text-white text-sm font-semibold">Đóng</button>
+        </div>
+        <form asp-action="Edit" method="post" class="p-6 space-y-6" id="formEditBus">
+            @Html.AntiForgeryToken()
+            @await Html.PartialAsync("_BusFormFields", createForm, new ViewDataDictionary(ViewData) { { "IdPrefix", "Edit" } })
+            <div class="flex justify-end gap-4">
+                <button type="button" onclick="hideBusModal('modal-bus-edit')"
+                        class="px-6 py-2.5 text-sm font-semibold text-gray-400 hover:text-white">Hủy</button>
+                <button type="submit"
+                        class="px-6 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg">Cập nhật</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Xác nhận xóa -->
+<div id="modal-bus-delete" tabindex="-1" aria-hidden="true" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 w-full h-full">
+    <div class="relative w-full max-w-md mx-4 bg-[#1e1e24] rounded-xl shadow-xl border border-gray-700/50">
+        <div class="p-6 text-center">
+            <h3 class="text-lg font-semibold text-white mb-2">Xác nhận xóa xe</h3>
+            <p class="text-sm text-gray-400 mb-6">
+                Bạn có chắc muốn xóa xe biển số
+                <span id="deleteBusPlate" class="font-semibold text-white"></span>?
+                Nếu xe đang gắn với chuyến đi, hệ thống sẽ chỉ chuyển sang Ngưng hoạt động thay vì xóa hẳn.
+            </p>
+            <form asp-action="Delete" method="post" id="formDeleteBus">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="deleteBusId" />
+                <div class="flex justify-center gap-4">
+                    <button type="button" onclick="hideBusModal('modal-bus-delete')"
+                            class="px-6 py-2.5 text-sm font-semibold text-gray-400 hover:text-white">Hủy</button>
+                    <button type="submit"
+                            class="px-6 py-2.5 text-sm font-semibold text-white bg-rose-500 hover:bg-rose-600 rounded-lg">Xác nhận</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 <script>
-    // JS cho modal Edit và Delete
+    function showBusModal(id) {
+        document.getElementById(id).classList.remove('hidden');
+    }
+
+    function hideBusModal(id) {
+        document.getElementById(id).classList.add('hidden');
+    }
+
     async function openEditBusModal(id) {
-        const res = await fetch(`/Buses/GetForEdit?id=${id}`);
-        const data = await res.json();
-        // Populate form edit...
-        // Sử dụng Flowbite modal
+        try {
+            const res = await fetch(`/Buses/GetForEdit?id=${id}`);
+            if (!res.ok) {
+                alert('Không tải được dữ liệu xe.');
+                return;
+            }
+            const data = await res.json();
+
+            document.getElementById('EditId').value = data.id;
+            document.getElementById('EditBusCode').value = data.busCode;
+            document.getElementById('EditLicensePlate').value = data.licensePlate;
+            document.getElementById('EditBusClassId').value = data.busClassId;
+            document.getElementById('EditBranchId').value = data.branchId;
+            document.getElementById('EditOperatorId').value = data.operatorId;
+            document.getElementById('EditStatus').value = data.status;
+
+            showBusModal('modal-bus-edit');
+        } catch (err) {
+            alert('Có lỗi xảy ra khi tải dữ liệu xe.');
+        }
     }
 
     function openDeleteBusModal(id, plate) {
-        // Set hidden id và show modal
+        document.getElementById('deleteBusId').value = id;
+        document.getElementById('deleteBusPlate').textContent = plate;
+        showBusModal('modal-bus-delete');
     }
 </script>
