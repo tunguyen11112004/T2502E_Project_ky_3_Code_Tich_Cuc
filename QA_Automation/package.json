@@ -1,0 +1,17 @@
+{
+  "name": "src-travel-qa-automation",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Selenium automation tests for SRC Travel",
+  "scripts": {
+    "test:qr": "node run-qr-payment.js",
+    "qr-payment": "node run-qr-payment.js",
+    "test:auth": "node authAutomation.js",
+    "test:seat-lock": "node seatLockBookingAutomation.js"
+  },
+  "dependencies": {
+    "mongodb": "^7.5.0",
+    "selenium-webdriver": "^4.46.0",
+    "xlsx": "^0.18.5"
+  }
+}

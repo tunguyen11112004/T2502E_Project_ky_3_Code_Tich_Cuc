@@ -1,0 +1,92 @@
+{
+  "database": {
+    "uri": "mongodb://127.0.0.1:27017",
+    "dbName": "BusTicketDb",
+    "tripsCollection": "trips",
+    "bookingsCollection": "bookings"
+  },
+  "app": {
+    "baseUrl": "http://localhost:5280"
+  },
+  "routes": {
+    "login": "/Account/Login",
+    "bookingCreate": "/Booking/Create",
+    "bookingIndex": "/Booking",
+    "momoReturn": "/Booking/MomoReturn",
+    "vnpayConfirm": "/Booking/ConfirmPayment",
+    "payosReturn": "/Booking/PayOSReturn"
+  },
+  "users": {
+    "employee": {
+      "email": "staff1@src.com",
+      "pass": "Admin@123"
+    },
+    "admin": {
+      "email": "admin@src.com",
+      "pass": "Admin@123"
+    },
+    "booking": {
+      "email": "admin@src.com",
+      "pass": "Admin@123"
+    },
+    "wrongPassword": "WrongPassword@999"
+  },
+  "bookingSearch": {
+    "departure": "Hà Nội",
+    "destination": "TP. Hồ Chí Minh",
+    "travelDate": "auto"
+  },
+  "passenger": {
+    "name": "QA Auto Test",
+    "dob": "1990-01-15",
+    "email": "qa-automation@test.local"
+  },
+  "selectors": {
+    "login": {
+      "email": "#Email",
+      "password": "#Password",
+      "submitBtn": "button[type='submit']"
+    },
+    "booking": {
+      "departure": "#txtDeparture",
+      "destination": "#txtDestination",
+      "travelDate": "#txtTravelDate",
+      "searchBtn": "button[onclick=\"searchTripsByRoute()\"]",
+      "tripCard": "#searchResultArea > div",
+      "availableSeat": "#grid-seats button:not([disabled])",
+      "seatGrid": "#grid-seats",
+      "phone": "#txtPassengerPhone",
+      "name": "#txtPassengerName",
+      "dob": "#inputDob",
+      "email": "#txtPassengerEmail",
+      "paymentMethod": "input[name='paymentMethod']",
+      "submitBtn": "#formBooking button[type='submit']",
+      "detailSection": "#bookingDetailSection"
+    },
+    "ticket": {
+      "successModal": "#successModal",
+      "bookingDetails": "#bookingDetails",
+      "printBtn": "#successModal button[onclick*='printTicket']"
+    }
+  },
+  "execution": {
+    "stepDelayMs": 600,
+    "delayBetweenTestsMs": 800,
+    "waitTimeoutMs": 20000,
+    "paymentWaitMs": 35000,
+    "qrDemoDelayMs": 5000
+  },
+  "excel": {
+    "fileName": "QrPaymentTestCases.xlsx"
+  },
+  "paymentMethods": {
+    "momo": "MOMO",
+    "vnpay": "VNPAY",
+    "payos": "PAYOS",
+    "cash": "Cash"
+  },
+  "vnpay": {
+    "tmnCode": "ALVUQFU3",
+    "hashSecret": "JMIAIZOIQ3AAJIBG79Q5FFE4KCYZ1XDC"
+  }
+}
