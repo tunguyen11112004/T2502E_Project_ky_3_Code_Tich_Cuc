@@ -24,6 +24,9 @@ namespace Bus_ticket.Controllers
     [Authorize(Roles = "Admin,Employee")]
     public class BookingController : Controller
     {
+        private const int SeatSelectionHoldMinutes = 3;
+        private const string SeatSelectionHoldSessionKey = "SeatSelectionHoldCode";
+
         private readonly ApplicationDbContext _dbContext;
         private readonly IConfiguration _config;
         private readonly IMomoService _momoService;
@@ -272,8 +275,17 @@ namespace Bus_ticket.Controllers
                         totalSeats = t.RealtimeSeats.Count;
                     }
 
-                    // Tính số ghế còn trống (Có sẵn)
-                    int availableSeats = totalSeats - bookedSeatsCount;
+                    // Tính số ghế còn trống: trừ cả ghế đã đặt và ghế đang được giữ chỗ còn hạn
+                    var activeHoldingSeatCount = (t.RealtimeSeats ?? new List<RealtimeSeat>())
+                        .Where(s => s.Status == "Holding"
+                                    && s.HeldUntil.HasValue
+                                    && s.HeldUntil.Value > DateTime.UtcNow
+                                    && !string.IsNullOrWhiteSpace(s.SeatNumber))
+                        .Select(s => s.SeatNumber.Trim().ToUpper())
+                        .Distinct()
+                        .Count();
+
+                    int availableSeats = totalSeats - bookedSeatsCount - activeHoldingSeatCount;
                     if (availableSeats < 0) availableSeats = 0;
 
                     decimal baseFare = t.BaseFare;
@@ -312,7 +324,7 @@ namespace Bus_ticket.Controllers
 
         // GET: /Booking/GetTripSeatMap?tripId=xxx
         [HttpGet]
-        public async Task<IActionResult> GetTripSeatMap(string tripId)
+        public async Task<IActionResult> GetTripSeatMap(string tripId, string holdCode = "")
         {
             if (string.IsNullOrEmpty(tripId))
             {
@@ -364,11 +376,20 @@ namespace Bus_ticket.Controllers
             // 3. Lấy danh sách trạng thái ghế thời gian thực (RealtimeSeats) trong Trip
             var realtimeSeats = trip.RealtimeSeats ?? new List<RealtimeSeat>();
             var now = DateTime.UtcNow;
+            var currentHoldCode = !string.IsNullOrWhiteSpace(holdCode)
+                ? holdCode.Trim()
+                : HttpContext.Session.GetString(SeatSelectionHoldSessionKey);
+
+            if (!string.IsNullOrWhiteSpace(currentHoldCode))
+            {
+                HttpContext.Session.SetString(SeatSelectionHoldSessionKey, currentHoldCode);
+            }
 
             // 4. Ánh xạ trạng thái realtime vào layout ghế mẫu
+            // Lưu ý: ghế Holding của CHÍNH phiên hiện tại không được khóa với người giữ nó.
+            // Nếu không phân biệt isHeldByMe, user reload trang sẽ thấy ghế mình đang giữ bị disable luôn.
             var seatMapResult = defaultLayout.Select(template =>
             {
-                // Kiểm tra xem ghế mẫu này hiện tại trong Trip có trạng thái như thế nào
                 var realtimeInfo = realtimeSeats.FirstOrDefault(s =>
                     s.SeatNumber != null &&
                     s.SeatNumber.Trim().Equals(template.SeatNumber.Trim(), StringComparison.OrdinalIgnoreCase));
@@ -376,13 +397,19 @@ namespace Bus_ticket.Controllers
                 bool isBooked = realtimeInfo?.Status == "Booked";
                 bool isHolding = realtimeInfo?.Status == "Holding" && realtimeInfo.HeldUntil.HasValue &&
                                  realtimeInfo.HeldUntil.Value > now;
+                bool isHeldByMe = isHolding
+                                  && !string.IsNullOrWhiteSpace(currentHoldCode)
+                                  && string.Equals(realtimeInfo?.HeldByCustomerId, currentHoldCode,
+                                      StringComparison.OrdinalIgnoreCase);
 
                 return new
                 {
                     seatNumber = template.SeatNumber,
                     isBooked = isBooked,
                     isHolding = isHolding,
-                    isLocked = isBooked || isHolding // Khoá ghế nếu đã thanh toán hoặc đang bị giữ chỗ
+                    isHeldByMe = isHeldByMe,
+                    heldUntil = realtimeInfo?.HeldUntil,
+                    isLocked = isBooked || (isHolding && !isHeldByMe)
                 };
             }).ToList();
 
@@ -390,6 +417,7 @@ namespace Bus_ticket.Controllers
             {
                 success = true,
                 cols = totalCols,
+                holdCode = currentHoldCode,
                 seats = seatMapResult
             });
         }
@@ -403,7 +431,8 @@ namespace Bus_ticket.Controllers
             DateTime dob,
             string passengerPhone,
             string passengerEmail,
-            string paymentMethod)
+            string paymentMethod,
+            string seatHoldCode)
         {
             if (seatNumbers == null || !seatNumbers.Any() || string.IsNullOrEmpty(tripId))
             {
@@ -432,6 +461,10 @@ namespace Bus_ticket.Controllers
                 {
                     return Json(new { success = false, message = "Vui lòng chọn ghế hợp lệ." });
                 }
+
+                seatHoldCode = string.IsNullOrWhiteSpace(seatHoldCode)
+                    ? string.Empty
+                    : seatHoldCode.Trim();
 
                 var trip = await _dbContext.Trips
                     .Find(t => t.Id == tripId)
@@ -466,7 +499,7 @@ namespace Bus_ticket.Controllers
                 {
                     var cleanBookingCode = new string(bookingCode.Where(char.IsLetterOrDigit).ToArray());
 
-                    var holdResult = await TryHoldSeatsAsync(tripId, seatNumbers, cleanBookingCode);
+                    var holdResult = await PreparePaymentHoldAsync(tripId, seatNumbers, seatHoldCode, cleanBookingCode);
 
                     if (!holdResult.Success)
                     {
@@ -560,8 +593,8 @@ namespace Bus_ticket.Controllers
                     // MoMo chỉ chấp nhận chữ và số cho orderId nên ta clean tương tự VNPAY
                     var cleanBookingCode = new string(bookingCode.Where(char.IsLetterOrDigit).ToArray());
 
-                    // 1. Giữ ghế tạm thời để tránh người khác đặt trùng trong lúc đang quét mã
-                    var holdResult = await TryHoldSeatsAsync(tripId, seatNumbers, cleanBookingCode);
+                    // 1. Chuyển giữ chỗ ở màn chọn ghế sang phiên thanh toán, gia hạn thêm 3 phút
+                    var holdResult = await PreparePaymentHoldAsync(tripId, seatNumbers, seatHoldCode, cleanBookingCode);
                     if (!holdResult.Success)
                     {
                         return Json(new { success = false, message = holdResult.Message });
@@ -612,7 +645,7 @@ namespace Bus_ticket.Controllers
                     // Bỏ các ký tự đặc biệt để làm mã giữ chỗ
                     var cleanBookingCode = new string(bookingCode.Where(char.IsLetterOrDigit).ToArray());
 
-                    var holdResult = await TryHoldSeatsAsync(tripId, seatNumbers, cleanBookingCode);
+                    var holdResult = await PreparePaymentHoldAsync(tripId, seatNumbers, seatHoldCode, cleanBookingCode);
                     if (!holdResult.Success)
                     {
                         return Json(new { success = false, message = holdResult.Message });
@@ -686,15 +719,26 @@ namespace Bus_ticket.Controllers
                     }
                 }
 
-                var cashHoldResult = await TryHoldSeatsAsync(tripId, seatNumbers, bookingCode);
+                var finalCashHoldCode = bookingCode;
+                var hasSelectionHold = !string.IsNullOrWhiteSpace(seatHoldCode)
+                                       && await HasValidHoldAsync(tripId, seatNumbers, seatHoldCode);
 
-                if (!cashHoldResult.Success)
+                if (hasSelectionHold)
                 {
-                    return Json(new
+                    finalCashHoldCode = seatHoldCode;
+                }
+                else
+                {
+                    var cashHoldResult = await TryHoldSeatsAsync(tripId, seatNumbers, bookingCode);
+
+                    if (!cashHoldResult.Success)
                     {
-                        success = false,
-                        message = cashHoldResult.Message
-                    });
+                        return Json(new
+                        {
+                            success = false,
+                            message = cashHoldResult.Message
+                        });
+                    }
                 }
 
                 var newBooking = new Booking
@@ -738,7 +782,7 @@ namespace Bus_ticket.Controllers
 
                 await ResetUnpaidCountAsync(passengerPhone);
 
-                await MarkHeldSeatsAsBookedAsync(tripId, seatNumbers, bookingCode);
+                await MarkHeldSeatsAsBookedAsync(tripId, seatNumbers, finalCashHoldCode);
 
                 await _rabbitMqService.PublishOrderAsync(newBooking.BookingCode);
 
@@ -1349,6 +1393,107 @@ namespace Bus_ticket.Controllers
                 .ToList();
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> HoldSeatSelection(string tripId, string seatNumber, string holdCode = "")
+        {
+            if (string.IsNullOrWhiteSpace(tripId) || string.IsNullOrWhiteSpace(seatNumber))
+            {
+                return Json(new { success = false, message = "Dữ liệu giữ chỗ không hợp lệ." });
+            }
+
+            var normalizedSeat = NormalizeSeatNumbers(new[] { seatNumber }).FirstOrDefault();
+            if (string.IsNullOrWhiteSpace(normalizedSeat))
+            {
+                return Json(new { success = false, message = "Số ghế không hợp lệ." });
+            }
+
+            var effectiveHoldCode = !string.IsNullOrWhiteSpace(holdCode)
+                ? holdCode.Trim()
+                : GetOrCreateSeatSelectionHoldCode();
+
+            HttpContext.Session.SetString(SeatSelectionHoldSessionKey, effectiveHoldCode);
+
+            var heldUntil = DateTime.UtcNow.AddMinutes(SeatSelectionHoldMinutes);
+            var holdResult = await TryHoldOneSeatAtomicAsync(tripId, normalizedSeat, effectiveHoldCode, heldUntil);
+
+            if (!holdResult.Success)
+            {
+                return Json(new { success = false, message = holdResult.Message });
+            }
+
+            await RefreshHoldCodeUntilAsync(tripId, effectiveHoldCode, heldUntil);
+
+            return Json(new
+            {
+                success = true,
+                message = "Giữ chỗ thành công.",
+                seatNumber = normalizedSeat,
+                holdCode = effectiveHoldCode,
+                heldUntil,
+                seconds = SeatSelectionHoldMinutes * 60
+            });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ReleaseSeatSelection(string tripId, string seatNumber, string holdCode)
+        {
+            if (string.IsNullOrWhiteSpace(tripId) || string.IsNullOrWhiteSpace(seatNumber))
+            {
+                return Json(new { success = false, message = "Dữ liệu nhả ghế không hợp lệ." });
+            }
+
+            var normalizedSeat = NormalizeSeatNumbers(new[] { seatNumber }).FirstOrDefault();
+            if (string.IsNullOrWhiteSpace(normalizedSeat))
+            {
+                return Json(new { success = false, message = "Số ghế không hợp lệ." });
+            }
+
+            var effectiveHoldCode = !string.IsNullOrWhiteSpace(holdCode)
+                ? holdCode.Trim()
+                : HttpContext.Session.GetString(SeatSelectionHoldSessionKey);
+
+            if (string.IsNullOrWhiteSpace(effectiveHoldCode))
+            {
+                return Json(new { success = true, message = "Không có phiên giữ chỗ cần nhả." });
+            }
+
+            await ReleaseSpecificSeatsByHoldCodeAsync(tripId, new List<string> { normalizedSeat }, effectiveHoldCode);
+
+            return Json(new { success = true, message = "Đã nhả ghế." });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ReleaseCurrentSeatSelection(string tripId, string holdCode)
+        {
+            var effectiveHoldCode = !string.IsNullOrWhiteSpace(holdCode)
+                ? holdCode.Trim()
+                : HttpContext.Session.GetString(SeatSelectionHoldSessionKey);
+
+            if (string.IsNullOrWhiteSpace(tripId) || string.IsNullOrWhiteSpace(effectiveHoldCode))
+            {
+                return Json(new { success = true });
+            }
+
+            await ReleaseSeatsByHoldCodeAsync(tripId, effectiveHoldCode);
+            return Json(new { success = true });
+        }
+
+        private string GetOrCreateSeatSelectionHoldCode()
+        {
+            var holdCode = HttpContext.Session.GetString(SeatSelectionHoldSessionKey);
+
+            if (string.IsNullOrWhiteSpace(holdCode))
+            {
+                holdCode = "SEL" + Guid.NewGuid().ToString("N")[..16].ToUpper();
+                HttpContext.Session.SetString(SeatSelectionHoldSessionKey, holdCode);
+            }
+
+            return holdCode;
+        }
+
         private async Task ReleaseExpiredHoldsAsync(string tripId)
         {
             var now = DateTime.UtcNow;
@@ -1371,6 +1516,11 @@ namespace Bus_ticket.Controllers
 
         private async Task ReleaseSeatsByHoldCodeAsync(string tripId, string holdCode)
         {
+            if (string.IsNullOrWhiteSpace(holdCode))
+            {
+                return;
+            }
+
             var holdFilter = Builders<RealtimeSeat>.Filter.And(
                 Builders<RealtimeSeat>.Filter.Eq(s => s.Status, "Holding"),
                 Builders<RealtimeSeat>.Filter.Eq(s => s.HeldByCustomerId, holdCode)
@@ -1387,6 +1537,31 @@ namespace Bus_ticket.Controllers
             );
         }
 
+        private async Task ReleaseSpecificSeatsByHoldCodeAsync(string tripId, List<string> seatNumbers, string holdCode)
+        {
+            if (string.IsNullOrWhiteSpace(holdCode))
+            {
+                return;
+            }
+
+            var normalizedSeats = NormalizeSeatNumbers(seatNumbers);
+            if (!normalizedSeats.Any())
+            {
+                return;
+            }
+
+            var holdFilter = Builders<RealtimeSeat>.Filter.And(
+                Builders<RealtimeSeat>.Filter.Eq(s => s.Status, "Holding"),
+                Builders<RealtimeSeat>.Filter.Eq(s => s.HeldByCustomerId, holdCode),
+                Builders<RealtimeSeat>.Filter.In(s => s.SeatNumber, normalizedSeats)
+            );
+
+            await _dbContext.Trips.UpdateOneAsync(
+                t => t.Id == tripId,
+                Builders<Trip>.Update.PullFilter(t => t.RealtimeSeats, holdFilter)
+            );
+        }
+
         private async Task<(bool Success, string Message)> TryHoldSeatsAsync(
             string tripId,
             List<string> seatNumbers,
@@ -1395,67 +1570,218 @@ namespace Bus_ticket.Controllers
             await ReleaseExpiredHoldsAsync(tripId);
 
             var normalizedSeats = NormalizeSeatNumbers(seatNumbers);
-            var now = DateTime.UtcNow;
-            var heldUntil = now.AddMinutes(3);
+            var heldUntil = DateTime.UtcNow.AddMinutes(SeatSelectionHoldMinutes);
+
+            foreach (var seat in normalizedSeats)
+            {
+                var holdOneResult = await TryHoldOneSeatAtomicAsync(tripId, seat, holdCode, heldUntil);
+
+                if (!holdOneResult.Success)
+                {
+                    await ReleaseSeatsByHoldCodeAsync(tripId, holdCode);
+                    return holdOneResult;
+                }
+            }
+
+            return (true, "Giữ chỗ thành công.");
+        }
+
+        private async Task RefreshHoldCodeUntilAsync(string tripId, string holdCode, DateTime heldUntil)
+        {
+            if (string.IsNullOrWhiteSpace(holdCode))
+            {
+                return;
+            }
+
+            var update = Builders<Trip>.Update.Set("realtimeSeats.$[seat].heldUntil", heldUntil);
+            var options = new UpdateOptions
+            {
+                ArrayFilters = new List<ArrayFilterDefinition>
+                {
+                    new BsonDocumentArrayFilterDefinition<BsonDocument>(
+                        new BsonDocument
+                        {
+                            { "seat.status", "Holding" },
+                            { "seat.heldByCustomerId", holdCode }
+                        })
+                }
+            };
+
+            await _dbContext.Trips.UpdateOneAsync(
+                Builders<Trip>.Filter.Eq(t => t.Id, tripId),
+                update,
+                options
+            );
+        }
+
+        private async Task<(bool Success, string Message)> TryHoldOneSeatAtomicAsync(
+            string tripId,
+            string seatNumber,
+            string holdCode,
+            DateTime heldUntil)
+        {
+            if (string.IsNullOrWhiteSpace(holdCode))
+            {
+                return (false, "Thiếu mã phiên giữ chỗ.");
+            }
+
+            await ReleaseExpiredHoldsAsync(tripId);
+
+            var normalizedSeat = NormalizeSeatNumbers(new[] { seatNumber }).FirstOrDefault();
+            if (string.IsNullOrWhiteSpace(normalizedSeat))
+            {
+                return (false, "Số ghế không hợp lệ.");
+            }
+
+            var trip = await _dbContext.Trips.Find(t => t.Id == tripId).FirstOrDefaultAsync();
+            if (trip == null || trip.DeletedAt.HasValue)
+            {
+                return (false, "Chuyến không tồn tại hoặc đã bị xóa.");
+            }
 
             var activeBookings = await _dbContext.Bookings
                 .Find(b => b.TripId == tripId && b.BookingStatus == "Completed")
                 .ToListAsync();
 
-            var bookedSeats = activeBookings
+            var alreadyBooked = activeBookings
                 .SelectMany(b => b.Passengers ?? new List<PassengerDetail>())
-                .Select(p => p.SeatNumber.Trim().ToUpper())
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                .Any(p => !string.IsNullOrWhiteSpace(p.SeatNumber)
+                          && p.SeatNumber.Trim().Equals(normalizedSeat, StringComparison.OrdinalIgnoreCase));
 
-            var alreadyBookedSeat = normalizedSeats.FirstOrDefault(bookedSeats.Contains);
-
-            if (!string.IsNullOrWhiteSpace(alreadyBookedSeat))
+            if (alreadyBooked)
             {
-                return (false, $"Ghế {alreadyBookedSeat} đã được đặt.");
+                return (false, $"Ghế {normalizedSeat} đã được đặt.");
             }
 
-            foreach (var seat in normalizedSeats)
+            var now = DateTime.UtcNow;
+
+            var activeSeatFilter = Builders<RealtimeSeat>.Filter.And(
+                Builders<RealtimeSeat>.Filter.Eq(s => s.SeatNumber, normalizedSeat),
+                Builders<RealtimeSeat>.Filter.Or(
+                    Builders<RealtimeSeat>.Filter.Eq(s => s.Status, "Booked"),
+                    Builders<RealtimeSeat>.Filter.And(
+                        Builders<RealtimeSeat>.Filter.Eq(s => s.Status, "Holding"),
+                        Builders<RealtimeSeat>.Filter.Gt(s => s.HeldUntil, now),
+                        Builders<RealtimeSeat>.Filter.Ne(s => s.HeldByCustomerId, holdCode)
+                    )
+                )
+            );
+
+            var safeTripFilter = Builders<Trip>.Filter.And(
+                Builders<Trip>.Filter.Eq(t => t.Id, tripId),
+                Builders<Trip>.Filter.Not(
+                    Builders<Trip>.Filter.ElemMatch(t => t.RealtimeSeats, activeSeatFilter)
+                )
+            );
+
+            var existingSeatFilter = Builders<Trip>.Filter.And(
+                safeTripFilter,
+                Builders<Trip>.Filter.ElemMatch(t => t.RealtimeSeats, s => s.SeatNumber == normalizedSeat)
+            );
+
+            var updateExistingSeat = Builders<Trip>.Update.Combine(
+                Builders<Trip>.Update.Set("realtimeSeats.$[seat].status", "Holding"),
+                Builders<Trip>.Update.Set("realtimeSeats.$[seat].heldUntil", heldUntil),
+                Builders<Trip>.Update.Set("realtimeSeats.$[seat].heldByCustomerId", holdCode)
+            );
+
+            var updateOptions = new UpdateOptions
             {
-                var activeSeatFilter = Builders<RealtimeSeat>.Filter.And(
-                    Builders<RealtimeSeat>.Filter.Eq(s => s.SeatNumber, seat),
-                    Builders<RealtimeSeat>.Filter.Or(
-                        Builders<RealtimeSeat>.Filter.Eq(s => s.Status, "Booked"),
-                        Builders<RealtimeSeat>.Filter.And(
-                            Builders<RealtimeSeat>.Filter.Eq(s => s.Status, "Holding"),
-                            Builders<RealtimeSeat>.Filter.Gt(s => s.HeldUntil, now)
-                        )
+                ArrayFilters = new List<ArrayFilterDefinition>
+                {
+                    new BsonDocumentArrayFilterDefinition<BsonDocument>(
+                        new BsonDocument("seat.seatNumber", normalizedSeat)
                     )
-                );
+                }
+            };
 
-                var tripFilter = Builders<Trip>.Filter.And(
-                    Builders<Trip>.Filter.Eq(t => t.Id, tripId),
-                    Builders<Trip>.Filter.Not(
-                        Builders<Trip>.Filter.ElemMatch(t => t.RealtimeSeats, activeSeatFilter)
-                    )
-                );
+            var updateResult = await _dbContext.Trips.UpdateOneAsync(
+                existingSeatFilter,
+                updateExistingSeat,
+                updateOptions
+            );
 
-                var update = Builders<Trip>.Update.Push(
+            if (updateResult.MatchedCount > 0)
+            {
+                return (true, "Giữ chỗ thành công.");
+            }
+
+            var pushResult = await _dbContext.Trips.UpdateOneAsync(
+                safeTripFilter,
+                Builders<Trip>.Update.Push(
                     t => t.RealtimeSeats,
                     new RealtimeSeat
                     {
-                        SeatNumber = seat,
+                        SeatNumber = normalizedSeat,
                         Status = "Holding",
                         HeldUntil = heldUntil,
                         HeldByCustomerId = holdCode
-                    }
+                    })
+            );
+
+            if (pushResult.ModifiedCount == 1)
+            {
+                return (true, "Giữ chỗ thành công.");
+            }
+
+            return (false, $"Ghế {normalizedSeat} đang được người khác giữ hoặc đã đặt.");
+        }
+
+        private async Task<(bool Success, string Message)> PreparePaymentHoldAsync(
+            string tripId,
+            List<string> seatNumbers,
+            string selectionHoldCode,
+            string paymentHoldCode)
+        {
+            var normalizedSeats = NormalizeSeatNumbers(seatNumbers);
+
+            if (!string.IsNullOrWhiteSpace(selectionHoldCode)
+                && await HasValidHoldAsync(tripId, normalizedSeats, selectionHoldCode))
+            {
+                return await TransferHoldCodeAsync(tripId, normalizedSeats, selectionHoldCode, paymentHoldCode);
+            }
+
+            return await TryHoldSeatsAsync(tripId, normalizedSeats, paymentHoldCode);
+        }
+
+        private async Task<(bool Success, string Message)> TransferHoldCodeAsync(
+            string tripId,
+            List<string> seatNumbers,
+            string fromHoldCode,
+            string toHoldCode)
+        {
+            await ReleaseExpiredHoldsAsync(tripId);
+
+            var normalizedSeats = NormalizeSeatNumbers(seatNumbers);
+            var now = DateTime.UtcNow;
+            var newHeldUntil = now.AddMinutes(SeatSelectionHoldMinutes);
+
+            foreach (var seat in normalizedSeats)
+            {
+                var filter = Builders<Trip>.Filter.And(
+                    Builders<Trip>.Filter.Eq(t => t.Id, tripId),
+                    Builders<Trip>.Filter.ElemMatch(t => t.RealtimeSeats, s =>
+                        s.SeatNumber == seat
+                        && s.Status == "Holding"
+                        && s.HeldByCustomerId == fromHoldCode
+                        && s.HeldUntil.HasValue
+                        && s.HeldUntil.Value > now)
                 );
 
-                var result = await _dbContext.Trips.UpdateOneAsync(tripFilter, update);
+                var update = Builders<Trip>.Update.Combine(
+                    Builders<Trip>.Update.Set("realtimeSeats.$.heldByCustomerId", toHoldCode),
+                    Builders<Trip>.Update.Set("realtimeSeats.$.heldUntil", newHeldUntil)
+                );
 
-                if (result.ModifiedCount != 1)
+                var result = await _dbContext.Trips.UpdateOneAsync(filter, update);
+
+                if (result.ModifiedCount != 1 && result.MatchedCount != 1)
                 {
-                    await ReleaseSeatsByHoldCodeAsync(tripId, holdCode);
-
-                    return (false, $"Ghế {seat} đang được người khác giữ hoặc đã đặt.");
+                    return (false, $"Ghế {seat} đã hết thời gian giữ chỗ hoặc đã được xử lý bởi phiên khác.");
                 }
             }
 
-            return (true, "Giữ chỗ thành công.");
+            return (true, "Đã chuyển sang phiên thanh toán.");
         }
 
         private async Task<bool> HasValidHoldAsync(string tripId, List<string> seatNumbers, string holdCode)
