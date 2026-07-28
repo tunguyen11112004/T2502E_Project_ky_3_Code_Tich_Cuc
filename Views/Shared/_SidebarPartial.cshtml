@@ -55,7 +55,30 @@
         "BusClasses",
         "/BusClasses"
     );
+
     var canViewBusOperators = SidebarPermissionService.HasPermission(
+        permissionNames,
+        "BusOperator",
+        "BusOperators",
+        "/BusOperators"
+    );
+
+    var canViewBuses = SidebarPermissionService.HasPermission(
+        permissionNames,
+        "Bus",
+        "Buses",
+        "/Buses"
+    );
+    var canViewBusRoutes = SidebarPermissionService.HasPermission(
+        permissionNames,
+        "BusRoute",
+        "BusRoutes",
+        "Route",
+        "Routes",
+        "/BusRoutes"
+    );
+
+    var canManageBuses = SidebarPermissionService.HasPermission(
         permissionNames,
         "BusOperator",
         "BusOperators",
@@ -126,11 +149,14 @@
                        || canViewBusOperators
                        || canViewBranches
                        || canViewBusClasses
+                       || canViewBusOperators
+                       || canViewBuses
+                       || canViewBusRoutes
                        || canManagePrices
                        || canViewUsers
                        || canViewDynamicRoles
                        || canViewPermissions
-                       || isAdmin; 
+                       || isAdmin;
 
     var showEmployeeMenu = canViewTripsList || canBookTicket || canViewBooking;
 
@@ -222,6 +248,37 @@
                                     <li>
                                         <a asp-controller="BusClasses" asp-action="Index" class="@subMenuItemClass">
                                             BusClasses
+                                        </a>
+                                    </li>
+                                }
+
+                                @if (canViewBusOperators)
+                                {
+                                    <li>
+                                        <a asp-controller="BusOperators" asp-action="Index" class="@subMenuItemClass">
+                                            BusOperators
+                                        </a>
+                                    </li>
+                                }
+
+                                @if (canViewBuses)
+                                {
+                                    <li>
+                                        <a asp-controller="Buses"
+                                           asp-action="Index"
+                                           class="@subMenuItemClass">
+                                            Buses
+                                        </a>
+                                    </li>
+                                }
+
+                                @if (canViewBusRoutes || isAdmin)
+                                {
+                                    <li>
+                                        <a asp-controller="BusRoutes"
+                                           asp-action="Index"
+                                           class="@subMenuItemClass">
+                                            BusRoutes
                                         </a>
                                     </li>
                                 }
