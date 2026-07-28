@@ -6,31 +6,31 @@
 
 <div class="p-6 sm:p-8 space-y-6">
     <div>
-        <h1 class="text-2xl font-bold tracking-tight text-white">📋 Danh Sách Vé Hoàn Tiền & Trả Hàng</h1>
-        <p class="text-sm text-gray-400 mt-1">Quản lý giao dịch hoàn tiền, đối chiếu mã cổng đối tác thanh toán và thực
+        <h1 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">📋 Danh Sách Vé Hoàn Tiền & Trả Hàng</h1>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Quản lý giao dịch hoàn tiền, đối chiếu mã cổng đối tác thanh toán và thực
             hiện trả tiền cho hành khách.</p>
     </div>
 
     <!-- Thanh công cụ & Bộ lọc tích hợp đa năng -->
     <div
-        class="bg-[#1e1e24] p-4 border border-gray-700/50 rounded-xl flex flex-col md:flex-row md:items-end justify-between gap-4">
+        class="bg-white dark:bg-gray-800 p-4 border border-gray-200 dark:border-gray-700 rounded-xl flex flex-col md:flex-row md:items-end justify-between gap-4">
         <form method="get" action="@Url.Action("RefundList", "Booking")"
               class="grid grid-cols-1 sm:grid-cols-3 gap-4 flex-1">
             <div>
                 <label class="block mb-1 text-xs font-semibold text-gray-400 uppercase">Lọc theo ngày yêu cầu</label>
                 <input type="date" name="filterDate" value="@ViewBag.FilterDate"
-                       class="block w-full px-3 py-2 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-1 focus:ring-rose-500 focus:border-rose-500"/>
+                       class="block w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-rose-500 focus:border-rose-500"/>
             </div>
 
             <div>
                 <label class="block mb-1 text-xs font-semibold text-gray-400 uppercase">Tìm kiếm mã đơn vé</label>
                 <input type="text" name="searchCode" value="@ViewBag.SearchCode" placeholder="Nhập mã đơn BK-..."
-                       class="block w-full px-3 py-2 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-1 focus:ring-rose-500 focus:border-rose-500"/>
+                       class="block w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-rose-500 focus:border-rose-500"/>
             </div>
 
             <div class="flex items-end gap-2">
                 <button type="submit"
-                        class="w-full px-4 py-2 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg transition-colors">
+                        class="w-full px-4 py-2 text-sm font-semibold text-gray-900 dark:text-white bg-rose-600 hover:bg-rose-700 rounded-lg transition-colors">
                     Tìm kiếm
                 </button>
             </div>
@@ -42,17 +42,17 @@
                 ⚠️ Đơn Chưa Hoàn (Tất cả ngày)
             </a>
             <a href="@Url.Action("RefundList", "Booking")"
-               class="px-4 py-2 text-sm font-semibold text-gray-300 bg-gray-800 hover:bg-gray-700 rounded-lg text-center transition-colors">
+               class="px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 rounded-lg text-center transition-colors">
                 Đặt lại
             </a>
         </div>
     </div>
 
     <!-- Bảng hiển thị dữ liệu -->
-    <div class="overflow-hidden bg-[#1e1e24] border border-gray-700/50 rounded-xl shadow-xl">
+    <div class="overflow-hidden bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl">
         <div class="overflow-x-auto">
-            <table class="w-full text-sm text-left text-gray-300 whitespace-nowrap">
-                <thead class="text-xs uppercase bg-[#141419] text-gray-400 border-b border-gray-700/60">
+            <table class="w-full text-sm text-left text-gray-600 dark:text-gray-300 whitespace-nowrap">
+                <thead class="text-xs uppercase bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
                 <tr>
                     <th class="px-6 py-4 font-semibold">Mã Đơn / Ngày Yêu Cầu</th>
                     <th class="px-6 py-4 font-semibold">Thông Tin Khách</th>
@@ -62,7 +62,7 @@
                     <th class="px-6 py-4 font-semibold text-center">Trạng Thái / Xử Lý</th>
                 </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-700/50">
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                 @if (Model != null && Model.Any())
                 {
                     foreach (var req in Model)
@@ -74,7 +74,7 @@
                                     cầu: @req.RequestDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
                             </td>
                             <td class="px-6 py-4">
-                                <div class="font-medium text-white">@req.CustomerName</div>
+                                <div class="font-medium text-gray-900 dark:text-white">@req.CustomerName</div>
                                 <div class="text-xs text-gray-400">SĐT: @req.CustomerPhone</div>
                             </td>
                             <td class="px-6 py-4">
@@ -110,7 +110,7 @@
                                     <!-- NÚT XEM CHI TIẾT TO VÀ ĐẸP (MỞ MODAL) -->
                                     <button type="button"
                                             onclick="openRefundModal('@req.BookingCode', '@req.CustomerName', '@req.CustomerPhone', '@req.OriginalAmount.ToString("N0")', '@req.RefundAmount.ToString("N0")', '@req.RefundMethod', '@req.Reason')"
-                                            class="inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 active:scale-95 rounded-lg transition-all shadow-md focus:ring-2 focus:ring-blue-500/50">
+                                            class="inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-gray-900 dark:text-white bg-blue-600 hover:bg-blue-700 active:scale-95 rounded-lg transition-all shadow-md focus:ring-2 focus:ring-blue-500/50">
                                         🔍 Xem chi tiết
                                     </button>
 
@@ -125,7 +125,7 @@
                                                   onsubmit="return confirm('Xác nhận đã chuyển tiền hoàn tất cho khách hàng này?')">
                                                 <input type="hidden" name="id" value="@req.Id"/>
                                                 <button type="submit"
-                                                        class="px-4 py-2 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-95 rounded-lg transition-all shadow-md whitespace-nowrap">
+                                                        class="px-4 py-2 text-sm font-bold text-gray-900 dark:text-white bg-emerald-600 hover:bg-emerald-700 active:scale-95 rounded-lg transition-all shadow-md whitespace-nowrap">
                                                     ✓ Xác nhận đã hoàn
                                                 </button>
                                             </form>
@@ -168,12 +168,12 @@
 
 <!-- MODAL CHI TIẾT ĐƠN HOÀN TIỀN -->
 <div id="refundModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-    <div class="bg-[#1e1e24] border border-gray-700 rounded-xl w-full max-w-lg shadow-2xl overflow-hidden transform transition-all">
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl w-full max-w-lg shadow-2xl overflow-hidden transform transition-all">
         
         <!-- Header -->
-        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-700/60 bg-[#141419]">
-            <h3 class="text-lg font-bold text-white">📋 Chi Tiết Đơn Hoàn Tiền</h3>
-            <button type="button" onclick="closeRefundModal()" class="text-gray-400 hover:text-white px-3 py-1.5 rounded-lg bg-gray-800 text-xs font-semibold">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white">📋 Chi Tiết Đơn Hoàn Tiền</h3>
+            <button type="button" onclick="closeRefundModal()" class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-xs font-semibold">
                 Đóng
             </button>
         </div>
@@ -183,45 +183,45 @@
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-xs font-semibold text-gray-400 uppercase mb-1">Mã Đơn Vé</label>
-                    <div id="modalBookingCode" class="px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg font-bold text-amber-400"></div>
+                    <div id="modalBookingCode" class="px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg font-bold text-amber-400"></div>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-gray-400 uppercase mb-1">Hình Thức Hoàn</label>
-                    <div id="modalMethod" class="px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white"></div>
+                    <div id="modalMethod" class="px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-white"></div>
                 </div>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-xs font-semibold text-gray-400 uppercase mb-1">Tên Khách Hàng</label>
-                    <div id="modalCustomerName" class="px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white"></div>
+                    <div id="modalCustomerName" class="px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-white"></div>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-gray-400 uppercase mb-1">Số Điện Thoại</label>
-                    <div id="modalCustomerPhone" class="px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white"></div>
+                    <div id="modalCustomerPhone" class="px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-white"></div>
                 </div>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-xs font-semibold text-gray-400 uppercase mb-1">Số Tiền Gốc</label>
-                    <div id="modalOriginalAmount" class="px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-gray-400 line-through"></div>
+                    <div id="modalOriginalAmount" class="px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-400 line-through"></div>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-gray-400 uppercase mb-1">Số Tiền Hoàn Trả</label>
-                    <div id="modalRefundAmount" class="px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg font-bold text-rose-400"></div>
+                    <div id="modalRefundAmount" class="px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg font-bold text-rose-400"></div>
                 </div>
             </div>
 
             <div>
                 <label class="block text-xs font-semibold text-gray-400 uppercase mb-1">Lý Do Hoàn Tiền</label>
-                <div id="modalReason" class="px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-gray-300 min-h-[60px] whitespace-pre-wrap"></div>
+                <div id="modalReason" class="px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-300 min-h-[60px] whitespace-pre-wrap"></div>
             </div>
         </div>
 
         <!-- Footer -->
-        <div class="flex justify-end px-6 py-4 bg-[#141419] border-t border-gray-700/60">
-            <button type="button" onclick="closeRefundModal()" class="px-4 py-2 text-sm font-semibold text-white bg-amber-500 hover:bg-amber-600 rounded-lg transition-colors shadow">
+        <div class="flex justify-end px-6 py-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
+            <button type="button" onclick="closeRefundModal()" class="px-4 py-2 text-sm font-semibold text-gray-900 dark:text-white bg-amber-500 hover:bg-amber-600 rounded-lg transition-colors shadow">
                 Ok, Đã Hiểu
             </button>
         </div>

@@ -20,8 +20,21 @@
             darkMode: 'class',
         }
     </script>
+    <script>
+        (function () {
+            var stored = localStorage.getItem('color-theme');
+            var isDark = stored === 'dark' || (stored !== 'light');
+            if (isDark) {
+                document.documentElement.classList.add('dark');
+                document.body?.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+                document.body?.classList.remove('dark');
+            }
+        })();
+    </script>
 </head>
-<body class="dark bg-gray-50 dark:bg-gray-900 font-sans antialiased" style="font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;">
+<body class="bg-gray-50 dark:bg-gray-900 font-sans antialiased" style="font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;">
 @*Nav-bar*@
 <partial name="_NavbarPartial" />
 
