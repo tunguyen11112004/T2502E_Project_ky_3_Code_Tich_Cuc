@@ -9,28 +9,28 @@
 }
 
 <div class="p-6 sm:p-8 space-y-6 max-w-3xl mx-auto">
-    <div class="border-b border-gray-700/50 pb-4">
-        <a asp-controller="Admin" asp-action="PriceConfig" class="inline-flex items-center text-sm font-medium text-gray-400 hover:text-amber-400 mb-2">
+    <div class="border-b border-gray-200 dark:border-gray-700 pb-4">
+        <a asp-controller="Admin" asp-action="PriceConfig" class="inline-flex items-center text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 mb-2">
             Quay lại danh sách chuyến
         </a>
-        <h1 class="text-2xl font-bold text-white">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
             @(Model.IsEdit ? "Sửa chuyến xe & giá vé" : "Thêm tuyến đường cho xe chạy")
         </h1>
-        <p class="text-sm text-gray-400 mt-1">
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
             Chọn tuyến từ database <strong class="text-gray-300">busroutes</strong>, gán xe và lịch chạy. Giá vé gợi ý từ <strong class="text-gray-300">fareConfigs</strong> của tuyến.
         </p>
     </div>
 
     @if (TempData["ErrorMessage"] != null)
     {
-        <div class="flex items-center p-4 text-sm text-red-400 rounded-lg bg-gray-800 border border-red-800">
+        <div class="flex items-center p-4 text-sm text-red-800 dark:text-red-400 rounded-lg bg-red-50 dark:bg-gray-800 border border-red-200 dark:border-red-800">
             <div><span class="font-medium">Thất bại!</span> @TempData["ErrorMessage"]</div>
         </div>
     }
 
     @if (!Model.Routes.Any())
     {
-        <div class="p-4 text-sm text-amber-300 rounded-lg bg-gray-800 border border-amber-700">
+        <div class="p-4 text-sm text-amber-800 dark:text-amber-300 rounded-lg bg-amber-50 dark:bg-gray-800 border border-amber-200 dark:border-amber-700">
             Chưa có tuyến đường trong collection <strong>busroutes</strong>. Hãy seed dữ liệu hoặc thêm tuyến trong MongoDB trước.
         </div>
     }
@@ -39,13 +39,13 @@
         @Html.AntiForgeryToken()
         <input type="hidden" name="tripId" value="@Model.TripId"/>
 
-        <div class="p-6 bg-[#1e1e24] border border-gray-700/50 rounded-xl space-y-4 shadow-xl">
+        <div class="p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl space-y-4 shadow-xl">
             <p class="text-xs font-bold text-gray-500">Hành trình & xe</p>
 
             <div>
-                <label class="block mb-1 text-sm font-semibold text-gray-300">Tuyến đường</label>
+                <label class="block mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300">Tuyến đường</label>
                 <select name="routeId" id="ddlRoute" @(Model.IsEdit ? "" : "required")
-                        class="bg-gray-900 border border-gray-700 text-white text-sm rounded-lg block w-full p-2.5 focus:ring-2 focus:ring-amber-400">
+                        class="bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-lg block w-full p-2.5 focus:ring-2 focus:ring-amber-400">
                     <option value="">-- @(Model.IsEdit ? "Giữ nguyên tuyến cũ" : "Chọn tuyến đường") --</option>
                     @foreach (var route in Model.Routes)
                     {
@@ -68,9 +68,9 @@
             </div>
 
             <div>
-                <label class="block mb-1 text-sm font-semibold text-gray-300">Biển số xe</label>
+                <label class="block mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300">Biển số xe</label>
                 <select name="busId" id="ddlBus" @(Model.IsEdit ? "" : "required")
-                        class="bg-gray-900 border border-gray-700 text-white text-sm rounded-lg block w-full p-2.5 focus:ring-2 focus:ring-amber-400">
+                        class="bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-lg block w-full p-2.5 focus:ring-2 focus:ring-amber-400">
                     <option value="">-- @(Model.IsEdit ? "Giữ nguyên xe cũ" : "Chọn biển số") --</option>
                     @foreach (var bus in Model.Buses)
                     {
@@ -97,29 +97,29 @@
             </div>
         </div>
 
-        <div class="p-6 bg-[#1e1e24] border border-gray-700/50 rounded-xl space-y-4 shadow-xl">
+        <div class="p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl space-y-4 shadow-xl">
             <p class="text-xs font-bold text-gray-500">Giá vé nền</p>
             <div>
-                <label class="block mb-1 text-sm font-semibold text-gray-300">Giá vé (VND)</label>
+                <label class="block mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300">Giá vé (VND)</label>
                 <input type="number" name="baseFare" id="txtBaseFare" min="1000" max="50000000" step="1000" required placeholder="750000"
                        value="@(Model.BaseFare > 0 ? Model.BaseFare.ToString(CultureInfo.InvariantCulture) : "")"
-                       class="block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 font-semibold text-amber-400"/>
+                       class="block w-full px-4 py-2.5 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 font-semibold text-amber-400"/>
                 <p class="text-xs text-gray-500 mt-1">Tự gợi ý từ <strong class="text-gray-400">fareConfigs</strong> của tuyến + loại xe</p>
             </div>
         </div>
 
-        <div class="p-6 bg-[#1e1e24] border border-gray-700/50 rounded-xl space-y-4 shadow-xl">
+        <div class="p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl space-y-4 shadow-xl">
             <p class="text-xs font-bold text-gray-500">Lịch chạy</p>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label class="block mb-1 text-sm font-semibold text-gray-300">Giờ đi</label>
+                    <label class="block mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300">Giờ đi</label>
                     <input type="datetime-local" name="departureTime" id="txtDepartureTime" @(Model.IsEdit ? "" : "required") value="@depValue"
-                           class="block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400"/>
+                           class="block w-full px-4 py-2.5 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400"/>
                 </div>
                 <div>
-                    <label class="block mb-1 text-sm font-semibold text-gray-300">Giờ đến</label>
+                    <label class="block mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300">Giờ đến</label>
                     <input type="datetime-local" name="arrivalTime" id="txtArrivalTime" @(Model.IsEdit ? "" : "required") value="@arrValue"
-                           class="block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400"/>
+                           class="block w-full px-4 py-2.5 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400"/>
                     <p class="text-xs text-gray-500 mt-1">Tự ước tính theo quãng đường tuyến (~60 km/h, có thể sửa tay)</p>
                 </div>
             </div>
@@ -127,8 +127,8 @@
                 <p class="text-xs text-amber-500 italic mt-2">* Cứ giữ nguyên ngày giờ cũ và xe nếu chỉ muốn cập nhật thay đổi giá vé</p> 
             }
             <div class="mt-4">
-                <label class="block mb-1 text-sm font-semibold text-gray-300">Trạng thái</label>
-                <select name="status" id="ddlTripStatus" class="bg-gray-900 border border-gray-700 text-white text-sm rounded-lg block w-full p-2.5 focus:ring-2 focus:ring-amber-400">
+                <label class="block mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300">Trạng thái</label>
+                <select name="status" id="ddlTripStatus" class="bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-lg block w-full p-2.5 focus:ring-2 focus:ring-amber-400">
                     @{
                         var statuses = new[] { "Scheduled", "Active", "Completed", "Cancelled" };
                     }
@@ -151,7 +151,7 @@
             <button type="submit" class="px-6 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg transition-colors">
                 @(Model.IsEdit ? "Cập nhật chuyến & giá vé" : "Lưu chuyến & giá vé")
             </button>
-            <a asp-controller="Admin" asp-action="PriceConfig" class="px-6 py-2.5 text-sm font-semibold text-gray-300 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors text-center">
+            <a asp-controller="Admin" asp-action="PriceConfig" class="px-6 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 rounded-lg transition-colors text-center">
                 Hủy
             </a>
         </div>

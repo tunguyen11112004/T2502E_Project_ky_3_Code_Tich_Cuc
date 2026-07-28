@@ -22,10 +22,10 @@
 <div class="p-4 sm:p-6 lg:p-8 space-y-6 max-w-full overflow-x-hidden animate-fade-in">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-            <h1 class="text-2xl font-bold tracking-tight text-white">
+            <h1 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
                 Thống kê doanh thu theo tuyến đường
             </h1>
-            <p class="text-sm text-gray-400 mt-1">
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
                 Doanh thu được sắp xếp giảm dần theo từng tuyến. Click lát biểu đồ để highlight dòng tương ứng.
             </p>
         </div>
@@ -34,7 +34,7 @@
             <input id="date_range_RouteRevenue"
                    type="text"
                    readonly
-                   class="min-w-[260px] rounded-lg border border-gray-700 bg-gray-900 px-3 py-2.5 text-sm text-white cursor-pointer focus:border-amber-400 focus:ring-2 focus:ring-amber-400"
+                   class="min-w-[260px] rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2.5 text-sm text-gray-900 dark:text-white cursor-pointer focus:border-amber-400 focus:ring-2 focus:ring-amber-400"
                    placeholder="Chọn khoảng ngày" />
 
             <a asp-controller="Dashboard"
@@ -48,38 +48,38 @@
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-        <div class="bg-[#1e1e24] border border-gray-700/50 rounded-xl p-5 shadow-xl">
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-xl">
             <p class="text-sm text-gray-400">Tổng doanh thu</p>
             <p class="text-2xl font-bold text-amber-400 mt-2">
                 @Model.GrandTotalRevenue.ToString("N0") đ
             </p>
         </div>
 
-        <div class="bg-[#1e1e24] border border-gray-700/50 rounded-xl p-5 shadow-xl">
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-xl">
             <p class="text-sm text-gray-400">Booking thành công</p>
-            <p class="text-2xl font-bold text-white mt-2">
+            <p class="text-2xl font-bold text-gray-900 dark:text-white mt-2">
                 @Model.GrandTotalBookings.ToString("N0")
             </p>
         </div>
 
-        <div class="bg-[#1e1e24] border border-gray-700/50 rounded-xl p-5 shadow-xl">
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-xl">
             <p class="text-sm text-gray-400">Số vé bán</p>
-            <p class="text-2xl font-bold text-white mt-2">
+            <p class="text-2xl font-bold text-gray-900 dark:text-white mt-2">
                 @Model.GrandTotalTickets.ToString("N0")
             </p>
         </div>
 
-        <div class="bg-[#1e1e24] border border-gray-700/50 rounded-xl p-5 shadow-xl">
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-xl">
             <p class="text-sm text-gray-400">Số tuyến có doanh thu</p>
-            <p class="text-2xl font-bold text-white mt-2">
+            <p class="text-2xl font-bold text-gray-900 dark:text-white mt-2">
                 @items.Count.ToString("N0")
             </p>
         </div>
     </div>
 
-    <div class="grid grid-cols-1 2xl:grid-cols-[430px_minmax(0,1fr)] gap-6">
-        <div class="bg-[#1e1e24] border border-gray-700/50 rounded-xl p-5 shadow-xl">
-            <h2 class="text-lg font-semibold text-white mb-2">
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div class="xl:col-span-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-xl">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                 Biểu đồ phân bổ doanh thu
             </h2>
             <p class="text-sm text-gray-400 mb-4">
@@ -100,19 +100,19 @@
             }
         </div>
 
-        <div class="w-full max-w-full overflow-hidden bg-[#1e1e24] border border-gray-700/50 rounded-xl shadow-xl">
-            <div class="p-5 border-b border-gray-700/60">
-                <h2 class="text-lg font-semibold text-white">
+        <div class="xl:col-span-2 w-full max-w-full overflow-hidden bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl">
+            <div class="p-5 border-b border-gray-200 dark:border-gray-700">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
                     Bảng doanh thu theo tuyến đường
                 </h2>
-                <p class="text-sm text-gray-400 mt-1">
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
                     Đã sắp xếp giảm dần theo doanh thu.
                 </p>
             </div>
 
             <div class="w-full overflow-x-auto">
-                <table class="w-full min-w-[980px] text-sm text-left text-gray-300">
-                    <thead class="text-xs uppercase bg-[#141419] text-gray-400 border-b border-gray-700/60">
+                <table class="w-full min-w-[980px] text-sm text-left text-gray-600 dark:text-gray-300">
+                    <thead class="text-xs uppercase bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
                         <tr>
                             <th class="w-[80px] px-4 py-4 whitespace-nowrap">STT</th>
                             <th class="w-[320px] px-4 py-4 whitespace-nowrap">Tuyến đường</th>
@@ -123,7 +123,7 @@
                         </tr>
                     </thead>
 
-                    <tbody class="divide-y divide-gray-700/50">
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                         @if (!items.Any())
                         {
                             <tr>
@@ -140,12 +140,12 @@
 
                                 <tr id="route-revenue-row-@i"
                                     data-linked-row="true"
-                                    class="hover:bg-gray-800/30 transition-colors duration-150 scroll-mt-24">
+                                    class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-150 scroll-mt-24">
                                     <td class="px-4 py-4 text-gray-400 whitespace-nowrap">
                                         @(i + 1)
                                     </td>
 
-                                    <td class="px-4 py-4 font-semibold text-white">
+                                    <td class="px-4 py-4 font-semibold text-gray-900 dark:text-white">
                                         <div class="max-w-[320px] leading-6 break-words">
                                             @item.RouteName
                                         </div>
@@ -171,21 +171,21 @@
                         }
                     </tbody>
 
-                    <tfoot class="bg-[#141419] border-t border-gray-700/60">
+                    <tfoot class="bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
                         <tr>
-                            <td colspan="2" class="px-4 py-4 font-bold text-white">
+                            <td colspan="2" class="px-4 py-4 font-bold text-gray-900 dark:text-white">
                                 Tổng cộng
                             </td>
-                            <td class="px-4 py-4 text-right font-bold text-white">
+                            <td class="px-4 py-4 text-right font-bold text-gray-900 dark:text-white">
                                 @Model.GrandTotalBookings.ToString("N0")
                             </td>
-                            <td class="px-4 py-4 text-right font-bold text-white">
+                            <td class="px-4 py-4 text-right font-bold text-gray-900 dark:text-white">
                                 @Model.GrandTotalTickets.ToString("N0")
                             </td>
                             <td class="px-4 py-4 text-right font-bold text-amber-400">
                                 @Model.GrandTotalRevenue.ToString("N0") đ
                             </td>
-                            <td class="px-4 py-4 text-right font-bold text-white">
+                            <td class="px-4 py-4 text-right font-bold text-gray-900 dark:text-white">
                                 @(Model.GrandTotalRevenue > 0 ? "100.00%" : "0.00%")
                             </td>
                         </tr>

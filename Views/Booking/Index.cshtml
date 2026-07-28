@@ -14,11 +14,15 @@
 <div class="p-6 sm:p-8 space-y-6">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-            <h1 class="text-2xl font-bold tracking-tight text-white">Điều Hành & Danh Sách Vé Chuyến</h1>
-            <p class="text-sm text-gray-400 mt-1">Quản lý hành khách theo từng chuyến chạy, in danh sách đón khách gửi
+            <h1 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Điều Hành & Danh Sách Vé Chuyến</h1>
+            <p class="text-sm font-medium text-gray-700 dark:text-gray-400 mt-1">Quản lý hành khách theo từng chuyến chạy, in danh sách đón khách gửi
                 tài xế.</p>
         </div>
         <div>
+            <a asp-action="RefundList" asp-controller="Booking"
+               class="inline-flex items-center justify-center px-4 py-2.5 text-sm font-semibold text-gray-900 dark:text-white bg-rose-600 hover:bg-rose-700 rounded-lg transition-colors duration-200 shadow-sm">
+                <span class="mr-1.5">📋</span> Danh sách vé cần hoàn tiền
+            </a>
             <a asp-action="Create" asp-controller="Booking"
                class="inline-flex items-center justify-center px-4 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg transition-colors duration-200 shadow-sm">
                 + Đặt vé mới tại quầy
@@ -27,23 +31,23 @@
     </div>
 
     <form method="get" action="@Url.Action("Index", "Booking")"
-          class="bg-[#1e1e24] p-4 border border-gray-700/50 rounded-xl grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+          class="bg-white dark:bg-gray-800 p-4 border border-gray-200 dark:border-gray-700 rounded-xl grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
         <div>
-            <label class="block mb-1 text-xs font-semibold text-gray-400 uppercase">Lọc theo ngày đi</label>
+            <label class="block mb-1 text-xs font-bold text-gray-700 dark:text-gray-400 uppercase">Lọc theo ngày đi</label>
             <input type="date" name="searchDate" value="@(ViewBag.SearchDate ?? DateTime.Today.ToString("yyyy-MM-dd"))"
-                   class="block w-full px-3 py-2 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-1 focus:ring-amber-400 focus:border-amber-400"/>
+                   class="block w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-amber-400 focus:border-amber-400"/>
         </div>
 
         <div>
-            <label class="block mb-1 text-xs font-semibold text-gray-400 uppercase">Tìm theo thông tin xe</label>
+            <label class="block mb-1 text-xs font-bold text-gray-700 dark:text-gray-400 uppercase">Tìm theo thông tin xe</label>
             <input type="text" id="searchBusText" placeholder="Biển số, mã xe, loại xe, nhà xe..."
-                   class="block w-full px-3 py-2 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-1 focus:ring-amber-400 focus:border-amber-400"/>
+                   class="block w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-amber-400 focus:border-amber-400"/>
         </div>
 
         <div>
-            <label class="block mb-1 text-xs font-semibold text-gray-400 uppercase">Tìm theo tuyến đường</label>
+            <label class="block mb-1 text-xs font-bold text-gray-700 dark:text-gray-400 uppercase">Tìm theo tuyến đường</label>
             <input type="text" id="searchRouteText" placeholder="Hà Nội, Hải Phòng, Cát Bà..."
-                   class="block w-full px-3 py-2 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-1 focus:ring-amber-400 focus:border-amber-400"/>
+                   class="block w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-amber-400 focus:border-amber-400"/>
         </div>
 
         <div class="flex gap-2">
@@ -52,7 +56,7 @@
                 Lọc dữ liệu
             </button>
             <a href="@Url.Action("Index", "Booking")"
-               class="px-4 py-2 text-sm font-semibold text-gray-300 bg-gray-800 hover:bg-gray-700 rounded-lg text-center transition-colors">
+               class="px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 rounded-lg text-center transition-colors">
                 Xóa bộ lọc
             </a>
         </div>
@@ -61,10 +65,10 @@
     <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
 
         <div class="xl:col-span-2 space-y-4">
-            <div class="overflow-hidden bg-[#1e1e24] border border-gray-700/50 rounded-xl shadow-xl">
+            <div class="overflow-hidden bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl">
                 <div class="overflow-x-auto">
-                    <table class="w-full text-sm text-left text-gray-300 whitespace-nowrap">
-                        <thead class="text-xs uppercase bg-[#141419] text-gray-400 border-b border-gray-700/60">
+                    <table class="w-full text-sm text-left text-gray-800 dark:text-gray-300 whitespace-nowrap">
+                        <thead class="text-xs uppercase bg-gray-50 dark:bg-gray-900 text-gray-700 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
                         <tr>
                             <th class="px-6 py-4 font-semibold">Thông Tin Xe</th>
                             <th class="px-6 py-4 font-semibold">Tuyến Đường</th>
@@ -74,7 +78,7 @@
                             <th class="px-6 py-4 font-semibold text-center">Hành Động</th>
                         </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-700/50" id="tripTableBody">
+                        <tbody class="divide-y divide-gray-200 dark:divide-gray-700" id="tripTableBody">
                         @if (Model != null && Model.Any())
                         {
                             foreach (var trip in Model)
@@ -85,9 +89,10 @@
                                 var matchedClass = busClassList?.FirstOrDefault(c => c.Id == matchedBus?.BusClassId);
                                 string rName = matchedRoute != null ? $"{matchedRoute.DeparturePoint} → {matchedRoute.DestinationPoint}" : "Tuyến đường mẫu SRC";
 
-                                <tr class="hover:bg-gray-800/30 transition-colors duration-150 cursor-pointer trip-row"
+                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-150 cursor-pointer trip-row"
                                     data-trip-id="@trip.Id"
-                                    onclick="loadPassengerManifest('@trip.Id', '@matchedBus?.BusCode', '@rName')">
+                                    data-departure-time="@trip.DepartureTime.ToLocalTime().ToString("yyyy-MM-ddTHH:mm:ss")"
+                                    onclick="loadPassengerManifest('@trip.Id', '@matchedBus?.BusCode', '@rName', '@trip.DepartureTime.ToLocalTime().ToString("yyyy-MM-ddTHH:mm:ss")')">
 
                                     <td class="px-6 py-4">
                                         <div class="flex flex-col space-y-1">
@@ -97,30 +102,30 @@
                                                 @if (!string.IsNullOrEmpty(matchedBus?.LicensePlate))
                                                 {
                                                     <span
-                                                        class="text-xs text-gray-400 font-normal">(@matchedBus.LicensePlate)</span>
+                                                        class="text-xs text-gray-600 dark:text-gray-400 font-normal">(@matchedBus.LicensePlate)</span>
                                                 }
                                             </div>
 
                                             <div class="flex flex-wrap items-center gap-1.5 text-[10px]">
                                                 <span
-                                                    class="px-2 py-0.5 rounded bg-gray-800 text-gray-300 font-medium border border-gray-700/60">
+                                                    class="px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-medium border border-gray-200 dark:border-gray-700">
                                                     @(matchedClass?.ClassName ?? matchedBus?.LegacyBusType ?? "Xe giường nằm")
                                                 </span>
                                                 <span
-                                                    class="px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 font-semibold border border-amber-500/20">
+                                                    class="px-2 py-0.5 rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 font-semibold border border-amber-500/20">
                                                     @(matchedOperator?.OperatorName ?? "Nhà xe")
                                                 </span>
                                             </div>
                                         </div>
                                     </td>
 
-                                    <td class="px-6 py-4 text-gray-300">@rName</td>
+                                    <td class="px-6 py-4 font-medium text-gray-800 dark:text-gray-300">@rName</td>
 
-                                    <td class="px-6 py-4 text-gray-300">
+                                    <td class="px-6 py-4 font-medium text-gray-800 dark:text-gray-300">
                                         @trip.DepartureTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
                                     </td>
 
-                                    <td class="px-6 py-4 font-semibold text-white">
+                                    <td class="px-6 py-4 font-semibold text-gray-900 dark:text-white">
                                         @trip.BaseFare.ToString("N0") đ
                                     </td>
 
@@ -131,20 +136,20 @@
                                             {
                                                 case "scheduled":
                                                     <span
-                                                        class="px-2.5 py-1 text-xs font-semibold rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                                                        class="px-2.5 py-1 text-xs font-semibold rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/20">
                         Sắp chạy
                     </span>
                                                     break;
                                                 case "intransit":
                                                 case "active":
                                                     <span
-                                                        class="px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 animate-pulse">
+                                                        class="px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 animate-pulse">
                         Đang chạy
                     </span>
                                                     break;
                                                 case "completed":
                                                     <span
-                                                        class="px-2.5 py-1 text-xs font-semibold rounded-full bg-gray-500/10 text-gray-400 border border-gray-700">
+                                                        class="px-2.5 py-1 text-xs font-semibold rounded-full bg-gray-500/10 text-gray-700 dark:text-gray-400 border border-gray-300 dark:border-gray-700">
                         Hoàn thành
                     </span>
                                                     break;
@@ -165,7 +170,7 @@
                                     </td>
 
                                     <td class="px-6 py-4 text-center">
-                                        <span class="text-xs text-amber-400 hover:underline">Xem khách →</span>
+                                        <span class="text-xs font-semibold text-amber-600 dark:text-amber-400 hover:underline">Xem khách →</span>
                                     </td>
                                 </tr>
                             }
@@ -173,7 +178,7 @@
                         else
                         {
                             <tr>
-                                <td colspan="5" class="px-6 py-10 text-center text-gray-500 bg-[#1e1e24]">
+                                <td colspan="5" class="px-6 py-10 text-center text-gray-500 bg-white dark:bg-gray-800">
                                     Không có chuyến xe nào phù hợp với bộ lọc.
                                 </td>
                             </tr>
@@ -184,23 +189,23 @@
 
                 @if (totalPages > 1)
                 {
-                    <div class="flex items-center justify-between p-4 bg-[#141419] border-t border-gray-700/60">
-                        <span class="text-xs text-gray-400">Trang <span
-                                class="text-white font-semibold">@currentPage</span> / @totalPages</span>
+                    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
+                        <span class="text-xs font-medium text-gray-700 dark:text-gray-400">Trang <span
+                                class="text-gray-900 dark:text-white font-bold">@currentPage</span> / @totalPages</span>
                         <div class="inline-flex space-x-1">
                             <a href="@Url.Action("Index", "Booking", new { page = currentPage - 1, searchDate = searchDate })"
-                               class="@(currentPage == 1 ? "pointer-events-none opacity-40" : "") px-3 py-1 text-xs font-medium text-gray-400 bg-gray-800 rounded hover:bg-gray-700 hover:text-white">
+                               class="@(currentPage == 1 ? "pointer-events-none opacity-40" : "") px-3 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 rounded border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white">
                                 Trước
                             </a>
                             @for (int i = 1; i <= totalPages; i++)
                             {
                                 <a href="@Url.Action("Index", "Booking", new { page = i, searchDate = searchDate })"
-                                   class="px-3 py-1 text-xs font-medium rounded @(i == currentPage ? "bg-amber-400 text-gray-900 font-bold" : "text-gray-400 bg-gray-800 hover:bg-gray-700 hover:text-white")">
+                                   class="px-3 py-1 text-xs font-medium rounded @(i == currentPage ? "bg-amber-400 text-gray-900 font-bold" : "text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white")">
                                     @i
                                 </a>
                             }
                             <a href="@Url.Action("Index", "Booking", new { page = currentPage + 1, searchDate = searchDate })"
-                               class="@(currentPage == totalPages ? "pointer-events-none opacity-40" : "") px-3 py-1 text-xs font-medium text-gray-400 bg-gray-800 rounded hover:bg-gray-700 hover:text-white">
+                               class="@(currentPage == totalPages ? "pointer-events-none opacity-40" : "") px-3 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 rounded border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white">
                                 Tiếp
                             </a>
                         </div>
@@ -210,22 +215,22 @@
         </div>
 
         <div class="space-y-4">
-            <div class="overflow-hidden bg-[#1e1e24] border border-gray-700/50 rounded-xl shadow-xl p-5">
-                <div class="flex items-center justify-between border-b border-gray-700/60 pb-3 mb-4">
-                    <h2 class="text-sm font-semibold uppercase tracking-wider text-gray-400">Danh Sách Đón Khách</h2>
+            <div class="overflow-hidden bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl p-5">
+                <div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-3 mb-4">
+                    <h2 class="text-sm font-bold uppercase tracking-wider text-gray-800 dark:text-gray-300">Danh Sách Đón Khách</h2>
                     <button type="button" id="btnPrint" onclick="printDriverManifest()" disabled
                             class="opacity-50 inline-flex items-center justify-center px-3 py-1.5 text-xs font-semibold text-gray-900 bg-emerald-400 hover:bg-emerald-500 rounded-md transition-colors duration-200">
                         In gửi tài xế
                     </button>
                 </div>
 
-                <div class="mb-4 p-3 rounded-lg bg-[#141419] border border-gray-700/50 text-xs text-gray-400 space-y-1">
-                    <div>Xe điều hành: <span id="lblTargetBus" class="text-white font-bold">-</span></div>
-                    <div>Tuyến: <span id="lblTargetRoute" class="text-white font-medium">-</span></div>
+                <div class="mb-4 p-3 rounded-lg bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-xs font-medium text-gray-700 dark:text-gray-400 space-y-1">
+                    <div>Xe điều hành: <span id="lblTargetBus" class="text-gray-900 dark:text-white font-bold">-</span></div>
+                    <div>Tuyến: <span id="lblTargetRoute" class="text-gray-900 dark:text-white font-medium">-</span></div>
                 </div>
 
                 <div id="manifestContainer" class="space-y-2 max-h-[420px] overflow-y-auto pr-1">
-                    <p class="text-xs text-gray-500 text-center py-12">Bấm chọn một chuyến xe để kiểm tra vé đã bán</p>
+                    <p class="text-xs font-medium text-gray-600 dark:text-gray-500 text-center py-12">Bấm chọn một chuyến xe để kiểm tra vé đã bán</p>
                 </div>
             </div>
         </div>
@@ -233,9 +238,9 @@
 </div>
 
 <div id="successModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-[9999]">
-    <div class="bg-[#1e1e24] p-6 rounded-2xl w-full max-w-sm border border-amber-500 shadow-2xl text-white">
+    <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl w-full max-w-sm border border-amber-500 shadow-2xl text-gray-900 dark:text-white">
         <h2 class="text-xl font-bold text-amber-400 mb-4 text-center">Vé vừa đặt thành công</h2>
-        <div id="bookingDetails" class="text-sm space-y-2 border-t border-gray-700 pt-4 mb-6"></div>
+        <div id="bookingDetails" class="text-sm space-y-2 border-t border-gray-200 dark:border-gray-700 pt-4 mb-6"></div>
         <div class="flex gap-3 mt-6">
             <button onclick="printTicket()"
                     class="flex-1 bg-amber-500 hover:bg-amber-600 text-gray-900 font-bold py-2 rounded-lg transition-all">
@@ -249,6 +254,105 @@
     </div>
 </div>
 
+<!-- Modal Hủy Vé & Tính Tiền Hoàn (Đã đồng bộ Dark Mode) -->
+<div id="cancelBookingModal"
+     class="hidden fixed inset-0 z-50 overflow-y-auto bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
+    <div
+        class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full overflow-hidden transform transition-all border border-gray-200 dark:border-gray-700 text-gray-300">
+
+        <!-- Header -->
+        <div class="bg-rose-600 px-6 py-4 flex items-center justify-between text-white">
+            <h5 class="text-base font-bold flex items-center gap-2 uppercase tracking-wide">
+                <span>⚠️</span> Xác Nhận Hủy Vé & Hoàn Tiền
+            </h5>
+            <button type="button" onclick="closeCancelModal()"
+                    class="text-white hover:text-gray-300 text-2xl font-bold leading-none transition-colors">&times;
+            </button>
+        </div>
+
+        <form id="formCancelBooking" onsubmit="submitCancelRequest(event)">
+            @Html.AntiForgeryToken()
+            <div class="p-6 space-y-4">
+                <!-- Mã đặt vé ẩn -->
+                <input type="hidden" id="cancelBookingCode" name="bookingCode"/>
+
+                <!-- Khối hiển thị thông tin giá vé trực quan -->
+                <div class="bg-rose-500/10 p-4 rounded-xl border border-rose-500/20 space-y-2.5">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-400">Giá vé ban đầu:</span>
+                        <span id="lblOriginalFare" class="font-semibold text-gray-900 dark:text-white">0 đ</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span id="lblFeePercentText" class="text-gray-600 dark:text-gray-400">Phí hủy vé quy định:</span>
+                        <span id="lblRefundFee" class="font-semibold text-rose-400">-0 đ</span>
+                    </div>
+                    <div class="border-t border-gray-200 dark:border-gray-700 my-2 pt-2 flex justify-between text-base font-bold">
+                        <span class="text-rose-400">Số tiền thực hoàn:</span>
+                        <span id="lblAmountToRefund" class="text-rose-400">0 đ</span>
+                    </div>
+                </div>
+
+                <!-- Lý do hủy -->
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-400 mb-1">Lý do hủy
+                        vé</label>
+                    <textarea
+                        class="w-full px-3 py-2 bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-500 focus:ring-1 focus:ring-rose-500 focus:border-rose-500 outline-none transition-all"
+                        name="reason" rows="2" placeholder="Nhập lý do khách trả vé..." required></textarea>
+                </div>
+
+                <!-- Phương thức hoàn tiền -->
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-400 mb-1">Phương thức
+                        hoàn tiền</label>
+                    <select
+                        class="w-full px-3 py-2 bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-1 focus:ring-rose-500 focus:border-rose-500 outline-none transition-all"
+                        id="selectRefundMethod" name="refundMethod" required>
+                        <option value="Cash">Hoàn tại quầy (Tiền mặt)</option>
+                        <option value="Online">Hoàn qua tài khoản (Online)</option>
+                    </select>
+                </div>
+
+                <!-- Khối thông tin ngân hàng -->
+                <div id="divBankInfo" class="hidden bg-gray-50 dark:bg-gray-950 p-4 rounded-lg border border-gray-200 dark:border-gray-700 space-y-3">
+                    <h6 class="text-xs font-bold uppercase text-amber-400 border-b border-gray-800 pb-1.5">Thông Tin Tài
+                        Khoản Nhận Tiền</h6>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 dark:text-gray-400 mb-1">Tên ngân hàng</label>
+                        <input type="text"
+                               class="w-full px-3 py-1.5 text-sm bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white rounded focus:ring-1 focus:ring-rose-500 outline-none"
+                               name="bankName" placeholder="Ví dụ: Vietcombank">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 dark:text-gray-400 mb-1">Số tài khoản</label>
+                        <input type="text"
+                               class="w-full px-3 py-1.5 text-sm bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white rounded focus:ring-1 focus:ring-rose-500 outline-none"
+                               name="accountNo" placeholder="Nhập số tài khoản">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 dark:text-gray-400 mb-1">Tên chủ tài khoản</label>
+                        <input type="text"
+                               class="w-full px-3 py-1.5 text-sm bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white rounded focus:ring-1 focus:ring-rose-500 outline-none"
+                               name="accountName" placeholder="NGUYEN VAN A">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Buttons -->
+            <div class="bg-gray-50 dark:bg-gray-900 px-6 py-4 flex justify-end space-x-3 border-t border-gray-200 dark:border-gray-700">
+                <button type="button" onclick="closeCancelModal()"
+                        class="px-4 py-2 border border-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors">
+                    Đóng
+                </button>
+                <button type="submit"
+                        class="px-4 py-2 rounded-lg text-sm font-semibold text-gray-900 dark:text-white bg-rose-600 hover:bg-rose-700 shadow-lg transition-colors">
+                    Xác Nhận Hủy & Hoàn Danh Sách
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 @if (TempData["NewBookingCode"] != null)
 {
     <script>
@@ -258,14 +362,14 @@
                 .then(data => {
                     if (data.success) {
                         document.getElementById('bookingDetails').innerHTML = `
-                            <div class="space-y-2 text-white">
-                                <p><strong>Mã vé:</strong> ${data.bookingCode}</p>
-                                <p><strong>Thông tin xe:</strong>Mã: ${data.busInfo}</p>
-                                <p><strong>Giờ khởi hành:</strong> ${data.departureTime}</p>
-                                <hr class="border-gray-700">
-                                <p><strong>Khách hàng:</strong> ${data.passengerName}</p>
-                                <p><strong>Ghế:</strong> ${data.seats}</p>
-                                <p><strong>Tổng tiền:</strong> ${data.finalTotal}</p>
+                            <div class="space-y-2 text-gray-800 dark:text-gray-200">
+                                <p><strong class="text-gray-900 dark:text-white">Mã vé:</strong> ${data.bookingCode}</p>
+                                <p><strong class="text-gray-900 dark:text-white">Thông tin xe:</strong> Mã: ${data.busInfo}</p>
+                                <p><strong class="text-gray-900 dark:text-white">Giờ khởi hành:</strong> ${data.departureTime}</p>
+                                <hr class="border-gray-200 dark:border-gray-700">
+                                <p><strong class="text-gray-900 dark:text-white">Khách hàng:</strong> ${data.passengerName}</p>
+                                <p><strong class="text-gray-900 dark:text-white">Ghế:</strong> ${data.seats}</p>
+                                <p><strong class="text-gray-900 dark:text-white">Tổng tiền:</strong> ${data.finalTotal}</p>
                             </div>
                         `;
                         document.getElementById('successModal').classList.remove('hidden');
@@ -314,6 +418,8 @@
     let currentManifestData = [];
     let currentBusCode = "";
     let currentRouteName = "";
+    let currentTripId = "";
+
 
     // Xử lý bộ lọc thông minh Realtime kết hợp cả 2 điều kiện tại Client
     const searchBusInput = document.getElementById('searchBusText');
@@ -344,8 +450,9 @@
     searchBusInput?.addEventListener('input', filterTripTable);
     searchRouteInput?.addEventListener('input', filterTripTable);
 
-    async function loadPassengerManifest(tripId, busCode, routeName) {
-        document.querySelectorAll('.trip-row').forEach(r => r.classList.remove('bg-amber-500/10', 'ring-1', 'ring-amber-400/50'));
+    async function loadPassengerManifest(tripId, busCode, routeName, tripDepartureTime) {
+        currentTripId = tripId;
+        document.querySelectorAll('#tripTableBody .trip-row').forEach(r => r.classList.remove('bg-amber-500/10', 'ring-1', 'ring-amber-400/50'));
         const targetRow = document.querySelector(`[data-trip-id="${tripId}"]`);
         if (targetRow) targetRow.classList.add('bg-amber-500/10', 'ring-1', 'ring-amber-400/50');
 
@@ -356,7 +463,7 @@
 
         const container = document.getElementById('manifestContainer');
         const btnPrint = document.getElementById('btnPrint');
-        container.innerHTML = '<p class="text-xs text-gray-400 text-center py-6">Đang tải danh sách...</p>';
+        container.innerHTML = '<p class="text-xs font-medium text-gray-600 dark:text-gray-400 text-center py-6">Đang tải danh sách...</p>';
 
         try {
             const response = await fetch('/Booking/GetManifest?tripId=' + tripId);
@@ -376,16 +483,67 @@
             btnPrint.classList.remove('opacity-50');
 
             currentManifestData.forEach(p => {
+                const fare = p.originalFare || p.finalAmount || 0;
+                // Đảm bảo lấy chính xác chuỗi thời gian khởi hành từ thuộc tính của dòng được chọn
+                const targetRow = document.querySelector(`[data-trip-id="${currentTripId}"]`);
+                const depTime = targetRow ? targetRow.getAttribute('data-departure-time') : (tripDepartureTime || "");
+
+                let isExpired = false;
+                if (depTime.trim() !== "") {
+                    let formattedTimeStr = depTime.replace(' ', 'T');
+                    const departureTime = new Date(formattedTimeStr);
+                    const currentTime = new Date();
+                    if (!isNaN(departureTime.getTime())) {
+                        isExpired = (currentTime >= departureTime);
+                    }
+                }
+
                 const item = document.createElement('div');
-                item.className = "p-3 rounded-lg bg-[#141419] border border-gray-700/40 flex items-center justify-between";
-                item.innerHTML = '<div>' +
-                    '<div class="text-xs font-bold text-white">' + p.passengerName + '</div>' +
-                    '<div class="text-[11px] text-gray-400">' + p.phone + '</div>' +
-                    '<div class="text-[10px] text-gray-500 mt-1">Mã: ' + p.bookingCode + ' | ' + p.paymentStatus + '</div>' +
-                    '</div>' +
-                    '<div class="px-2.5 py-1 text-xs font-black text-amber-400 bg-amber-400/10 rounded border border-amber-400/20 shadow-inner">' +
-                    'Ghế ' + p.seatNumber +
-                    '</div>';
+                item.className = "p-3 rounded-lg bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 flex items-center justify-between";
+
+                let cancelButtonHtml = '';
+                if (isExpired) {
+                    cancelButtonHtml = `
+                        <button type="button" disabled 
+                                class="px-2 py-1 text-[11px] font-medium text-gray-500 bg-gray-100 dark:bg-gray-800 rounded border border-gray-300 dark:border-gray-700 cursor-not-allowed opacity-60">
+                            Không thể hủy
+                        </button>`;
+                } else {
+                    // Ép kiểu chữ thường chính xác theo dữ liệu Json trả về
+                    const bCode = p.bookingCode || '';
+                    const pName = p.passengerName || '';
+                    const sNumber = p.seatNumber || '';
+
+                    const safePassengerName = pName.replace(/'/g, "\\'");
+
+                    // Truyền depTime vào dưới dạng chuỗi an toàn
+                    cancelButtonHtml = `
+                        <button type="button" onclick="openCancelModal('${bCode}', '${safePassengerName}', '${sNumber}', ${fare}, '${depTime}')" 
+                                class="px-2 py-1 text-[11px] font-medium text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-600 rounded border border-rose-500/20 transition-all">
+                            Hủy vé
+                        </button>`;
+                }
+
+                // Cập nhật hiển thị text phía dưới
+                const displayCode = p.bookingCode || '';
+                const displayName = p.passengerName || '';
+                const displayPhone = p.phone || '';
+                const displayStatus = p.paymentStatus || '';
+                const displaySeat = p.seatNumber || '';
+
+                item.innerHTML = `
+                    <div>
+                        <div class="text-xs font-bold text-gray-900 dark:text-white">${displayName}</div>
+                        <div class="text-[11px] text-gray-600 dark:text-gray-400">${displayPhone}</div>
+                        <div class="text-[10px] text-gray-700 dark:text-gray-500 mt-1">Mã: ${displayCode} | ${displayStatus}</div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        ${cancelButtonHtml}
+                        <div class="px-2.5 py-1 text-xs font-black text-amber-400 bg-amber-400/10 rounded border border-amber-400/20 shadow-inner">
+                            Ghế ${displaySeat}
+                        </div>
+                    </div>`;
+
                 container.appendChild(item);
             });
         } catch {
@@ -420,4 +578,193 @@
         printWindow.document.close();
         printWindow.print();
     }
+
+    function openCancelModal(bookingCode, passengerName, seatNumber, originalFare, departureTimeInput) {
+        const currentTime = new Date();
+
+        // Chuẩn hóa định dạng thời gian linh hoạt
+        let formattedTimeStr = departureTimeInput;
+        if (departureTimeInput && departureTimeInput.includes('/')) {
+            const [datePart, timePart] = departureTimeInput.trim().split(" ");
+            if (datePart && timePart) {
+                const [day, month, year] = datePart.split("/");
+                const [hours, minutes] = timePart.split(":");
+                formattedTimeStr = `${year}-${month}-${day}T${hours}:${minutes}:00`;
+            }
+        } else if (departureTimeInput) {
+            // Đổi khoảng trắng thành T nếu là chuỗi sql/iso thường
+            formattedTimeStr = departureTimeInput.replace(' ', 'T');
+        }
+
+        const departureTime = new Date(formattedTimeStr);
+
+        if (isNaN(departureTime.getTime())) {
+            console.error("Thời gian khởi hành không đúng định dạng:", departureTimeInput);
+            alert("Lỗi: Định dạng thời gian của chuyến đi không hợp lệ!");
+            return;
+        }
+
+        // Tính toán khoảng cách thời gian (Giờ)
+        const timeDiffMs = departureTime - currentTime;
+        const hoursDifference = timeDiffMs / (1000 * 60 * 60);
+
+        // LOGIC TÍNH PHÍ HOÀN VÉ
+        let feePercent = 0;
+        let percentText = "0%";
+
+        if (hoursDifference >= 48) {
+            feePercent = 0;
+            percentText = "Miễn phí (0%)";
+        } else if (hoursDifference >= 24 && hoursDifference < 48) {
+            feePercent = 0.15;
+            percentText = "15%";
+        } else {
+            feePercent = 0.30;
+            percentText = "30%";
+        }
+
+        const parsedOriginalFare = parseInt(originalFare) || 0;
+        const refundFee = parsedOriginalFare * feePercent;
+        const amountToRefund = parsedOriginalFare - refundFee;
+
+        // Cập nhật giao diện hiển thị
+        if (document.getElementById('lblOriginalFare')) {
+            document.getElementById('lblOriginalFare').innerText = parsedOriginalFare.toLocaleString('vi-VN') + ' đ';
+        }
+        if (document.getElementById('lblFeePercentText')) {
+            document.getElementById('lblFeePercentText').innerText = `Phí hủy vé quy định (${percentText}):`;
+        }
+        if (document.getElementById('lblRefundFee')) {
+            document.getElementById('lblRefundFee').innerText = refundFee > 0 ? '-' + refundFee.toLocaleString('vi-VN') + ' đ' : '0 đ';
+        }
+        if (document.getElementById('lblAmountToRefund')) {
+            document.getElementById('lblAmountToRefund').innerText = amountToRefund.toLocaleString('vi-VN') + ' đ';
+        }
+
+        // Gán dữ liệu vào các thẻ input ẩn
+        if (document.getElementById('cancelBookingCode')) {
+            document.getElementById('cancelBookingCode').value = bookingCode;
+        }
+
+        // Hiển thị modal hủy vé
+        const modal = document.getElementById('cancelBookingModal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+    }
+
+    function calculateRefundValues(originalFare, departureTimeInput) {
+        // 1. Xác định thời gian hiện tại và thời gian xe chạy
+        const currentTime = new Date();
+        const departureTime = new Date(departureTimeInput); // Truyền vào định dạng ISO, vd: '2026-07-25T14:00:00'
+
+        // 2. Tính khoảng thời gian chênh lệch (quy đổi ra giờ)
+        const timeDiffMs = departureTime - currentTime;
+        const hoursDifference = timeDiffMs / (1000 * 60 * 60);
+
+        // 3. Xét tỷ lệ khấu trừ theo 3 mốc thời gian
+        let feePercent = 0;
+
+        if (hoursDifference >= 48) {
+            // Mức 1: Từ 48 giờ trở lên -> Miễn phí hoàn (0%)
+            feePercent = 0;
+        } else if (hoursDifference >= 24 && hoursDifference < 48) {
+            // Mức 2: Từ 24 giờ đến dưới 48 giờ -> Khấu trừ 15%
+            feePercent = 0.15;
+        } else {
+            // Mức 3: Trong vòng 24 giờ -> Khấu trừ 30%
+            // (Nếu hoursDifference < 0 tức là xe đã chạy, tùy nghiệp vụ bạn có thể block không cho hủy, ở đây mình gộp chung mức 30%)
+            feePercent = 0.30;
+        }
+
+        // 4. Tính toán số tiền
+        const refundFee = originalFare * feePercent;
+        const amountToRefund = originalFare - refundFee;
+
+        // 5. Cập nhật giao diện
+        document.getElementById('lblOriginalFare').innerText = originalFare.toLocaleString('vi-VN') + ' đ';
+
+        // Nếu phí = 0 thì không hiện dấu âm (-) đằng trước cho đẹp
+        const feeText = refundFee > 0 ? '-' + refundFee.toLocaleString('vi-VN') + ' đ' : '0 đ';
+        document.getElementById('lblRefundFee').innerText = feeText;
+
+        document.getElementById('lblAmountToRefund').innerText = amountToRefund.toLocaleString('vi-VN') + ' đ';
+    }
+
+    // 2. Hàm đóng Modal chủ động
+    function closeCancelModal() {
+        const modal = document.getElementById('cancelBookingModal');
+        modal.classList.add('hidden');
+    }
+
+    // 3. Hàm xử lý gửi yêu cầu hủy vé (Đã sửa đổi cho Bước 3)
+    async function submitCancelRequest(event) {
+        event.preventDefault(); // Chặn reload trang mặc định
+
+        const form = document.getElementById('formCancelBooking');
+        if (!form) return;
+
+        const formData = new FormData(form);
+
+        // Gom dữ liệu gửi lên API
+        const requestData = {
+            BookingCode: formData.get('bookingCode'),
+            Reason: formData.get('reason'),
+            RefundMethod: formData.get('refundMethod'),
+            BankName: formData.get('bankName') || "",
+            AccountNumber: formData.get('accountNo') || "",
+            AccountName: formData.get('accountName')?.toUpperCase() || ""
+        };
+
+        try {
+            const response = await fetch('/Booking/RequestCancel', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': form.querySelector('input[name="__RequestVerificationToken"]')?.value
+                },
+                body: JSON.stringify(requestData)
+            });
+
+            const result = await response.json();
+            // Tìm đoạn này trong hàm submitCancelRequest của bạn:
+            if (result.success) {
+                alert('Đã ghi nhận yêu cầu hủy vé! Vé đã được chuyển sang danh sách chờ hoàn tiền.');
+                closeCancelModal();
+
+                // Sửa lại đoạn gọi hàm mượt mà hơn ở đây:
+                if (currentTripId) {
+                    const targetRow = document.querySelector(`[data-trip-id="${currentTripId}"]`);
+                    // Lấy trực tiếp từ thuộc tính data-departure-time
+                    const depTime = targetRow ? targetRow.getAttribute('data-departure-time') : "";
+
+                    loadPassengerManifest(currentTripId, currentBusCode, currentRouteName, depTime);
+                } else {
+                    location.reload();
+                }
+            } else {
+                alert('Lỗi từ hệ thống: ' + result.message);
+            }
+        } catch (error) {
+            console.error("Lỗi gửi request hủy vé:", error);
+            alert('Có lỗi hệ thống xảy ra khi gửi yêu cầu hủy!');
+        }
+    }
+
+    // 4. Lắng nghe sự kiện thay đổi Phương thức hoàn tiền để ẩn/hiện ô Ngân hàng
+    document.addEventListener("DOMContentLoaded", function () {
+        const selectMethod = document.getElementById('selectRefundMethod');
+        const divBankInfo = document.getElementById('divBankInfo');
+
+        if (selectMethod && divBankInfo) {
+            selectMethod.addEventListener('change', function () {
+                if (this.value === 'Online') {
+                    divBankInfo.classList.remove('hidden'); // Hiện phần ngân hàng
+                } else {
+                    divBankInfo.classList.add('hidden');    // Ẩn phần ngân hàng
+                }
+            });
+        }
+    });
 </script>

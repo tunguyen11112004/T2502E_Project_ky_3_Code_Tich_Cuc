@@ -38,6 +38,22 @@ public class CancellationInfo
     [BsonElement("penaltyPercentage")] public decimal PenaltyPercentage { get; set; }
 
     [BsonElement("refundAmount")] public decimal RefundAmount { get; set; }
+    
+    [BsonElement("refundMethod")] 
+    [BsonIgnoreIfNull]
+    public string RefundMethod { get; set; } // "Cash" hoặc "Online"
+
+    [BsonElement("refundBankName")] 
+    [BsonIgnoreIfNull]
+    public string RefundBankName { get; set; }
+
+    [BsonElement("refundAccountNo")] 
+    [BsonIgnoreIfNull]
+    public string RefundAccountNo { get; set; }
+
+    [BsonElement("refundAccountName")] 
+    [BsonIgnoreIfNull]
+    public string RefundAccountName { get; set; }
 }
 
 public class Booking

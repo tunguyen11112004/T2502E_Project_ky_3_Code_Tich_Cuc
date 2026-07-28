@@ -36,4 +36,9 @@ public class BusOperator
 
     [BsonElement("createdBy")]
     public string CreatedBy { get; set; } = "SystemSeeder";
+    
+    public string ContactEmail { get; set; } = string.Empty;
+    public string? TaxCode { get; set; }
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public string UpdatedBy { get; set; } = string.Empty;
 }

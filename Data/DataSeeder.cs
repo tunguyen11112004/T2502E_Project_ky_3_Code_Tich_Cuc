@@ -26,7 +26,21 @@ namespace Bus_ticket.Data
 
         // --- BUS CLASS ID ---
         public static readonly string BusClassExpress45Id = "64f1a2b3c4d5e6f7a8b9c011";
-        public static readonly string BusClassLimousine22Id = "64f1a2b3c4d5e6f7a8b9c012";
+        public static readonly string BusClassLuxury22Id = "64f1a2b3c4d5e6f7a8b9c012";
+        public static readonly string BusClassVolvoNonAc40Id = "64f1a2b3c4d5e6f7a8b9c013";
+        public static readonly string BusClassVolvoAc40Id = "64f1a2b3c4d5e6f7a8b9c014";
+
+        // Backward-compatible alias used by older seed references.
+        public static readonly string BusClassLimousine22Id = BusClassLuxury22Id;
+
+        // --- DYNAMIC ROLE ID ---
+        public static readonly string RoleSuperAdminId = "64f1a2b3c4d5e6f7a8b9c099";
+        public static readonly string RoleTicketAgentId = "64f1a2b3c4d5e6f7a8b9c098";
+        public static readonly string RoleOperationsStaffId = "64f1a2b3c4d5e6f7a8b9c097";
+        public static readonly string RoleAccountantId = "64f1a2b3c4d5e6f7a8b9c096";
+        public static readonly string RoleBranchManagerId = "64f1a2b3c4d5e6f7a8b9c095";
+
+        public static readonly string RoleAdminId = RoleSuperAdminId;
 
         // --- 4 XE GỐC CỐ ĐỊNH ---
         public static readonly string BusHNExpressId = "64f1a2b3c4d5e6f7a8b9c021";
@@ -43,7 +57,9 @@ namespace Bus_ticket.Data
         public static readonly string TripHanoiSaigonLimoId = "64f1a2b3c4d5e6f7a8b9c042";
         public static readonly string CustomerNguyenVanAId = "64f1a2b3c4d5e6f7a8b9c051";
         public static readonly string BookingLimoId = "64f1a2b3c4d5e6f7a8b9c061";
-        public static readonly string RoleAdminId = "64f1a2b3c4d5e6f7a8b9c099";
+
+        private const string DefaultEmployeePassword = "Src@123456";
+        private const string DefaultAdminPassword = "Admin@123";
 
         private static List<string> _allPermissionIds = new List<string>();
 
@@ -54,12 +70,21 @@ namespace Bus_ticket.Data
 
         public async Task SeedAllAsync()
         {
+            Console.WriteLine("--> Upsert permissions, dynamic roles và tài khoản mẫu...");
+            await UpsertPermissionsAsync();
+            await UpsertDynamicRolesAsync();
+            await UpsertSampleUsersAsync();
+
+            var isDataAlreadySeeded = _context.Branches != null && await _context.Branches.Find(_ => true).AnyAsync();
+
+            if (isDataAlreadySeeded)
+            {
+                Console.WriteLine("--> [BỎ QUA] Dữ liệu nghiệp vụ đã tồn tại. Chỉ cập nhật role/permission/user.");
+                return;
+            }
+            
             Console.WriteLine("--> Bắt đầu seeding dữ liệu liên tỉnh chuẩn...");
 
-            await SeedPermissions();
-            await EnsureDashboardReportPermissionsAsync();
-            await SeedDynamicRoles();
-            await SeedUsers();
             await SeedBranches();
             await SeedBusOperators();
             await SeedBusClasses();
@@ -75,65 +100,69 @@ namespace Bus_ticket.Data
             Console.WriteLine("--> Hoàn tất khởi tạo dữ liệu hệ thống!");
         }
 
-        private async Task SeedUsers()
+        private async Task UpsertSampleUsersAsync()
         {
-            if (await _context.Users.CountDocumentsAsync(_ => true) > 0) return;
-
-            var users = new List<User>();
-
-            // 1. Tạo tài khoản Admin chính
-            var admin = new User
+            var now = DateTime.UtcNow;
+            var sampleUsers = new List<User>
             {
-                UserCode = "ADM001",
-                EmployeeCode = "000001",
-                FullName = "System Admin",
-                Dob = null, // Phải đảm bảo kiểu dữ liệu là DateTime? hoặc nullable
-                Email = "admin@src.com",
+                BuildSampleUser("64f1a2b3c4d5e6f7a8b9d001", "ADM001", "000001", "System Admin", "admin@src.com", "admin", "Admin", RoleSuperAdminId, BranchHanoiId, DefaultAdminPassword, now),
+                BuildSampleUser("64f1a2b3c4d5e6f7a8b9d002", "EMP002", "000002", "Ticket Agent Hà Nội", "ticketagent.hn@src.com", "ticketagent.hn", "Employee", RoleTicketAgentId, BranchHanoiId, DefaultEmployeePassword, now),
+                BuildSampleUser("64f1a2b3c4d5e6f7a8b9d003", "EMP003", "000003", "Operations Staff Hà Nội", "operations.hn@src.com", "operations.hn", "Employee", RoleOperationsStaffId, BranchHanoiId, DefaultEmployeePassword, now),
+                BuildSampleUser("64f1a2b3c4d5e6f7a8b9d004", "EMP004", "000004", "Accountant SRC", "accountant@src.com", "accountant", "Employee", RoleAccountantId, BranchHanoiId, DefaultEmployeePassword, now),
+                BuildSampleUser("64f1a2b3c4d5e6f7a8b9d005", "EMP005", "000005", "Branch Manager Hà Nội", "manager.hn@src.com", "manager.hn", "Employee", RoleBranchManagerId, BranchHanoiId, DefaultEmployeePassword, now),
+                BuildSampleUser("64f1a2b3c4d5e6f7a8b9d006", "EMP006", "000006", "Ticket Agent Đà Nẵng", "ticketagent.dn@src.com", "ticketagent.dn", "Employee", RoleTicketAgentId, BranchDanangId, DefaultEmployeePassword, now),
+                BuildSampleUser("64f1a2b3c4d5e6f7a8b9d007", "EMP007", "000007", "Ticket Agent Sài Gòn", "ticketagent.sg@src.com", "ticketagent.sg", "Employee", RoleTicketAgentId, BranchSaigonId, DefaultEmployeePassword, now),
+                BuildSampleUser("64f1a2b3c4d5e6f7a8b9d008", "EMP008", "000008", "Branch Manager Đà Nẵng", "manager.dn@src.com", "manager.dn", "Employee", RoleBranchManagerId, BranchDanangId, DefaultEmployeePassword, now),
+                BuildSampleUser("64f1a2b3c4d5e6f7a8b9d009", "EMP009", "000009", "Branch Manager Sài Gòn", "manager.sg@src.com", "manager.sg", "Employee", RoleBranchManagerId, BranchSaigonId, DefaultEmployeePassword, now)
+            };
+
+            foreach (var user in sampleUsers)
+            {
+                await _context.Users.ReplaceOneAsync(
+                    u => u.Email == user.Email,
+                    user,
+                    new ReplaceOptions { IsUpsert = true });
+            }
+
+            Console.WriteLine($"--> [THÀNH CÔNG] Upsert {sampleUsers.Count} tài khoản mẫu theo role nghiệp vụ.");
+        }
+
+        private static User BuildSampleUser(
+            string id,
+            string userCode,
+            string employeeCode,
+            string fullName,
+            string email,
+            string username,
+            string role,
+            string roleId,
+            string branchId,
+            string password,
+            DateTime now)
+        {
+            var user = new User
+            {
+                Id = id,
+                UserCode = userCode,
+                EmployeeCode = employeeCode,
+                FullName = fullName,
+                Dob = null,
+                Email = email,
                 PhoneNumber = "",
                 Address = "",
                 EducationLevel = "",
-                Username = "admin",
-                Role = "Admin",
+                Username = username,
+                Role = role,
                 Status = "Active",
-                RoleId = RoleAdminId,
-                BranchId = BranchHanoiId,
-                CreatedAt = DateTime.UtcNow,
-                CreatedBy = "System",
-                UpdatedAt = DateTime.UtcNow,
-                UpdatedBy = ""
+                RoleId = roleId,
+                BranchId = branchId,
+                CreatedAt = now,
+                CreatedBy = "SystemSeeder",
+                UpdatedAt = now,
+                UpdatedBy = "SystemSeeder"
             };
-            admin.PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin@123");
-            users.Add(admin);
-
-            // 2. Tạo thêm 10 tài khoản nhân viên khác nhau
-            for (int i = 1; i <= 10; i++)
-            {
-                var user = new User
-                {
-                    UserCode = $"EMP{i:D3}",
-                    EmployeeCode = $"{i:D6}",
-                    FullName = $"Staff {i}",
-                    Dob = null,
-                    Email = $"staff{i}@src.com",
-                    PhoneNumber = $"090000000{i}",
-                    Address = "Default Address",
-                    EducationLevel = "University",
-                    Username = $"employee01{i}",
-                    Role = "Employee",
-                    Status = "Active",
-                    RoleId = null,
-                    BranchId = BranchHanoiId,
-                    CreatedAt = DateTime.UtcNow,
-                    CreatedBy = "System",
-                    UpdatedAt = DateTime.UtcNow,
-                    UpdatedBy = ""
-                };
-                user.PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin@123");
-                users.Add(user);
-            }
-
-            // Chèn danh sách vào database
-            await _context.Users.InsertManyAsync(users);
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(password);
+            return user;
         }
 
         public async Task SeedBranches()
@@ -262,29 +291,30 @@ namespace Bus_ticket.Data
                     }
                 }
             }
-            else if (busType == "Luxury_Sleeper") // Xe Giường Phòng VIP 22 Chỗ (2 Tầng - Mỗi tầng 11 phòng)
+            else if (busType is "Luxury_Sleeper" or "Volvo_NonAC" or "Volvo_AC")
             {
-                // Tầng 1 (Floor 1): 11 Phòng ký hiệu T1-01 đến T1-11
-                // Tầng 2 (Floor 2): 11 Phòng ký hiệu T2-01 đến T2-11
+                var seatType = busType == "Luxury_Sleeper"
+                    ? "VIP_Sleeper"
+                    : busType == "Volvo_AC"
+                        ? "Volvo_AC_Sleeper"
+                        : "Volvo_NonAC_Sleeper";
+
                 for (int f = 1; f <= totalFloors; f++)
                 {
                     int roomCounter = 1;
-                    // Thiết kế sơ đồ phân bổ hàng/cột cho giường phòng (4 hàng x 3 cột) để Frontend dễ vẽ bọc khung
                     for (int r = 1; r <= 4; r++)
                     {
                         for (int c = 1; c <= 3; c++)
                         {
-                            if (roomCounter > 11) break; // Chỉ lấy đúng 11 phòng mỗi tầng
+                            if (roomCounter > 11) break;
 
-                            // Bỏ qua ô trống làm lối đi giữa nếu cần, ở đây xếp đều cấu hình lưới
                             layout.Add(new SeatTemplate
                             {
-                                SeatNumber =
-                                    $"T{f}-{roomCounter:D2}", // Ví dụ: T1-01 (Tầng 1 phòng 1), T2-05 (Tầng 2 phòng 5)
+                                SeatNumber = $"T{f}-{roomCounter:D2}",
                                 Row = r,
                                 Column = c,
                                 Floor = f,
-                                SeatType = "VIP_Sleeper"
+                                SeatType = seatType
                             });
                             roomCounter++;
                         }
@@ -293,6 +323,17 @@ namespace Bus_ticket.Data
             }
 
             return layout;
+        }
+
+        private static List<FareConfig> BuildStandardFareConfigs(decimal expressPrice)
+        {
+            return new List<FareConfig>
+            {
+                new FareConfig { BusType = "Express_Seat", FlatPrice = expressPrice, VatPercentage = 10m },
+                new FareConfig { BusType = "Luxury_Sleeper", FlatPrice = Math.Round(expressPrice * 1.45m), VatPercentage = 10m },
+                new FareConfig { BusType = "Volvo_NonAC", FlatPrice = Math.Round(expressPrice * 1.65m), VatPercentage = 10m },
+                new FareConfig { BusType = "Volvo_AC", FlatPrice = Math.Round(expressPrice * 1.85m), VatPercentage = 10m }
+            };
         }
 
         public async Task SeedBusClasses()
@@ -309,8 +350,8 @@ namespace Bus_ticket.Data
             {
                 new BusClass
                 {
-                    Id = BusClassExpress45Id, // Sử dụng biến ID tĩnh sẵn có trong Seeder của bạn
-                    ClassName = "Express Seat 45 (Xe Ghế Ngồi Phổ Thông)",
+                    Id = BusClassExpress45Id,
+                    ClassName = "Express 45 (Ghế ngồi phổ thông)",
                     BusType = "Express_Seat",
                     ImageUrl =
                         "https://xetaibaoloc.com/images/stories/virtuemart/product/mercedes-benz-mb120s-47-ghe.jpg",
@@ -326,8 +367,8 @@ namespace Bus_ticket.Data
                 },
                 new BusClass
                 {
-                    Id = BusClassLimousine22Id, // Sử dụng biến ID tĩnh sẵn có trong Seeder của bạn
-                    ClassName = "Luxury Limousine Giường Phòng 22 (VIP)",
+                    Id = BusClassLuxury22Id,
+                    ClassName = "Luxury 22 (Giường phòng VIP)",
                     BusType = "Luxury_Sleeper",
                     ImageUrl = "https://vielimousine.com/wp-content/uploads/2021/12/DSC6090.jpg",
                     Status = "Active",
@@ -339,16 +380,49 @@ namespace Bus_ticket.Data
                     CreatedAt = DateTime.UtcNow,
                     UpdatedBy = "SystemSeeder",
                     UpdatedAt = DateTime.UtcNow
+                },
+                new BusClass
+                {
+                    Id = BusClassVolvoNonAc40Id,
+                    ClassName = "Volvo 40 (Non A/C - Giường nằm thông khí tự nhiên)",
+                    BusType = "Volvo_NonAC",
+                    ImageUrl = "https://images.unsplash.com/photo-1544620307-c4fd4fc3b2f5?auto=format&fit=crop&w=800&q=80",
+                    Status = "Active",
+                    TotalRows = 4,
+                    TotalColumns = 3,
+                    TotalFloors = 2,
+                    DefaultLayout = GenerateSeatLayout(4, 3, 2, "Volvo_NonAC"),
+                    CreatedBy = "SystemSeeder",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedBy = "SystemSeeder",
+                    UpdatedAt = DateTime.UtcNow
+                },
+                new BusClass
+                {
+                    Id = BusClassVolvoAc40Id,
+                    ClassName = "Volvo 40 (A/C Premium)",
+                    BusType = "Volvo_AC",
+                    ImageUrl = "https://images.unsplash.com/photo-1570125909232-e94333dd4c43?auto=format&fit=crop&w=800&q=80",
+                    Status = "Active",
+                    TotalRows = 4,
+                    TotalColumns = 3,
+                    TotalFloors = 2,
+                    DefaultLayout = GenerateSeatLayout(4, 3, 2, "Volvo_AC"),
+                    CreatedBy = "SystemSeeder",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedBy = "SystemSeeder",
+                    UpdatedAt = DateTime.UtcNow
                 }
             };
 
-            // Đếm chính xác số lượng phần tử layout thực tế gán ngược lại cho thuộc tính TotalSeats
-            busClasses[0].TotalSeats = busClasses[0].DefaultLayout.Count; // Sẽ tự động là 45
-            busClasses[1].TotalSeats = busClasses[1].DefaultLayout.Count; // Sẽ tự động là 22
+            foreach (var busClass in busClasses)
+            {
+                busClass.TotalSeats = busClass.DefaultLayout.Count;
+            }
 
             await _context.BusClasses.InsertManyAsync(busClasses);
             Console.WriteLine(
-                $"--> [THÀNH CÔNG] Đã Seeding xong bảng BusClass. Xe 45 chỗ: {busClasses[0].TotalSeats} ghế | Xe giường phòng: {busClasses[1].TotalSeats} phòng.");
+                $"--> [THÀNH CÔNG] Seeding BusClass: Express, Luxury, Volvo Non A/C, Volvo A/C ({busClasses.Count} hạng xe).");
         }
 
         private static List<string> GetAllowedBranchIdsForBus(Bus bus)
@@ -564,6 +638,62 @@ namespace Bus_ticket.Data
                     BranchId = BranchDanangId, OperatorId = OperatorHaiVanId, BusClassId = BusClassLimousine22Id,
                     CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow, UpdatedBy = "SystemSeeder",
                     UpdatedAt = DateTime.UtcNow
+                },
+                new Bus
+                {
+                    Id = "64f1a2b3c4d5e6f7a8b9c206", BusCode = "BUS-PT-VNAC01", LicensePlate = "51B-555.11",
+                    Status = "Active",
+                    BranchId = BranchSaigonId, OperatorId = OperatorPhuongTrangId, BusClassId = BusClassVolvoNonAc40Id,
+                    CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow, UpdatedBy = "SystemSeeder",
+                    UpdatedAt = DateTime.UtcNow
+                },
+                new Bus
+                {
+                    Id = "64f1a2b3c4d5e6f7a8b9c207", BusCode = "BUS-PT-VAC01", LicensePlate = "51B-555.22",
+                    Status = "Active",
+                    BranchId = BranchSaigonId, OperatorId = OperatorPhuongTrangId, BusClassId = BusClassVolvoAc40Id,
+                    CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow, UpdatedBy = "SystemSeeder",
+                    UpdatedAt = DateTime.UtcNow
+                },
+                new Bus
+                {
+                    Id = "64f1a2b3c4d5e6f7a8b9c208", BusCode = "BUS-HL-VNAC01", LicensePlate = "29B-666.11",
+                    Status = "Active",
+                    BranchId = BranchHanoiId, OperatorId = OperatorHoangLongId, BusClassId = BusClassVolvoNonAc40Id,
+                    CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow, UpdatedBy = "SystemSeeder",
+                    UpdatedAt = DateTime.UtcNow
+                },
+                new Bus
+                {
+                    Id = "64f1a2b3c4d5e6f7a8b9c209", BusCode = "BUS-HL-VAC01", LicensePlate = "29B-666.22",
+                    Status = "Active",
+                    BranchId = BranchHanoiId, OperatorId = OperatorHoangLongId, BusClassId = BusClassVolvoAc40Id,
+                    CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow, UpdatedBy = "SystemSeeder",
+                    UpdatedAt = DateTime.UtcNow
+                },
+                new Bus
+                {
+                    Id = "64f1a2b3c4d5e6f7a8b9c20a", BusCode = "BUS-TB-LUX02", LicensePlate = "51B-777.11",
+                    Status = "Active",
+                    BranchId = BranchSaigonId, OperatorId = OperatorThanhBuoiId, BusClassId = BusClassLuxury22Id,
+                    CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow, UpdatedBy = "SystemSeeder",
+                    UpdatedAt = DateTime.UtcNow
+                },
+                new Bus
+                {
+                    Id = "64f1a2b3c4d5e6f7a8b9c20b", BusCode = "BUS-HV-EXP03", LicensePlate = "43B-888.11",
+                    Status = "Active",
+                    BranchId = BranchDanangId, OperatorId = OperatorHaiVanId, BusClassId = BusClassExpress45Id,
+                    CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow, UpdatedBy = "SystemSeeder",
+                    UpdatedAt = DateTime.UtcNow
+                },
+                new Bus
+                {
+                    Id = "64f1a2b3c4d5e6f7a8b9c20c", BusCode = "BUS-HV-VAC01", LicensePlate = "43B-888.22",
+                    Status = "Active",
+                    BranchId = BranchDanangId, OperatorId = OperatorHaiVanId, BusClassId = BusClassVolvoAc40Id,
+                    CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow, UpdatedBy = "SystemSeeder",
+                    UpdatedAt = DateTime.UtcNow
                 }
             };
             await _context.Buses.InsertManyAsync(buses);
@@ -590,11 +720,7 @@ namespace Bus_ticket.Data
                         new Station { StationName = "Bến xe Mỹ Đình", StopOrder = 1 },
                         new Station { StationName = "Bến xe Miền Đông", StopOrder = 2 }
                     },
-                    FareConfigs = new List<FareConfig>
-                    {
-                        new FareConfig { BusType = "Express_Seat", FlatPrice = 750000m, VatPercentage = 10m },
-                        new FareConfig { BusType = "Luxury_Sleeper", FlatPrice = 1100000m, VatPercentage = 10m }
-                    },
+                    FareConfigs = BuildStandardFareConfigs(750000m),
                     CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow, UpdatedBy = "SystemSeeder",
                     UpdatedAt = DateTime.UtcNow
                 },
@@ -607,11 +733,7 @@ namespace Bus_ticket.Data
                         new Station { StationName = "Bến xe Miền Đông", StopOrder = 1 },
                         new Station { StationName = "Bến xe Mỹ Đình", StopOrder = 2 }
                     },
-                    FareConfigs = new List<FareConfig>
-                    {
-                        new FareConfig { BusType = "Express_Seat", FlatPrice = 750000m, VatPercentage = 10m },
-                        new FareConfig { BusType = "Luxury_Sleeper", FlatPrice = 1100000m, VatPercentage = 10m }
-                    },
+                    FareConfigs = BuildStandardFareConfigs(750000m),
                     CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow, UpdatedBy = "SystemSeeder",
                     UpdatedAt = DateTime.UtcNow
                 },
@@ -626,11 +748,7 @@ namespace Bus_ticket.Data
                         new Station { StationName = "Bến xe Giáp Bát", StopOrder = 1 },
                         new Station { StationName = "Bến xe Trung tâm Đà Nẵng", StopOrder = 2 }
                     },
-                    FareConfigs = new List<FareConfig>
-                    {
-                        new FareConfig { BusType = "Express_Seat", FlatPrice = 450000m, VatPercentage = 10m },
-                        new FareConfig { BusType = "Luxury_Sleeper", FlatPrice = 650000m, VatPercentage = 10m }
-                    },
+                    FareConfigs = BuildStandardFareConfigs(450000m),
                     CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow, UpdatedBy = "SystemSeeder",
                     UpdatedAt = DateTime.UtcNow
                 },
@@ -643,11 +761,7 @@ namespace Bus_ticket.Data
                         new Station { StationName = "Bến xe Trung tâm Đà Nẵng", StopOrder = 1 },
                         new Station { StationName = "Bến xe Giáp Bát", StopOrder = 2 }
                     },
-                    FareConfigs = new List<FareConfig>
-                    {
-                        new FareConfig { BusType = "Express_Seat", FlatPrice = 450000m, VatPercentage = 10m },
-                        new FareConfig { BusType = "Luxury_Sleeper", FlatPrice = 650000m, VatPercentage = 10m }
-                    },
+                    FareConfigs = BuildStandardFareConfigs(450000m),
                     CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow, UpdatedBy = "SystemSeeder",
                     UpdatedAt = DateTime.UtcNow
                 },
@@ -662,11 +776,7 @@ namespace Bus_ticket.Data
                         new Station { StationName = "Bến xe Đà Nẵng", StopOrder = 1 },
                         new Station { StationName = "Bến xe Miền Đông", StopOrder = 2 }
                     },
-                    FareConfigs = new List<FareConfig>
-                    {
-                        new FareConfig { BusType = "Express_Seat", FlatPrice = 500000m, VatPercentage = 10m },
-                        new FareConfig { BusType = "Luxury_Sleeper", FlatPrice = 750000m, VatPercentage = 10m }
-                    },
+                    FareConfigs = BuildStandardFareConfigs(500000m),
                     CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow, UpdatedBy = "SystemSeeder",
                     UpdatedAt = DateTime.UtcNow
                 },
@@ -679,11 +789,7 @@ namespace Bus_ticket.Data
                         new Station { StationName = "Bến xe Miền Đông", StopOrder = 1 },
                         new Station { StationName = "Bến xe Đà Nẵng", StopOrder = 2 }
                     },
-                    FareConfigs = new List<FareConfig>
-                    {
-                        new FareConfig { BusType = "Express_Seat", FlatPrice = 500000m, VatPercentage = 10m },
-                        new FareConfig { BusType = "Luxury_Sleeper", FlatPrice = 750000m, VatPercentage = 10m }
-                    },
+                    FareConfigs = BuildStandardFareConfigs(500000m),
                     CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow, UpdatedBy = "SystemSeeder",
                     UpdatedAt = DateTime.UtcNow
                 },
@@ -698,10 +804,7 @@ namespace Bus_ticket.Data
                         new Station { StationName = "Bến xe Gia Lâm", StopOrder = 1 },
                         new Station { StationName = "Bến xe Niệm Nghĩa", StopOrder = 2 }
                     },
-                    FareConfigs = new List<FareConfig>
-                    {
-                        new FareConfig { BusType = "Express_Seat", FlatPrice = 150000m, VatPercentage = 10m }
-                    },
+                    FareConfigs = BuildStandardFareConfigs(150000m),
                     CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow, UpdatedBy = "SystemSeeder",
                     UpdatedAt = DateTime.UtcNow
                 },
@@ -714,10 +817,7 @@ namespace Bus_ticket.Data
                         new Station { StationName = "Bến xe Niệm Nghĩa", StopOrder = 1 },
                         new Station { StationName = "Bến xe Gia Lâm", StopOrder = 2 }
                     },
-                    FareConfigs = new List<FareConfig>
-                    {
-                        new FareConfig { BusType = "Express_Seat", FlatPrice = 150000m, VatPercentage = 10m }
-                    },
+                    FareConfigs = BuildStandardFareConfigs(150000m),
                     CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow, UpdatedBy = "SystemSeeder",
                     UpdatedAt = DateTime.UtcNow
                 },
@@ -732,11 +832,7 @@ namespace Bus_ticket.Data
                         new Station { StationName = "Bến xe Miền Tây", StopOrder = 1 },
                         new Station { StationName = "Bến xe Trung tâm Cần Thơ", StopOrder = 2 }
                     },
-                    FareConfigs = new List<FareConfig>
-                    {
-                        new FareConfig { BusType = "Express_Seat", FlatPrice = 180000m, VatPercentage = 10m },
-                        new FareConfig { BusType = "Luxury_Sleeper", FlatPrice = 280000m, VatPercentage = 10m }
-                    },
+                    FareConfigs = BuildStandardFareConfigs(180000m),
                     CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow, UpdatedBy = "SystemSeeder",
                     UpdatedAt = DateTime.UtcNow
                 },
@@ -749,11 +845,7 @@ namespace Bus_ticket.Data
                         new Station { StationName = "Bến xe Trung tâm Cần Thơ", StopOrder = 1 },
                         new Station { StationName = "Bến xe Miền Tây", StopOrder = 2 }
                     },
-                    FareConfigs = new List<FareConfig>
-                    {
-                        new FareConfig { BusType = "Express_Seat", FlatPrice = 180000m, VatPercentage = 10m },
-                        new FareConfig { BusType = "Luxury_Sleeper", FlatPrice = 280000m, VatPercentage = 10m }
-                    },
+                    FareConfigs = BuildStandardFareConfigs(180000m),
                     CreatedBy = "SystemSeeder", CreatedAt = DateTime.UtcNow, UpdatedBy = "SystemSeeder",
                     UpdatedAt = DateTime.UtcNow
                 }
@@ -995,26 +1087,28 @@ namespace Bus_ticket.Data
             await _context.SystemConfigs.InsertOneAsync(globalConfig);
         }
 
-        public async Task SeedPermissions()
+        private async Task UpsertPermissionsAsync()
         {
-            Console.WriteLine("--> Kiểm tra và seeding dữ liệu bảng Quyền hệ thống (Permission)...");
+            Console.WriteLine("--> Upsert bảng Permission...");
+            _allPermissionIds.Clear();
 
-            var count =
-                await _context.Permissions
-                    .CountDocumentsAsync(new BsonDocument()); // Hãy chắc chắn _context.Permissions khớp với DbContext
-            if (count > 0)
+            foreach (var permission in BuildPermissionCatalog())
             {
-                Console.WriteLine("--> Bảng Permission đã có dữ liệu. Bỏ qua seeding.");
-                // Lấy lại danh sách ID hiện tại từ DB để nếu các hàm sau chạy vẫn có data liên kết
-                var existingPermissions = await _context.Permissions.Find(new BsonDocument()).ToListAsync();
-                _allPermissionIds = existingPermissions.Select(p => p.Id).ToList();
-                return;
+                await _context.Permissions.ReplaceOneAsync(
+                    p => p.Id == permission.Id,
+                    permission,
+                    new ReplaceOptions { IsUpsert = true });
+                _allPermissionIds.Add(permission.Id);
             }
 
+            Console.WriteLine($"--> [THÀNH CÔNG] Upsert {_allPermissionIds.Count} quyền hệ thống.");
+        }
+
+        private static List<Permission> BuildPermissionCatalog()
+        {
             var permissions = new List<Permission>();
 
-            // Hàm tiện ích nội bộ giúp sinh nhanh đối tượng Permission và gom ID
-            void AddPermission(string id, string name, string description, string link, string method)
+            void Add(string id, string name, string description, string link, string method)
             {
                 permissions.Add(new Permission
                 {
@@ -1024,229 +1118,217 @@ namespace Bus_ticket.Data
                     Link = link,
                     Method = method
                 });
-                _allPermissionIds.Add(id); // Gom ID lại để dùng cho bảng Role ở bước sau
             }
 
-            // --- NHÓM 1: QUẢN LÝ TUYẾN XE & CHUYẾN XE ---
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca01", "View.BusRoute", "Xem danh sách và chi tiết tuyến xe",
-                "BusRoutes/Index", "GET");
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca02", "Create.BusRoute", "Thêm tuyến xe chạy mới", "BusRoutes/Create",
-                "POST");
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca03", "Update.BusRoute", "Cập nhật thông tin tuyến xe",
-                "BusRoutes/Edit", "POST");
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca04", "Delete.BusRoute", "Xóa tuyến xe khỏi hệ thống",
-                "BusRoutes/Delete", "POST");
+            Add("64f1a2b3c4d5e6f7a8b9ca01", "View.BusRoute", "Xem danh sách và chi tiết tuyến xe", "Admin/PriceConfig", "GET");
+            Add("64f1a2b3c4d5e6f7a8b9ca02", "Create.BusRoute", "Thêm tuyến xe chạy mới", "Admin/SaveTrip", "POST");
+            Add("64f1a2b3c4d5e6f7a8b9ca03", "Update.BusRoute", "Cập nhật thông tin tuyến xe", "Admin/SaveTrip", "POST");
+            Add("64f1a2b3c4d5e6f7a8b9ca04", "Delete.BusRoute", "Xóa tuyến xe khỏi hệ thống", "Admin/DeleteTrip", "POST");
 
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca05", "View.Trip", "Xem lịch trình các chuyến xe chạy", "Trips/Index",
-                "GET");
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca06", "Create.Trip", "Thêm chuyến xe mới (gán tài xế, xe, giờ chạy)",
-                "Trips/Create", "POST");
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca07", "Update.Trip", "Thay đổi thông tin, giờ khởi hành chuyến",
-                "Trips/Edit", "POST");
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca08", "Delete.Trip", "Hủy/Xóa chuyến xe", "Trips/Delete", "POST");
+            Add("64f1a2b3c4d5e6f7a8b9ca05", "View.Trip", "Xem lịch trình các chuyến xe chạy", "Admin/PriceConfig", "GET");
+            Add("64f1a2b3c4d5e6f7a8b9ca06", "Create.Trip", "Thêm chuyến xe mới", "Admin/SaveTrip", "POST");
+            Add("64f1a2b3c4d5e6f7a8b9ca07", "Update.Trip", "Thay đổi thông tin chuyến xe", "Admin/SaveTrip", "POST");
+            Add("64f1a2b3c4d5e6f7a8b9ca08", "Delete.Trip", "Xóa chuyến xe khỏi hệ thống", "Admin/DeleteTrip", "POST");
+            Add("64f1a2b3c4d5e6f7a8b9cc21", "Cancel.Trip", "Hủy chuyến xe (giữ lịch sử)", "Admin/CancelTrip", "POST");
 
-            // --- NHÓM 2: QUẢN LÝ XE, HẠNG XE & CHI NHÁNH (ĐÃ UPDATE TÁCH BUSCLASS) ---
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca09", "View.Bus", "Xem danh sách xe và sơ đồ ghế", "Buses/Index",
-                "GET");
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca10", "Create.Bus", "Thêm xe mới vào đội xe", "Buses/Create", "POST");
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca11", "Update.Bus", "Sửa thông tin xe (biển số, loại ghế)",
-                "Buses/Edit", "POST");
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca12", "Delete.Bus", "Xóa xe khỏi danh sách vận hành", "Buses/Delete",
-                "POST");
+            Add("64f1a2b3c4d5e6f7a8b9ca09", "View.Bus", "Xem danh sách xe và sơ đồ ghế", "Buses", "GET");
+            Add("64f1a2b3c4d5e6f7a8b9ca10", "Create.Bus", "Thêm xe mới vào đội xe", "Buses/Create", "POST");
+            Add("64f1a2b3c4d5e6f7a8b9ca11", "Update.Bus", "Sửa thông tin xe", "Buses/Edit", "POST");
+            Add("64f1a2b3c4d5e6f7a8b9ca12", "Delete.Bus", "Xóa xe khỏi danh sách vận hành", "Buses/Delete", "POST");
 
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca13", "View.BusClass",
-                "Xem danh sách hạng xe và cấu trúc sơ đồ ghế mẫu", "BusClasses/Index", "GET");
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca14", "Create.BusClass", "Tạo hạng xe mới (Định nghĩa hàng, cột, tầng)",
-                "BusClasses/Create", "POST");
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca15", "Update.BusClass", "Cập nhật cấu hình hạng xe và sơ đồ mẫu",
-                "BusClasses/Edit", "POST");
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca16", "Delete.BusClass", "Xóa hạng xe khỏi hệ thống cấu hình",
-                "BusClasses/Delete", "POST");
+            Add("64f1a2b3c4d5e6f7a8b9ca13", "View.BusClass", "Xem danh sách hạng xe", "BusClasses", "GET");
+            Add("64f1a2b3c4d5e6f7a8b9ca14", "Create.BusClass", "Tạo hạng xe mới", "BusClasses/Create", "POST");
+            Add("64f1a2b3c4d5e6f7a8b9ca15", "Update.BusClass", "Cập nhật hạng xe", "BusClasses/Edit", "POST");
+            Add("64f1a2b3c4d5e6f7a8b9ca16", "Delete.BusClass", "Xóa hạng xe", "BusClasses/Delete", "POST");
 
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca17", "View.Branch", "Xem danh sách văn phòng/chi nhánh nhà xe",
-                "Branches/Index", "GET");
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca18", "Create.Branch", "Thêm chi nhánh hoặc văn phòng mới",
-                "Branches/Create", "POST");
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca19", "Update.Branch", "Cập nhật địa chỉ, hotline chi nhánh",
-                "Branches/Edit", "POST");
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca20", "Delete.Branch", "Xóa chi nhánh", "Branches/Delete", "POST");
+            Add("64f1a2b3c4d5e6f7a8b9ca17", "View.Branch", "Xem danh sách chi nhánh", "Branches", "GET");
+            Add("64f1a2b3c4d5e6f7a8b9ca18", "Create.Branch", "Thêm chi nhánh mới", "Branches/Create", "POST");
+            Add("64f1a2b3c4d5e6f7a8b9ca19", "Update.Branch", "Cập nhật chi nhánh", "Branches/Edit", "POST");
+            Add("64f1a2b3c4d5e6f7a8b9ca20", "Delete.Branch", "Xóa chi nhánh", "Branches/Delete", "POST");
 
-            // --- NHÓM 3: QUẢN LÝ VÉ & KHÁCH HÀNG ---
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca21", "View.Booking", "Xem danh sách lịch sử đặt vé của hệ thống",
-                "Bookings/Index", "GET");
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca22", "Create.Booking", "Đặt vé mới cho khách hàng", "Bookings/Create",
-                "POST");
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca23", "Update.Booking", "Thay đổi thông tin vé (đổi ghế, đổi chuyến)",
-                "Bookings/Edit", "POST");
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca24", "Delete.Booking", "Hủy vé/Hoàn trả vé", "Bookings/Delete",
-                "POST");
+            Add("64f1a2b3c4d5e6f7a8b9cc01", "View.BusOperator", "Xem danh sách nhà xe", "BusOperators", "GET");
+            Add("64f1a2b3c4d5e6f7a8b9cc02", "Create.BusOperator", "Thêm nhà xe mới", "BusOperators/Create", "POST");
+            Add("64f1a2b3c4d5e6f7a8b9cc03", "Update.BusOperator", "Cập nhật nhà xe", "BusOperators/Edit", "POST");
+            Add("64f1a2b3c4d5e6f7a8b9cc04", "Delete.BusOperator", "Xóa nhà xe", "BusOperators/Delete", "POST");
 
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca25", "View.Customer", "Xem thông tin danh sách khách hàng",
-                "Customers/Index", "GET");
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca26", "Create.Customer", "Tạo mới tài khoản khách hàng",
-                "Customers/Create", "POST");
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca27", "Update.Customer", "Sửa thông tin thành viên khách hàng",
-                "Customers/Edit", "POST");
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca28", "Delete.Customer", "Khóa/Xóa tài khoản khách hàng",
-                "Customers/Delete", "POST");
+            Add("64f1a2b3c4d5e6f7a8b9cc05", "View.PriceConfig", "Xem bảng giá và cấu hình chuyến", "Admin/PriceConfig", "GET");
+            Add("64f1a2b3c4d5e6f7a8b9cc06", "Create.PriceConfig", "Thêm cấu hình giá", "Admin/SavePriceConfig", "POST");
+            Add("64f1a2b3c4d5e6f7a8b9cc07", "Update.PriceConfig", "Cập nhật cấu hình giá", "Admin/SavePriceConfig", "POST");
+            Add("64f1a2b3c4d5e6f7a8b9cc08", "Delete.PriceConfig", "Xóa cấu hình giá", "Admin/DeletePriceConfig", "POST");
 
-            // --- NHÓM 4: TÀI KHOẢN NHÂN VIÊN & PHÂN QUYỀN ---
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca29", "View.User", "Xem danh sách tài khoản nhân viên quản trị",
-                "Users/Index", "GET");
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca30", "Create.User", "Tạo tài khoản cho nhân viên/tài xế mới",
-                "Users/Create", "POST");
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca31", "Update.User", "Cập nhật thông tin nhân viên hoặc đổi mật khẩu",
-                "Users/Edit", "POST");
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca32", "Delete.User", "Xóa/Vô hiệu hóa tài khoản nhân viên",
-                "Users/Delete", "POST");
+            Add("64f1a2b3c4d5e6f7a8b9ca21", "View.Booking", "Xem danh sách đặt vé", "Booking", "GET");
+            Add("64f1a2b3c4d5e6f7a8b9ca22", "Create.Booking", "Đặt vé mới cho khách hàng", "Booking/BookTicket", "POST");
+            Add("64f1a2b3c4d5e6f7a8b9ca23", "Update.Booking", "Thay đổi thông tin vé", "Booking/BookTicket", "POST");
+            Add("64f1a2b3c4d5e6f7a8b9ca24", "Delete.Booking", "Hủy vé trực tiếp (legacy)", "Booking/CancelBooking", "POST");
+            Add("64f1a2b3c4d5e6f7a8b9cc09", "RequestCancel.Booking", "Tạo yêu cầu hủy vé", "Booking/RequestCancel", "POST");
+            Add("64f1a2b3c4d5e6f7a8b9cc10", "ApproveCancel.Booking", "Duyệt yêu cầu hủy vé", "Booking/ApproveCancel", "POST");
+            Add("64f1a2b3c4d5e6f7a8b9cc11", "RejectCancel.Booking", "Từ chối yêu cầu hủy vé", "Booking/RejectCancel", "POST");
 
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca33", "View.Role", "Xem danh sách vai trò (Nhóm quyền)",
-                "DynamicRoles/Index", "GET");
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca34", "Create.Role", "Tạo vai trò mới và chọn ma trận quyền",
-                "DynamicRoles/Create", "POST");
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca35", "Update.Role", "Sửa vai trò và cập nhật lại mảng quyền",
-                "DynamicRoles/Edit", "POST");
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca36", "Delete.Role", "Xóa vai trò khỏi hệ thống", "DynamicRoles/Delete",
-                "POST");
+            Add("64f1a2b3c4d5e6f7a8b9ca25", "View.Customer", "Xem thông tin khách hàng", "Booking/GetCustomerByPhone", "GET");
+            Add("64f1a2b3c4d5e6f7a8b9ca26", "Create.Customer", "Tạo khách hàng khi đặt vé", "Booking/BookTicket", "POST");
+            Add("64f1a2b3c4d5e6f7a8b9ca27", "Update.Customer", "Cập nhật khách hàng khi đặt vé", "Booking/BookTicket", "POST");
+            Add("64f1a2b3c4d5e6f7a8b9ca28", "Delete.Customer", "Khóa/Xóa khách hàng", "Customer/Delete", "POST");
 
-            AddPermission("64f1a2b3c4d5e6f7a8b9ca37", "View.Permission", "Xem danh sách quyền hệ thống có phân trang",
-                "Permissions/Index", "GET");
+            Add("64f1a2b3c4d5e6f7a8b9cc19", "View.Manifest", "Xem danh sách hành khách", "Booking/GetManifest", "GET");
+            Add("64f1a2b3c4d5e6f7a8b9cc20", "Export.Manifest", "Xuất danh sách hành khách", "Booking/GetManifest", "GET");
 
-            // --- NHÓM 5: DASHBOARD & REPORTS ---
-            AddPermission("64f1a2b3c4d5e6f7a8b9cb01", "View.Dashboard", "Xem trang tổng quan Dashboard",
-                "Dashboard/Index", "GET");
-            AddPermission("64f1a2b3c4d5e6f7a8b9cb02", "View.RouteRevenue", "Xem báo cáo doanh thu theo tuyến",
-                "Dashboard/RouteRevenue", "GET");
-            AddPermission("64f1a2b3c4d5e6f7a8b9cb03", "Export.RouteRevenue", "Xuất Excel báo cáo doanh thu theo tuyến",
-                "Dashboard/ExportRouteRevenue", "GET");
-            AddPermission("64f1a2b3c4d5e6f7a8b9cb04", "View.OperatorRevenue", "Xem báo cáo doanh thu nhà xe bán chạy nhất",
-                "Dashboard/OperatorRevenuePartial", "GET");
-            AddPermission("64f1a2b3c4d5e6f7a8b9cb05", "Export.OperatorRevenue", "Xuất Excel doanh thu nhà xe",
-                "Dashboard/ExportOperatorRevenue", "GET");
-            AddPermission("64f1a2b3c4d5e6f7a8b9cb06", "View.BranchCancellation", "Xem báo cáo tỷ lệ hủy chuyến theo nhà xe",
-                "Dashboard/BranchCancellationPartial", "GET");
-            AddPermission("64f1a2b3c4d5e6f7a8b9cb07", "Export.BranchCancellation", "Xuất Excel tỷ lệ hủy chuyến",
-                "Dashboard/ExportBranchCancellation", "GET");
-            AddPermission("64f1a2b3c4d5e6f7a8b9cb08", "View.SeatAnalytics", "Xem báo cáo hiệu suất lấp đầy ghế",
-                "Dashboard/SeatAnalyticsPartial", "GET");
-            AddPermission("64f1a2b3c4d5e6f7a8b9cb09", "Export.SeatAnalytics", "Xuất Excel hiệu suất lấp đầy ghế",
-                "Dashboard/ExportSeatAnalytics", "GET");
-            AddPermission("64f1a2b3c4d5e6f7a8b9cb10", "View.TicketStatusStatistics", "Xem báo cáo vé thành công và vé hủy",
-                "Dashboard/TicketStatusStatisticsPartial", "GET");
-            AddPermission("64f1a2b3c4d5e6f7a8b9cb11", "Export.TicketStatusStatistics", "Xuất Excel báo cáo vé thành công và vé hủy",
-                "Dashboard/ExportTicketStatusStatistics", "GET");
+            Add("64f1a2b3c4d5e6f7a8b9cc12", "View.RefundRequest", "Xem yêu cầu hoàn tiền", "Booking/RefundList", "GET");
+            Add("64f1a2b3c4d5e6f7a8b9cc13", "Create.RefundRequest", "Tạo yêu cầu hoàn tiền", "Booking/RequestCancel", "POST");
+            Add("64f1a2b3c4d5e6f7a8b9cc14", "Approve.RefundRequest", "Duyệt yêu cầu hoàn tiền", "Booking/ApproveRefund", "POST");
+            Add("64f1a2b3c4d5e6f7a8b9cc15", "Reject.RefundRequest", "Từ chối yêu cầu hoàn tiền", "Booking/RejectRefund", "POST");
+            Add("64f1a2b3c4d5e6f7a8b9cc16", "Process.Refund", "Xử lý chuyển khoản hoàn tiền", "Booking/ConfirmRefund", "POST");
+            Add("64f1a2b3c4d5e6f7a8b9cc17", "Complete.Refund", "Hoàn tất hoàn tiền", "Booking/ConfirmRefund", "POST");
+            Add("64f1a2b3c4d5e6f7a8b9cc18", "View.OwnRefundRequest", "Xem yêu cầu hoàn do mình tạo", "Booking/RefundList", "GET");
+            Add("64f1a2b3c4d5e6f7a8b9cc30", "Reject.Refund", "Từ chối hoàn tiền", "Booking/RejectRefund", "POST");
 
-            await _context.Permissions.InsertManyAsync(permissions);
-            Console.WriteLine($"--> Đã seeding thành công trọn bộ {permissions.Count} quyền hệ thống!");
+            Add("64f1a2b3c4d5e6f7a8b9ca29", "View.User", "Xem danh sách nhân viên", "Admin/Users", "GET");
+            Add("64f1a2b3c4d5e6f7a8b9ca30", "Create.User", "Tạo tài khoản nhân viên", "Admin/Users/Create", "POST");
+            Add("64f1a2b3c4d5e6f7a8b9ca31", "Update.User", "Cập nhật nhân viên", "Admin/Users/Edit", "POST");
+            Add("64f1a2b3c4d5e6f7a8b9ca32", "Delete.User", "Xóa/Vô hiệu hóa nhân viên", "Admin/Users/Delete", "POST");
+
+            Add("64f1a2b3c4d5e6f7a8b9ca33", "View.Role", "Xem danh sách vai trò", "DynamicRoles", "GET");
+            Add("64f1a2b3c4d5e6f7a8b9ca34", "Create.Role", "Tạo vai trò mới", "DynamicRoles/Create", "POST");
+            Add("64f1a2b3c4d5e6f7a8b9ca35", "Update.Role", "Cập nhật vai trò", "DynamicRoles/Edit", "POST");
+            Add("64f1a2b3c4d5e6f7a8b9ca36", "Delete.Role", "Xóa vai trò", "DynamicRoles/Delete", "POST");
+            Add("64f1a2b3c4d5e6f7a8b9ca37", "View.Permission", "Xem danh sách quyền", "Permissions", "GET");
+
+            Add("64f1a2b3c4d5e6f7a8b9cb01", "View.Dashboard", "Xem trang tổng quan Dashboard", "Dashboard", "GET");
+            Add("64f1a2b3c4d5e6f7a8b9cb02", "View.RouteRevenue", "Xem báo cáo doanh thu theo tuyến", "Dashboard/RouteRevenuePartial", "GET");
+            Add("64f1a2b3c4d5e6f7a8b9cb03", "Export.RouteRevenue", "Xuất Excel doanh thu theo tuyến", "Dashboard/ExportRouteRevenue", "GET");
+            Add("64f1a2b3c4d5e6f7a8b9cb04", "View.OperatorRevenue", "Xem báo cáo doanh thu nhà xe", "Dashboard/OperatorRevenuePartial", "GET");
+            Add("64f1a2b3c4d5e6f7a8b9cb05", "Export.OperatorRevenue", "Xuất Excel doanh thu nhà xe", "Dashboard/ExportOperatorRevenue", "GET");
+            Add("64f1a2b3c4d5e6f7a8b9cb06", "View.BranchCancellation", "Xem báo cáo tỷ lệ hủy chuyến", "Dashboard/BranchCancellationPartial", "GET");
+            Add("64f1a2b3c4d5e6f7a8b9cb07", "Export.BranchCancellation", "Xuất Excel tỷ lệ hủy chuyến", "Dashboard/ExportBranchCancellation", "GET");
+            Add("64f1a2b3c4d5e6f7a8b9cb08", "View.SeatAnalytics", "Xem báo cáo hiệu suất lấp đầy ghế", "Dashboard/SeatAnalyticsPartial", "GET");
+            Add("64f1a2b3c4d5e6f7a8b9cb09", "Export.SeatAnalytics", "Xuất Excel hiệu suất lấp đầy ghế", "Dashboard/ExportSeatAnalytics", "GET");
+            Add("64f1a2b3c4d5e6f7a8b9cb10", "View.TicketStatusStatistics", "Xem báo cáo vé thành công và vé hủy", "Dashboard/TicketStatusStatisticsPartial", "GET");
+            Add("64f1a2b3c4d5e6f7a8b9cb11", "Export.TicketStatusStatistics", "Xuất Excel báo cáo vé", "Dashboard/ExportTicketStatusStatistics", "GET");
+            Add("64f1a2b3c4d5e6f7a8b9cc22", "View.TotalRevenue", "Xem báo cáo tổng doanh thu", "Dashboard/TotalRevenuePartial", "GET");
+            Add("64f1a2b3c4d5e6f7a8b9cc23", "Export.TotalRevenue", "Xuất Excel tổng doanh thu", "Dashboard/ExportTotalRevenue", "GET");
+            Add("64f1a2b3c4d5e6f7a8b9cc24", "View.SoldOutStats", "Xem báo cáo cháy ghế", "Dashboard/SoldOutStatsPartial", "GET");
+            Add("64f1a2b3c4d5e6f7a8b9cc25", "Export.SoldOutStats", "Xuất Excel cháy ghế", "Dashboard/ExportSoldOutStats", "GET");
+            Add("64f1a2b3c4d5e6f7a8b9cc26", "View.VehicleRevenue", "Xem báo cáo doanh thu theo xe", "Dashboard/VehicleRevenueStatisticsPartial", "GET");
+            Add("64f1a2b3c4d5e6f7a8b9cc27", "Export.VehicleRevenue", "Xuất Excel doanh thu theo xe", "Dashboard/ExportVehicleRevenueStatistics", "GET");
+            Add("64f1a2b3c4d5e6f7a8b9cc28", "View.LowOccupancyTrips", "Xem báo cáo chuyến thiếu khách", "Dashboard/LowOccupancyTripsPartial", "GET");
+            Add("64f1a2b3c4d5e6f7a8b9cc29", "Export.LowOccupancyTrips", "Xuất Excel chuyến thiếu khách", "Dashboard/ExportLowOccupancyTrips", "GET");
+
+            return permissions;
         }
 
-        private async Task EnsureDashboardReportPermissionsAsync()
+        private async Task UpsertDynamicRolesAsync()
         {
-            var dashboardPermissions = new List<Permission>
-            {
-                new Permission { Id = "64f1a2b3c4d5e6f7a8b9cb01", Name = "View.Dashboard", Description = "Xem trang tổng quan Dashboard", Link = "Dashboard/Index", Method = "GET" },
-                new Permission { Id = "64f1a2b3c4d5e6f7a8b9cb02", Name = "View.RouteRevenue", Description = "Xem báo cáo doanh thu theo tuyến", Link = "Dashboard/RouteRevenue", Method = "GET" },
-                new Permission { Id = "64f1a2b3c4d5e6f7a8b9cb03", Name = "Export.RouteRevenue", Description = "Xuất Excel báo cáo doanh thu theo tuyến", Link = "Dashboard/ExportRouteRevenue", Method = "GET" },
-                new Permission { Id = "64f1a2b3c4d5e6f7a8b9cb04", Name = "View.OperatorRevenue", Description = "Xem báo cáo doanh thu nhà xe bán chạy nhất", Link = "Dashboard/OperatorRevenuePartial", Method = "GET" },
-                new Permission { Id = "64f1a2b3c4d5e6f7a8b9cb05", Name = "Export.OperatorRevenue", Description = "Xuất Excel doanh thu nhà xe", Link = "Dashboard/ExportOperatorRevenue", Method = "GET" },
-                new Permission { Id = "64f1a2b3c4d5e6f7a8b9cb06", Name = "View.BranchCancellation", Description = "Xem báo cáo tỷ lệ hủy chuyến theo nhà xe", Link = "Dashboard/BranchCancellationPartial", Method = "GET" },
-                new Permission { Id = "64f1a2b3c4d5e6f7a8b9cb07", Name = "Export.BranchCancellation", Description = "Xuất Excel tỷ lệ hủy chuyến", Link = "Dashboard/ExportBranchCancellation", Method = "GET" },
-                new Permission { Id = "64f1a2b3c4d5e6f7a8b9cb08", Name = "View.SeatAnalytics", Description = "Xem báo cáo hiệu suất lấp đầy ghế", Link = "Dashboard/SeatAnalyticsPartial", Method = "GET" },
-                new Permission { Id = "64f1a2b3c4d5e6f7a8b9cb09", Name = "Export.SeatAnalytics", Description = "Xuất Excel hiệu suất lấp đầy ghế", Link = "Dashboard/ExportSeatAnalytics", Method = "GET" },
-                new Permission { Id = "64f1a2b3c4d5e6f7a8b9cb10", Name = "View.TicketStatusStatistics", Description = "Xem báo cáo vé thành công và vé hủy", Link = "Dashboard/TicketStatusStatisticsPartial", Method = "GET" },
-                new Permission { Id = "64f1a2b3c4d5e6f7a8b9cb11", Name = "Export.TicketStatusStatistics", Description = "Xuất Excel báo cáo vé thành công và vé hủy", Link = "Dashboard/ExportTicketStatusStatistics", Method = "GET" }
-            };
+            Console.WriteLine("--> Upsert 5 dynamic role nghiệp vụ...");
+            var permissions = await _context.Permissions.Find(_ => true).ToListAsync();
+            var permissionMap = permissions
+                .Where(p => !string.IsNullOrWhiteSpace(p.Name))
+                .GroupBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.First().Id, StringComparer.OrdinalIgnoreCase);
 
-            var existingIds = (await _context.Permissions.Find(new BsonDocument()).ToListAsync())
-                .Select(p => p.Id)
-                .Where(id => !string.IsNullOrWhiteSpace(id))
-                .ToHashSet();
+            string P(string name) => permissionMap[name];
+            List<string> Ps(params string[] names) => names.Select(P).Distinct().ToList();
 
-            var missingPermissions = dashboardPermissions
-                .Where(permission => !existingIds.Contains(permission.Id))
-                .ToList();
-
-            if (missingPermissions.Any())
-            {
-                await _context.Permissions.InsertManyAsync(missingPermissions);
-            }
-
-            _allPermissionIds = existingIds
-                .Concat(dashboardPermissions.Select(p => p.Id))
-                .Where(id => !string.IsNullOrWhiteSpace(id))
-                .Distinct()
-                .ToList();
-
-            var dashboardPermissionIds = dashboardPermissions.Select(p => p.Id).ToList();
-
-            await _context.DynamicRoles.UpdateManyAsync(
-                role => role.RoleName == "SuperAdmin",
-                Builders<DynamicRole>.Update.AddToSetEach(role => role.PermissionIds, dashboardPermissionIds)
-            );
-
-            await _context.DynamicRoles.UpdateManyAsync(
-                role => role.RoleName == "TicketAgent",
-                Builders<DynamicRole>.Update.AddToSetEach(role => role.PermissionIds, new List<string>
-                {
-                    "64f1a2b3c4d5e6f7a8b9cb01",
-                    "64f1a2b3c4d5e6f7a8b9cb04",
-                    "64f1a2b3c4d5e6f7a8b9cb05",
-                    "64f1a2b3c4d5e6f7a8b9cb06",
-                    "64f1a2b3c4d5e6f7a8b9cb07",
-                    "64f1a2b3c4d5e6f7a8b9cb08",
-                    "64f1a2b3c4d5e6f7a8b9cb09",
-                    "64f1a2b3c4d5e6f7a8b9cb10",
-                    "64f1a2b3c4d5e6f7a8b9cb11"
-                })
-            );
-        }
-
-        public async Task SeedDynamicRoles()
-        {
-            var count = await _context.DynamicRoles.CountDocumentsAsync(new BsonDocument());
-            if (count > 0) return;
-
+            var now = DateTime.UtcNow;
             var roles = new List<DynamicRole>
             {
                 new DynamicRole
                 {
-                    Id = RoleAdminId,
+                    Id = RoleSuperAdminId,
                     RoleName = "SuperAdmin",
-                    PermissionIds = _allPermissionIds,
+                    PermissionIds = permissions.Select(p => p.Id).Distinct().ToList(),
                     CreatedBy = "SystemSeeder",
-                    CreatedAt = DateTime.UtcNow,
+                    CreatedAt = now,
                     UpdatedBy = "SystemSeeder",
-                    UpdatedAt = DateTime.UtcNow
+                    UpdatedAt = now
                 },
                 new DynamicRole
                 {
-                    Id = "64f1a2b3c4d5e6f7a8b9c098",
+                    Id = RoleTicketAgentId,
                     RoleName = "TicketAgent",
-                    PermissionIds = new List<string>
-                    {
-                        "64f1a2b3c4d5e6f7a8b9ca05",
-                        "64f1a2b3c4d5e6f7a8b9ca13",
-                        "64f1a2b3c4d5e6f7a8b9ca21",
-                        "64f1a2b3c4d5e6f7a8b9ca22",
-                        "64f1a2b3c4d5e6f7a8b9ca25",
-                        "64f1a2b3c4d5e6f7a8b9cb01",
-                        "64f1a2b3c4d5e6f7a8b9cb04",
-                        "64f1a2b3c4d5e6f7a8b9cb05",
-                        "64f1a2b3c4d5e6f7a8b9cb06",
-                        "64f1a2b3c4d5e6f7a8b9cb07",
-                        "64f1a2b3c4d5e6f7a8b9cb08",
-                        "64f1a2b3c4d5e6f7a8b9cb09",
-                        "64f1a2b3c4d5e6f7a8b9cb10",
-                        "64f1a2b3c4d5e6f7a8b9cb11"
-                    },
+                    PermissionIds = Ps(
+                        "View.BusRoute", "View.Trip", "View.Bus", "View.BusClass", "View.PriceConfig",
+                        "View.Booking", "Create.Booking", "Update.Booking",
+                        "View.Customer", "Create.Customer", "Update.Customer",
+                        "View.Manifest", "Export.Manifest",
+                        "Create.RefundRequest", "View.OwnRefundRequest", "RequestCancel.Booking"),
                     CreatedBy = "SystemSeeder",
-                    CreatedAt = DateTime.UtcNow,
+                    CreatedAt = now,
                     UpdatedBy = "SystemSeeder",
-                    UpdatedAt = DateTime.UtcNow
+                    UpdatedAt = now
+                },
+                new DynamicRole
+                {
+                    Id = RoleOperationsStaffId,
+                    RoleName = "OperationsStaff",
+                    PermissionIds = Ps(
+                        "View.BusRoute", "Create.BusRoute", "Update.BusRoute", "Delete.BusRoute",
+                        "View.Trip", "Create.Trip", "Update.Trip", "Cancel.Trip",
+                        "View.Bus", "Create.Bus", "Update.Bus", "Delete.Bus",
+                        "View.BusClass", "Create.BusClass", "Update.BusClass", "Delete.BusClass",
+                        "View.Branch", "Create.Branch", "Update.Branch",
+                        "View.BusOperator", "Create.BusOperator", "Update.BusOperator", "Delete.BusOperator",
+                        "View.PriceConfig", "Create.PriceConfig", "Update.PriceConfig", "Delete.PriceConfig",
+                        "View.Booking", "View.Customer", "View.Manifest", "Export.Manifest",
+                        "View.SeatAnalytics", "Export.SeatAnalytics",
+                        "View.BranchCancellation", "Export.BranchCancellation",
+                        "View.VehicleRevenue", "Export.VehicleRevenue",
+                        "View.LowOccupancyTrips", "Export.LowOccupancyTrips",
+                        "View.SoldOutStats", "Export.SoldOutStats"),
+                    CreatedBy = "SystemSeeder",
+                    CreatedAt = now,
+                    UpdatedBy = "SystemSeeder",
+                    UpdatedAt = now
+                },
+                new DynamicRole
+                {
+                    Id = RoleAccountantId,
+                    RoleName = "Accountant",
+                    PermissionIds = Ps(
+                        "View.Booking", "View.Customer",
+                        "View.RefundRequest", "Process.Refund", "Complete.Refund", "Reject.Refund",
+                        "View.PriceConfig",
+                        "View.TotalRevenue", "Export.TotalRevenue",
+                        "View.RouteRevenue", "Export.RouteRevenue",
+                        "View.OperatorRevenue", "Export.OperatorRevenue",
+                        "View.TicketStatusStatistics", "Export.TicketStatusStatistics"),
+                    CreatedBy = "SystemSeeder",
+                    CreatedAt = now,
+                    UpdatedBy = "SystemSeeder",
+                    UpdatedAt = now
+                },
+                new DynamicRole
+                {
+                    Id = RoleBranchManagerId,
+                    RoleName = "BranchManager",
+                    PermissionIds = Ps(
+                        "View.Dashboard",
+                        "View.BusRoute", "View.Trip", "View.Bus", "View.Branch",
+                        "View.Booking", "View.Customer", "View.Manifest",
+                        "View.RefundRequest", "Approve.RefundRequest", "Reject.RefundRequest",
+                        "View.User",
+                        "View.TotalRevenue", "Export.TotalRevenue",
+                        "View.RouteRevenue", "Export.RouteRevenue",
+                        "View.OperatorRevenue", "Export.OperatorRevenue",
+                        "View.BranchCancellation", "Export.BranchCancellation",
+                        "View.SeatAnalytics", "Export.SeatAnalytics",
+                        "View.TicketStatusStatistics", "Export.TicketStatusStatistics",
+                        "View.VehicleRevenue", "Export.VehicleRevenue",
+                        "View.LowOccupancyTrips", "Export.LowOccupancyTrips"),
+                    CreatedBy = "SystemSeeder",
+                    CreatedAt = now,
+                    UpdatedBy = "SystemSeeder",
+                    UpdatedAt = now
                 }
             };
 
-            await _context.DynamicRoles.InsertManyAsync(roles);
+            foreach (var role in roles)
+            {
+                await _context.DynamicRoles.ReplaceOneAsync(
+                    r => r.RoleName == role.RoleName,
+                    role,
+                    new ReplaceOptions { IsUpsert = true });
+            }
+
+            Console.WriteLine($"--> [THÀNH CÔNG] Upsert {roles.Count} dynamic role.");
         }
 
         // --- HÀM BULK ĐÃ FIX LỖI COMPILE ---
@@ -1298,7 +1380,7 @@ namespace Bus_ticket.Data
                                   rank == "Silver" ? random.Next(101, 500) :
                                   rank == "Gold" ? random.Next(501, 1500) : random.Next(1501, 5000),
                     IsBlocked = isBlocked,
-                    ConsecutiveUnpaidCount = isBlocked ? 3 : 0,
+                    ConsecutiveUnpaidCount = isBlocked ? 10 : 0,
                     BlockReason = isBlocked ? "Hủy vé hoặc không thanh toán nhiều lần" : null,
                     Status = isBlocked ? "Blocked" : "Active",
                     CreatedBy = "SystemSeeder",

@@ -114,18 +114,18 @@
         </p>
     </div>
 
-    <div class="rounded-2xl border border-gray-700/60 bg-[#151922] p-3 shadow-xl">
+    <div class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 shadow-xl">
         <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
             @if (canViewTotalRevenue)
             {
                 <button type="button"
                         onclick="loadStatistic('TotalRevenue')"
-                        class="dashboard-stat-button min-h-[72px] rounded-xl border border-gray-700/70 border-t-4 border-t-teal-500 bg-[#1e1e24] px-4 py-3 text-left transition hover:bg-[#252530] focus:outline-none focus:ring-2 focus:ring-teal-400"
+                        class="dashboard-stat-button dashboard-stat-accent-teal min-h-[72px] rounded-xl px-4 py-3 text-left transition hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-400"
                         data-stat-type="TotalRevenue">
-                    <p class="text-sm font-bold text-white">
+                    <p class="text-sm font-bold text-gray-900 dark:text-white">
                         Tổng doanh thu
                     </p>
-                    <p class="mt-1 text-xs text-gray-400">
+                    <p class="mt-1 text-xs text-gray-600 dark:text-gray-400">
                         Toàn hệ thống
                     </p>
                 </button>
@@ -135,12 +135,12 @@
             {
                 <button type="button"
                         onclick="loadStatistic('OperatorRevenue')"
-                        class="dashboard-stat-button min-h-[72px] rounded-xl border border-gray-700/70 border-t-4 border-t-blue-500 bg-[#1e1e24] px-4 py-3 text-left transition hover:bg-[#252530] focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        class="dashboard-stat-button dashboard-stat-accent-blue min-h-[72px] rounded-xl px-4 py-3 text-left transition hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
                         data-stat-type="OperatorRevenue">
-                    <p class="text-sm font-bold text-white">
+                    <p class="text-sm font-bold text-gray-900 dark:text-white">
                         Doanh thu nhà xe
                     </p>
-                    <p class="mt-1 text-xs text-gray-400">
+                    <p class="mt-1 text-xs text-gray-600 dark:text-gray-400">
                         Xếp hạng nhà xe bán chạy
                     </p>
                 </button>
@@ -150,12 +150,12 @@
             {
                 <button type="button"
                         onclick="loadStatistic('BranchCancellation')"
-                        class="dashboard-stat-button min-h-[72px] rounded-xl border border-gray-700/70 border-t-4 border-t-emerald-500 bg-[#1e1e24] px-4 py-3 text-left transition hover:bg-[#252530] focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                        class="dashboard-stat-button dashboard-stat-accent-emerald min-h-[72px] rounded-xl px-4 py-3 text-left transition hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-400"
                         data-stat-type="BranchCancellation">
-                    <p class="text-sm font-bold text-white">
+                    <p class="text-sm font-bold text-gray-900 dark:text-white">
                         Tỷ lệ hủy chuyến
                     </p>
-                    <p class="mt-1 text-xs text-gray-400">
+                    <p class="mt-1 text-xs text-gray-600 dark:text-gray-400">
                         Độ uy tín vận hành
                     </p>
                 </button>
@@ -165,12 +165,12 @@
             {
                 <button type="button"
                         onclick="loadStatistic('SeatAnalytics')"
-                        class="dashboard-stat-button min-h-[72px] rounded-xl border border-gray-700/70 border-t-4 border-t-purple-500 bg-[#1e1e24] px-4 py-3 text-left transition hover:bg-[#252530] focus:outline-none focus:ring-2 focus:ring-purple-400"
+                        class="dashboard-stat-button dashboard-stat-accent-purple min-h-[72px] rounded-xl px-4 py-3 text-left transition hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-400"
                         data-stat-type="SeatAnalytics">
-                    <p class="text-sm font-bold text-white">
+                    <p class="text-sm font-bold text-gray-900 dark:text-white">
                         Hiệu suất lấp đầy
                     </p>
-                    <p class="mt-1 text-xs text-gray-400">
+                    <p class="mt-1 text-xs text-gray-600 dark:text-gray-400">
                         Chuyến xe và ghế trống
                     </p>
                 </button>
@@ -180,12 +180,12 @@
             {
                 <button type="button"
                         onclick="loadStatistic('RouteRevenue')"
-                        class="dashboard-stat-button min-h-[72px] rounded-xl border border-gray-700/70 border-t-4 border-t-amber-500 bg-[#1e1e24] px-4 py-3 text-left transition hover:bg-[#252530] focus:outline-none focus:ring-2 focus:ring-amber-400"
+                        class="dashboard-stat-button dashboard-stat-accent-amber min-h-[72px] rounded-xl px-4 py-3 text-left transition hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-400"
                         data-stat-type="RouteRevenue">
-                    <p class="text-sm font-bold text-white">
+                    <p class="text-sm font-bold text-gray-900 dark:text-white">
                         Doanh thu tuyến đường
                     </p>
-                    <p class="mt-1 text-xs text-gray-400">
+                    <p class="mt-1 text-xs text-gray-600 dark:text-gray-400">
                         Xếp hạng tuyến bán chạy
                     </p>
                 </button>
@@ -195,12 +195,12 @@
             {
                 <button type="button"
                         onclick="loadStatistic('VehicleRevenueStatistics')"
-                        class="dashboard-stat-button min-h-[72px] rounded-xl border border-gray-700/70 border-t-4 border-t-cyan-500 bg-[#1e1e24] px-4 py-3 text-left transition hover:bg-[#252530] focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                        class="dashboard-stat-button dashboard-stat-accent-cyan min-h-[72px] rounded-xl px-4 py-3 text-left transition hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-400"
                         data-stat-type="VehicleRevenueStatistics">
-                    <p class="text-sm font-bold text-white">
+                    <p class="text-sm font-bold text-gray-900 dark:text-white">
                         Doanh thu phương tiện
                     </p>
-                    <p class="mt-1 text-xs text-gray-400">
+                    <p class="mt-1 text-xs text-gray-600 dark:text-gray-400">
                         Theo loại xe và từng xe
                     </p>
                 </button>
@@ -210,12 +210,12 @@
             {
                 <button type="button"
                         onclick="loadStatistic('LowOccupancyTrips')"
-                        class="dashboard-stat-button min-h-[72px] rounded-xl border border-gray-700/70 border-t-4 border-t-orange-500 bg-[#1e1e24] px-4 py-3 text-left transition hover:bg-[#252530] focus:outline-none focus:ring-2 focus:ring-orange-400"
+                        class="dashboard-stat-button dashboard-stat-accent-orange min-h-[72px] rounded-xl px-4 py-3 text-left transition hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-400"
                         data-stat-type="LowOccupancyTrips">
-                    <p class="text-sm font-bold text-white">
+                    <p class="text-sm font-bold text-gray-900 dark:text-white">
                         Chuyến ít khách
                     </p>
-                    <p class="mt-1 text-xs text-gray-400">
+                    <p class="mt-1 text-xs text-gray-600 dark:text-gray-400">
                         Tỷ lệ lấp đầy thấp
                     </p>
                 </button>
@@ -225,12 +225,12 @@
             {
                 <button type="button"
                         onclick="loadStatistic('SoldOutStats')"
-                        class="dashboard-stat-button min-h-[72px] rounded-xl border border-gray-700/70 border-t-4 border-t-lime-500 bg-[#1e1e24] px-4 py-3 text-left transition hover:bg-[#252530] focus:outline-none focus:ring-2 focus:ring-lime-400"
+                        class="dashboard-stat-button dashboard-stat-accent-lime min-h-[72px] rounded-xl px-4 py-3 text-left transition hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-lime-400"
                         data-stat-type="SoldOutStats">
-                    <p class="text-sm font-bold text-white">
+                    <p class="text-sm font-bold text-gray-900 dark:text-white">
                         Chuyến cháy ghế
                     </p>
-                    <p class="mt-1 text-xs text-gray-400">
+                    <p class="mt-1 text-xs text-gray-600 dark:text-gray-400">
                         Danh sách xe hết chỗ
                     </p>
                 </button>
@@ -240,12 +240,12 @@
             {
                 <button type="button"
                         onclick="loadStatistic('TicketStatusStatistics')"
-                        class="dashboard-stat-button min-h-[72px] rounded-xl border border-gray-700/70 border-t-4 border-t-rose-500 bg-[#1e1e24] px-4 py-3 text-left transition hover:bg-[#252530] focus:outline-none focus:ring-2 focus:ring-rose-400"
+                        class="dashboard-stat-button dashboard-stat-accent-rose min-h-[72px] rounded-xl px-4 py-3 text-left transition hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-400"
                         data-stat-type="TicketStatusStatistics">
-                    <p class="text-sm font-bold text-white">
+                    <p class="text-sm font-bold text-gray-900 dark:text-white">
                         Tỷ lệ vé hủy
                     </p>
-                    <p class="mt-1 text-xs text-gray-400">
+                    <p class="mt-1 text-xs text-gray-600 dark:text-gray-400">
                         Vé thành công và vé hủy
                     </p>
                 </button>
@@ -253,8 +253,8 @@
         </div>
     </div>
 
-    <div id="statisticContainer" class="bg-gray-50 dark:bg-gray-900/40 rounded-xl min-h-[250px] p-4 relative border border-dashed border-gray-300 dark:border-gray-700">
-        <div id="placeholderText" class="text-center py-16 text-gray-400">
+    <div id="statisticContainer" class="dashboard-panel min-h-[250px] p-4 relative shadow-xl">
+        <div id="placeholderText" class="text-center py-16 text-gray-600 dark:text-gray-400">
             <p>Vui lòng click chọn 1 thẻ thống kê phía trên để hiển thị biểu đồ tròn và bảng dữ liệu chi tiết.</p>
         </div>
 
@@ -282,15 +282,45 @@
     window.dashboardCharts = window.dashboardCharts || {};
     window.dashboardRangePickers = window.dashboardRangePickers || {};
 
+    const dashboardAccentMap = {
+        TotalRevenue: 'teal',
+        OperatorRevenue: 'blue',
+        BranchCancellation: 'emerald',
+        SeatAnalytics: 'purple',
+        RouteRevenue: 'amber',
+        VehicleRevenueStatistics: 'cyan',
+        LowOccupancyTrips: 'orange',
+        SoldOutStats: 'lime',
+        TicketStatusStatistics: 'rose'
+    };
+
     function setActiveStatisticButton(type) {
         document.querySelectorAll('.dashboard-stat-button').forEach(button => {
             const isActive = button.dataset.statType === type;
-
-            button.classList.toggle('bg-[#2a2a33]', isActive);
+            button.classList.toggle('dashboard-stat-active', isActive);
             button.classList.toggle('ring-2', isActive);
-            button.classList.toggle('ring-white/30', isActive);
-            button.classList.toggle('shadow-2xl', isActive);
+            button.classList.toggle('ring-amber-400/40', isActive);
         });
+
+        const panel = document.getElementById('statisticContainer');
+        if (!panel) return;
+
+        panel.classList.remove(
+            'dashboard-panel-accent-teal',
+            'dashboard-panel-accent-blue',
+            'dashboard-panel-accent-emerald',
+            'dashboard-panel-accent-purple',
+            'dashboard-panel-accent-amber',
+            'dashboard-panel-accent-cyan',
+            'dashboard-panel-accent-orange',
+            'dashboard-panel-accent-lime',
+            'dashboard-panel-accent-rose'
+        );
+
+        const accent = dashboardAccentMap[type];
+        if (accent) {
+            panel.classList.add(`dashboard-panel-accent-${accent}`);
+        }
     }
 
     function destroyDashboardCharts() {
@@ -349,10 +379,17 @@
             destroyDashboardCharts();
 
             contentDiv.innerHTML = await response.text();
+
+            if (window.tailwind && typeof window.tailwind.refresh === 'function') {
+                window.tailwind.refresh();
+            }
+
             executeDynamicScripts(contentDiv);
             initializeDashboardTablePagination(contentDiv);
         } catch (error) {
             console.error(error);
+            if (placeholder) placeholder.style.display = '';
+            contentDiv.innerHTML = '';
             alert('Không thể lấy được dữ liệu thống kê, vui lòng kiểm tra lại!');
         } finally {
             if (spinner) spinner.classList.add('hidden');
@@ -362,11 +399,15 @@
     function executeDynamicScripts(container) {
         const scripts = Array.from(container.querySelectorAll('script'));
         scripts.forEach(oldScript => {
-            const newScript = document.createElement('script');
-            Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
-            newScript.text = oldScript.textContent;
-            document.body.appendChild(newScript);
-            document.body.removeChild(newScript);
+            try {
+                const newScript = document.createElement('script');
+                Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                newScript.text = oldScript.textContent;
+                document.body.appendChild(newScript);
+                document.body.removeChild(newScript);
+            } catch (scriptError) {
+                console.error('Dashboard partial script error:', scriptError);
+            }
         });
     }
 
@@ -453,7 +494,7 @@
 
             const popup = document.createElement('div');
             popup.id = `dashboard_range_popup_${type}`;
-            popup.className = 'dashboard-range-popup fixed z-[9999] rounded-xl border border-gray-700 bg-white text-gray-900 dark:bg-[#111827] dark:text-white overflow-hidden';
+            popup.className = 'dashboard-range-popup fixed z-[9999] rounded-xl border border-gray-700 bg-white text-gray-900 dark:bg-gray-900 dark:text-white overflow-hidden';
             popup.innerHTML = `
                 <div class="grid grid-cols-1 md:grid-cols-[220px_1fr]">
                     <div class="border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-3 space-y-1">
@@ -477,7 +518,7 @@
                         </div>
                         <div class="flex justify-end gap-3 border-t border-gray-200 dark:border-gray-700 pt-4">
                             <button type="button" data-range-cancel class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-800">Cancel</button>
-                            <button type="button" data-range-apply class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600">Apply</button>
+                            <button type="button" data-range-apply class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-gray-900 dark:text-white hover:bg-emerald-600">Apply</button>
                         </div>
                     </div>
                 </div>
@@ -733,7 +774,7 @@
                         class="min-w-[34px] rounded-lg px-3 py-1.5 text-sm font-semibold transition
                                ${isActive
                                    ? 'bg-amber-400 text-gray-950'
-                                   : 'border border-gray-700 text-gray-300 hover:bg-gray-800'}">
+                                   : 'border border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}">
                     ${item}
                 </button>
             `;
@@ -741,12 +782,12 @@
 
         pagination.innerHTML = `
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <p class="text-sm text-gray-500">
-                    Hiển thị <span class="font-semibold text-gray-300">${fromRow}</span>
+                <p class="text-sm text-gray-500 dark:text-gray-400">
+                    Hiển thị <span class="font-semibold text-gray-700 dark:text-gray-300">${fromRow}</span>
                     -
-                    <span class="font-semibold text-gray-300">${toRow}</span>
+                    <span class="font-semibold text-gray-700 dark:text-gray-300">${toRow}</span>
                     /
-                    <span class="font-semibold text-gray-300">${totalRows}</span>
+                    <span class="font-semibold text-gray-700 dark:text-gray-300">${totalRows}</span>
                     dòng
                 </p>
 
@@ -754,7 +795,7 @@
                     <button type="button"
                             data-dashboard-page="${currentPage - 1}"
                             ${currentPage <= 1 ? 'disabled' : ''}
-                            class="rounded-lg border border-gray-700 px-3 py-1.5 text-sm font-semibold text-gray-300 transition hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed">
+                            class="rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-sm font-semibold text-gray-600 dark:text-gray-300 transition hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed">
                         Trước
                     </button>
 
@@ -763,7 +804,7 @@
                     <button type="button"
                             data-dashboard-page="${currentPage + 1}"
                             ${currentPage >= totalPages ? 'disabled' : ''}
-                            class="rounded-lg border border-gray-700 px-3 py-1.5 text-sm font-semibold text-gray-300 transition hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed">
+                            class="rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-sm font-semibold text-gray-600 dark:text-gray-300 transition hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed">
                         Sau
                     </button>
                 </div>
@@ -807,7 +848,7 @@
 
             const pagination = document.createElement('div');
             pagination.dataset.dashboardPaginationFor = tableId;
-            pagination.className = 'dashboard-table-pagination mt-4 border-t border-gray-700/60 pt-4 px-1';
+            pagination.className = 'dashboard-table-pagination mt-4 border-t border-gray-200 dark:border-gray-700 pt-4 px-1';
 
             const tableWrapper = table.closest('.overflow-x-auto');
 

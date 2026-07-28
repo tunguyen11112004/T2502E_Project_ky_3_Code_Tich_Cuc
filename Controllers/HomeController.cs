@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Localization;
 using MongoDB.Driver;
 using Bus_ticket.Models;
 using Bus_ticket.Data;
+using System.Globalization;
 
 namespace Bus_ticket.Controllers;
 
@@ -88,11 +89,41 @@ public class HomeController : Controller
         return View();
     }
 
-    // Tìm đến nạp file Views/Home/Policy.cshtml
     public IActionResult Pricing()
     {
-        // Trả về file giao diện Views/Home/Pricing.cshtml vừa tạo
-        return View();
+        var activeBusClasses = _dbContext.BusClasses
+            .Find(bc => bc.Status == "Active" && bc.DeletedAt == null)
+            .ToList();
+        var staticPriceAndAmenities = new Dictionary<string, (decimal Price, string Amenities, bool IsHot)>
+        {
+            { "express_seat", (120000, "Ghế ngồi tiêu chuẩn, Quạt gió|Standard seats, Fan cooling", false) },
+            { "luxury_sleeper", (180000, "Giường nằm, Wi-Fi, Nước uống|Sleeper berth, Wi-Fi, Drinking water", true) }
+        };
+        var pricingData = activeBusClasses.Select(bc =>
+        {
+            var key = bc.ClassNameKey?.ToLower() ?? bc.ClassName.ToLower();
+        
+            var info = staticPriceAndAmenities.ContainsKey(key) 
+                ? staticPriceAndAmenities[key] 
+                : (150000, "Tiện nghi cơ bản, Điều hòa|Basic amenities, AC", false);
+            string viName = bc.ClassName;
+            string enName = bc.ClassName;
+            if (key.Contains("express")) enName = "Express Seater Class";
+            else if (key.Contains("luxury")) enName = "Luxury Limousine Sleeper";
+            string viType = bc.BusType;
+            string enType = bc.BusType == "Ghế ngồi" ? "Seater Bus" : (bc.BusType == "Giường nằm" ? "Sleeper Bus" : bc.BusType);
+            return new PriceConfigViewModel
+            {
+                ClassName = $"{viName}|{enName}",
+                BusType = $"{viType}|{enType}",
+                ImageUrl = string.IsNullOrEmpty(bc.ImageUrl) ? "/images/default-bus.jpg" : bc.ImageUrl,
+                TotalSeats = bc.TotalSeats,
+                BasePrice = info.Price,
+                Amenities = info.Amenities,
+                IsHot = info.IsHot
+            };
+        }).OrderBy(x => x.BasePrice).ToList();
+        return View(pricingData);
     }
 
     public IActionResult FAQ()

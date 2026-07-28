@@ -1,3 +1,4 @@
+using Bus_ticket.Data;
 using Bus_ticket.Services;
 using Bus_ticket.ViewModels;
 using Microsoft.AspNetCore.Authentication;
@@ -49,6 +50,13 @@ public class AccountController : Controller
             ModelState.AddModelError("", "Invalid email or password.");
             return View(model);
         }
+
+        if (user.Role != "Admin" && string.IsNullOrWhiteSpace(user.RoleId))
+        {
+            ModelState.AddModelError("", "Tài khoản chưa được gán vai trò nghiệp vụ. Vui lòng liên hệ quản trị viên.");
+            return View(model);
+        }
+
         var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id ?? string.Empty),
@@ -75,12 +83,26 @@ public class AccountController : Controller
             return RedirectToAction("Index", "Admin");
         }
 
-        if (user.Role == "Employee")
+        if (user.Role == "Employee" || !string.IsNullOrWhiteSpace(user.RoleId))
         {
-            return RedirectToAction("Index", "Employee");
+            return Redirect(ResolveEmployeeLandingPath(user.RoleId));
         }
 
         return RedirectToAction("AccessDenied", "Account");
+    }
+
+    private static string ResolveEmployeeLandingPath(string? roleId)
+    {
+        if (string.Equals(roleId, DataSeeder.RoleTicketAgentId, StringComparison.Ordinal))
+            return "/Booking/Create";
+        if (string.Equals(roleId, DataSeeder.RoleOperationsStaffId, StringComparison.Ordinal))
+            return "/Admin/PriceConfig";
+        if (string.Equals(roleId, DataSeeder.RoleAccountantId, StringComparison.Ordinal))
+            return "/Booking/RefundList";
+        if (string.Equals(roleId, DataSeeder.RoleBranchManagerId, StringComparison.Ordinal))
+            return "/Dashboard";
+
+        return "/Booking/Index";
     }
 
     [HttpPost]

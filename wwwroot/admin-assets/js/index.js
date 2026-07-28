@@ -1,6 +1,5 @@
 import './sidebar.js';
 import './charts.js?v=1.1';
-import './dark-mode.js';
 
 // Have the courage to follow your heart and intuition.
 

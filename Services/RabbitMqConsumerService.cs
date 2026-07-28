@@ -17,18 +17,39 @@ namespace Bus_ticket.Services
     public class RabbitMqConsumerService : BackgroundService
     {
         private readonly IServiceProvider _serviceProvider; // Khai báo Service Provider để tạo scope DB
+        private readonly Microsoft.Extensions.Configuration.IConfiguration _configuration; // Khai báo thêm Configuration
         private IConnection _connection;
         private IChannel _channel;
 
         // BẮT BUỘC: Constructor để Inject IServiceProvider vào hệ thống
-        public RabbitMqConsumerService(IServiceProvider serviceProvider)
+        public RabbitMqConsumerService(IServiceProvider serviceProvider, Microsoft.Extensions.Configuration.IConfiguration configuration)
         {
             _serviceProvider = serviceProvider;
+            _configuration = configuration;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            var factory = new ConnectionFactory() { HostName = "localhost" };
+            var factory = new ConnectionFactory();
+    
+            // Ưu tiên đọc chuỗi Uri đầy đủ (Dành cho CloudAMQP trên Production)
+            var rabbitMqUri = _configuration["RabbitMqSettings:Uri"];
+            if (!string.IsNullOrEmpty(rabbitMqUri))
+            {
+                factory.Uri = new Uri(rabbitMqUri);
+            }
+            else
+            {
+                // Fallback đọc cấu hình lẻ (Hoặc tự động về localhost nếu chạy ở máy cá nhân của bạn)
+                factory.HostName = _configuration["RabbitMQ:HostName"] ?? "localhost";
+                factory.UserName = _configuration["RabbitMQ:UserName"] ?? "guest";
+                factory.Password = _configuration["RabbitMQ:Password"] ?? "guest";
+                if (int.TryParse(_configuration["RabbitMQ:Port"], out int port))
+                {
+                    factory.Port = port;
+                }
+            }
+
             _connection = await factory.CreateConnectionAsync();
             _channel = await _connection.CreateChannelAsync();
 

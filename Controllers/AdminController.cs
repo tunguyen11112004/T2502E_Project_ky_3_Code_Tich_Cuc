@@ -11,7 +11,7 @@ using AngleSharp;
 
 namespace Bus_ticket.Controllers
 {
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Employee")]
     public class AdminController : Controller
     {
         private readonly ApplicationDbContext _dbContext;

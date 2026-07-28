@@ -1,0 +1,81 @@
+{
+  "app": {
+    "baseUrl": "http://localhost:5280"
+  },
+  "routes": {
+    "login": "/Account/Login",
+    "bookingCreate": "/Booking/Create"
+  },
+  "users": {
+    "admin": {
+      "email": "admin@src.com",
+      "pass": "Admin@123"
+    }
+  },
+  "bookingSearch": {
+    "origin": "AUTO_AVAILABLE_ORIGIN",
+    "destination": "AUTO_AVAILABLE_DESTINATION",
+    "date": "AUTO_NEXT_AVAILABLE_DATE",
+    "autoResolveRoute": true,
+    "autoResolveDate": true,
+    "minimumUsableSeats": 2
+  },
+  "passengers": {
+    "A": {
+      "name": "AUTO_GENERATED_NAME_A",
+      "phone": "AUTO_GENERATED_PHONE_A",
+      "email": "AUTO_GENERATED_EMAIL_A",
+      "dob": "AUTO_ADULT_DOB"
+    },
+    "B": {
+      "name": "AUTO_GENERATED_NAME_B",
+      "phone": "AUTO_GENERATED_PHONE_B",
+      "email": "AUTO_GENERATED_EMAIL_B",
+      "dob": "AUTO_ADULT_DOB"
+    }
+  },
+  "booking": {
+    "paymentMethod": "AUTO_FIRST_AVAILABLE_PAYMENT_METHOD"
+  },
+  "database": {
+    "uri": "mongodb://localhost:27017",
+    "dbName": "BusTicketDb",
+    "routesCollection": "busroutes",
+    "tripsCollection": "trips",
+    "bookingsCollection": "bookings"
+  },
+  "selectors": {
+    "login": {
+      "email": "#Email, input[type='email'], input[name='Email'], input[name='email']",
+      "password": "#Password, input[type='password'], input[name='Password'], input[name='password']",
+      "submitBtn": "button[type='submit'], input[type='submit']"
+    }
+  },
+  "execution": {
+    "implicitWaitMs": 600,
+    "elementTimeoutMs": 8000,
+    "pageLoadTimeoutMs": 30000,
+    "scriptTimeoutMs": 35000,
+
+    "stepDelayMs": 100,
+    "delayBetweenTestsMs": 100,
+    "keyDelayMs": 5,
+    "highlightDelayMs": 50,
+
+    "loginWaitMs": 500,
+    "searchWaitMs": 700,
+    "searchTimeoutMs": 10000,
+
+    "seatMapTimeoutMs": 12000,
+    "seatMapLoadWaitMs": 400,
+    "seatHoldWaitMs": 500,
+    "seatReleaseWaitMs": 300,
+
+    "alertTimeoutMs": 3500,
+    "alertReadDelayMs": 150,
+
+    "holdTimeoutSeconds": 185,
+    "showStepLabel": false,
+    "keepBrowserOpenAfterRun": false
+  }
+}
