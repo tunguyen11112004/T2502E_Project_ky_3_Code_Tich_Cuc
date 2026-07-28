@@ -18,33 +18,33 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-                <label asp-for="BranchCode" class="block mb-2 text-sm font-medium text-gray-300">Mã chi nhánh</label>
+                <label asp-for="BranchCode" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Mã chi nhánh</label>
                 <input asp-for="BranchCode" class="block w-full px-4 py-2.5 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400" />
                 <span asp-validation-for="BranchCode" class="text-sm text-red-400"></span>
             </div>
 
             <div>
-                <label asp-for="BranchName" class="block mb-2 text-sm font-medium text-gray-300">Tên chi nhánh</label>
+                <label asp-for="BranchName" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Tên chi nhánh</label>
                 <input asp-for="BranchName" class="block w-full px-4 py-2.5 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400" />
                 <span asp-validation-for="BranchName" class="text-sm text-red-400"></span>
             </div>
         </div>
 
         <div>
-            <label asp-for="Address" class="block mb-2 text-sm font-medium text-gray-300">Địa chỉ</label>
+            <label asp-for="Address" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Địa chỉ</label>
             <textarea asp-for="Address" rows="3" class="block w-full px-4 py-2.5 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400"></textarea>
             <span asp-validation-for="Address" class="text-sm text-red-400"></span>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-                <label asp-for="PhoneNumber" class="block mb-2 text-sm font-medium text-gray-300">Hotline</label>
+                <label asp-for="PhoneNumber" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Hotline</label>
                 <input asp-for="PhoneNumber" class="block w-full px-4 py-2.5 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400" />
                 <span asp-validation-for="PhoneNumber" class="text-sm text-red-400"></span>
             </div>
 
             <div>
-                <label asp-for="Status" class="block mb-2 text-sm font-medium text-gray-300">Trạng thái</label>
+                <label asp-for="Status" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Trạng thái</label>
                 <select asp-for="Status" class="block w-full px-4 py-2.5 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400">
                     <option value="Active">Active</option>
                     <option value="Inactive">Inactive</option>

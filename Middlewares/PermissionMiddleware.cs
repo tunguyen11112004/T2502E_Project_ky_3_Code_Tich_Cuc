@@ -26,9 +26,7 @@ public class PermissionMiddleware
             return;
         }
 
-        var requirement = GetPermissionRequirement(path, method);
-
-        if (requirement == null)
+        if (!RequiresPermissionCheck(path))
         {
             await _next(context);
             return;
@@ -66,7 +64,7 @@ public class PermissionMiddleware
             .Find(role => role.Id == roleId)
             .FirstOrDefaultAsync();
 
-        if (dynamicRole == null || dynamicRole.PermissionIds == null || !dynamicRole.PermissionIds.Any())
+        if (dynamicRole?.PermissionIds == null || !dynamicRole.PermissionIds.Any())
         {
             context.Response.Redirect("/Account/AccessDenied");
             return;
@@ -74,21 +72,16 @@ public class PermissionMiddleware
 
         var permissionIds = dynamicRole.PermissionIds
             .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Distinct()
             .ToList();
-
-        if (!permissionIds.Any())
-        {
-            context.Response.Redirect("/Account/AccessDenied");
-            return;
-        }
 
         var permissions = await dbContext.Permissions
             .Find(permission => permissionIds.Contains(permission.Id))
             .ToListAsync();
 
+        var normalizedPath = NormalizePath(path);
         var hasAccess = permissions.Any(permission =>
-            PermissionMatches(permission, requirement.Value, method)
-        );
+            PermissionMatches(permission, normalizedPath, method));
 
         if (!hasAccess)
         {
@@ -113,12 +106,9 @@ public class PermissionMiddleware
             return true;
         }
 
-        if (lowerPath.StartsWith("/account"))
-        {
-            return true;
-        }
-
-        if (lowerPath.StartsWith("/home"))
+        if (lowerPath.StartsWith("/account")
+            || lowerPath.StartsWith("/home")
+            || lowerPath == "/favicon.ico")
         {
             return true;
         }
@@ -129,12 +119,8 @@ public class PermissionMiddleware
             || lowerPath.StartsWith("/images")
             || lowerPath.StartsWith("/img")
             || lowerPath.StartsWith("/assets")
-            || lowerPath.StartsWith("/fonts"))
-        {
-            return true;
-        }
-
-        if (lowerPath == "/favicon.ico")
+            || lowerPath.StartsWith("/fonts")
+            || lowerPath.StartsWith("/admin-assets"))
         {
             return true;
         }
@@ -142,213 +128,68 @@ public class PermissionMiddleware
         return false;
     }
 
-    private static PermissionRequirement? GetPermissionRequirement(string path, string method)
+    private static bool RequiresPermissionCheck(string path)
     {
-        var currentPath = NormalizePath(path);
-
-        if (currentPath == "booking" || currentPath.StartsWith("booking/"))
-        {
-            return new PermissionRequirement(
-                ModuleKeywords: new[] { "booking", "book", "ticket" },
-                ActionKeywords: GetActionKeywords(currentPath, method)
-            );
-        }
-        if (currentPath == "dashboard" || currentPath.StartsWith("dashboard/"))
-        {
-            return new PermissionRequirement(
-                ModuleKeywords: new[] { "dashboard", "report", "revenue", "route", "statistic", "statistics" },
-                ActionKeywords: GetActionKeywords(currentPath, method)
-            );
-        }
-
-        if (currentPath == "employee" || currentPath.StartsWith("employee/"))
-        {
-            return new PermissionRequirement(
-                ModuleKeywords: new[] { "employee", "counter", "booking", "book", "ticket", "trip", "route", "price", "fare", "policy" },
-                ActionKeywords: GetActionKeywords(currentPath, method)
-            );
-        }
-
-        if (currentPath == "admin/users" || currentPath.StartsWith("admin/users/"))
-        {
-            return new PermissionRequirement(
-                ModuleKeywords: new[] { "user", "users", "employee", "employees" },
-                ActionKeywords: GetActionKeywords(currentPath, method)
-            );
-        }
-        if (currentPath == "branches" || currentPath.StartsWith("branches/"))
-        {
-            return new PermissionRequirement(
-                ModuleKeywords: new[] { "branch", "branches" },
-                ActionKeywords: GetActionKeywords(currentPath, method)
-            );
-        }
-
-        if (currentPath == "busclasses" || currentPath.StartsWith("busclasses/"))
-        {
-            return new PermissionRequirement(
-                ModuleKeywords: new[] { "busclass", "busclasses", "bus class", "bus classes", "seat", "layout" },
-                ActionKeywords: GetActionKeywords(currentPath, method)
-            );
-        }
-
-        if (currentPath == "dynamicroles" || currentPath.StartsWith("dynamicroles/"))
-        {
-            return new PermissionRequirement(
-                ModuleKeywords: new[] { "dynamicrole", "dynamicroles", "role", "roles" },
-                ActionKeywords: GetActionKeywords(currentPath, method)
-            );
-        }
-
-        if (currentPath == "permissions" || currentPath.StartsWith("permissions/"))
-        {
-            return new PermissionRequirement(
-                ModuleKeywords: new[] { "permission", "permissions" },
-                ActionKeywords: GetActionKeywords(currentPath, method)
-            );
-        }
-
-        if (currentPath == "admin/buses" || currentPath.StartsWith("admin/buses/"))
-        {
-            return new PermissionRequirement(
-                ModuleKeywords: new[] { "bus", "buses" },
-                ActionKeywords: GetActionKeywords(currentPath, method)
-            );
-        }
-
-        if (currentPath == "admin/routes" || currentPath.StartsWith("admin/routes/"))
-        {
-            return new PermissionRequirement(
-                ModuleKeywords: new[] { "route", "routes", "busroute" },
-                ActionKeywords: GetActionKeywords(currentPath, method)
-            );
-        }
-
-        if (currentPath == "admin/prices"
-            || currentPath.StartsWith("admin/prices/")
-            || currentPath == "admin/priceconfig"
-            || currentPath.StartsWith("admin/priceconfig/"))
-        {
-            return new PermissionRequirement(
-                ModuleKeywords: new[] { "price", "prices", "pricelist", "fare" },
-                ActionKeywords: GetActionKeywords(currentPath, method)
-            );
-        }
-
-        return null;
-    }
-
-    private static string[] GetActionKeywords(string currentPath, string method)
-    {
-        if (currentPath.Contains("delete", StringComparison.OrdinalIgnoreCase)
-            || currentPath.Contains("deactivate", StringComparison.OrdinalIgnoreCase)
-            || currentPath.Contains("remove", StringComparison.OrdinalIgnoreCase))
-        {
-            return new[] { "delete", "remove", "deactivate" };
-        }
-
-        if (currentPath.Contains("cancel", StringComparison.OrdinalIgnoreCase)
-            || currentPath.Contains("refund", StringComparison.OrdinalIgnoreCase))
-        {
-            return new[] { "cancel", "refund", "delete", "update" };
-        }
-
-        if (currentPath.Contains("changerole", StringComparison.OrdinalIgnoreCase)
-            || currentPath.Contains("edit", StringComparison.OrdinalIgnoreCase)
-            || currentPath.Contains("update", StringComparison.OrdinalIgnoreCase)
-            || currentPath.Contains("matrix", StringComparison.OrdinalIgnoreCase))
-        {
-            return new[] { "update", "edit", "change", "modify" };
-        }
-
-        if (currentPath.Contains("create", StringComparison.OrdinalIgnoreCase)
-            || currentPath.Contains("add", StringComparison.OrdinalIgnoreCase)
-            || currentPath.Contains("new", StringComparison.OrdinalIgnoreCase))
-        {
-            return new[] { "create", "add", "new" };
-        }
-
-        if (currentPath.Contains("search", StringComparison.OrdinalIgnoreCase))
-        {
-            return new[] { "view", "read", "list", "search" };
-        }
-        if (currentPath.Contains("export", StringComparison.OrdinalIgnoreCase)
-            || currentPath.Contains("download", StringComparison.OrdinalIgnoreCase))
-        {
-            return new[] { "export", "download", "report", "view" };
-        }
-
-        if (method == "GET")
-        {
-            return new[] { "view", "read", "list", "index", "search" };
-        }
-
-        if (method == "POST")
-        {
-            return new[] { "create", "update", "delete", "add", "edit", "change", "cancel", "refund", "book" };
-        }
-
-        return new[] { "view", "read", "list" };
-    }
-
-    private static bool PermissionMatches(Permission permission, PermissionRequirement requirement, string currentMethod)
-    {
-        var permissionText = BuildPermissionText(permission);
-
-        var moduleMatches = requirement.ModuleKeywords.Any(keyword =>
-            ContainsKeyword(permissionText, keyword)
-        );
-
-        if (!moduleMatches)
+        var normalizedPath = NormalizePath(path);
+        if (string.IsNullOrWhiteSpace(normalizedPath))
         {
             return false;
         }
 
-        var actionMatches = requirement.ActionKeywords.Any(keyword =>
-            ContainsKeyword(permissionText, keyword)
-        );
+        string[] protectedPrefixes =
+        {
+            "booking",
+            "dashboard",
+            "admin",
+            "buses",
+            "busclasses",
+            "branches",
+            "busoperators",
+            "dynamicroles",
+            "permissions"
+        };
 
-        var methodMatches = MethodMatches(permission.Method, currentMethod);
-
-        return actionMatches || methodMatches;
+        return protectedPrefixes.Any(prefix =>
+            normalizedPath == prefix || normalizedPath.StartsWith(prefix + "/", StringComparison.Ordinal));
     }
 
-    private static string BuildPermissionText(Permission permission)
+    private static bool PermissionMatches(Permission permission, string requestPath, string requestMethod)
     {
-        return $"{permission.Name} {permission.Link} {permission.Method}"
-            .Trim()
-            .ToLowerInvariant();
-    }
-
-    private static bool ContainsKeyword(string source, string keyword)
-    {
-        if (string.IsNullOrWhiteSpace(source) || string.IsNullOrWhiteSpace(keyword))
+        if (!MethodMatches(permission.Method, requestMethod))
         {
             return false;
         }
 
-        var normalizedSource = NormalizeForKeyword(source);
-        var normalizedKeyword = NormalizeForKeyword(keyword);
+        return PathMatches(permission.Link, permission.Name, requestPath, requestMethod);
+    }
 
-        if (normalizedSource.Contains(normalizedKeyword, StringComparison.OrdinalIgnoreCase))
+    private static bool PathMatches(string? permissionLink, string? permissionName, string requestPath, string requestMethod)
+    {
+        var link = NormalizePath(permissionLink);
+        if (string.IsNullOrWhiteSpace(link))
+        {
+            return false;
+        }
+
+        if (link == requestPath)
         {
             return true;
         }
 
-        if (normalizedKeyword.EndsWith("s", StringComparison.OrdinalIgnoreCase))
+        if (IsViewPermission(permissionName) && requestMethod == "GET")
         {
-            var singular = normalizedKeyword[..^1];
-
-            if (normalizedSource.Contains(singular, StringComparison.OrdinalIgnoreCase))
+            if (requestPath == link)
             {
                 return true;
             }
-        }
-        else
-        {
-            var plural = normalizedKeyword + "s";
 
-            if (normalizedSource.Contains(plural, StringComparison.OrdinalIgnoreCase))
+            if (requestPath.StartsWith(link + "/", StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            var linkController = link.Split('/')[0];
+            if (requestPath == linkController || requestPath.StartsWith(linkController + "/", StringComparison.Ordinal))
             {
                 return true;
             }
@@ -357,18 +198,10 @@ public class PermissionMiddleware
         return false;
     }
 
-    private static string NormalizeForKeyword(string value)
+    private static bool IsViewPermission(string? permissionName)
     {
-        return value
-            .Trim()
-            .Trim('/')
-            .Replace("/", "")
-            .Replace("\\", "")
-            .Replace(".", "")
-            .Replace("-", "")
-            .Replace("_", "")
-            .Replace(" ", "")
-            .ToLowerInvariant();
+        return !string.IsNullOrWhiteSpace(permissionName)
+               && permissionName.StartsWith("View.", StringComparison.OrdinalIgnoreCase);
     }
 
     private static string NormalizePath(string? path)
@@ -387,13 +220,6 @@ public class PermissionMiddleware
         }
 
         var method = permissionMethod.Trim().ToUpperInvariant();
-
         return method == "ALL" || method == currentMethod;
     }
-
-    private readonly record struct PermissionRequirement(
-        string[] ModuleKeywords,
-        string[] ActionKeywords
-    );
 }
-

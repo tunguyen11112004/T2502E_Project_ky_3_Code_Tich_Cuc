@@ -10,7 +10,7 @@
 
 <div class="p-6 sm:p-8 space-y-6 max-w-3xl mx-auto">
     <div class="border-b border-gray-200 dark:border-gray-700 pb-4">
-        <a asp-controller="Admin" asp-action="PriceConfig" class="inline-flex items-center text-sm font-medium text-gray-400 hover:text-amber-400 mb-2">
+        <a asp-controller="Admin" asp-action="PriceConfig" class="inline-flex items-center text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 mb-2">
             Quay lại danh sách chuyến
         </a>
         <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
@@ -43,7 +43,7 @@
             <p class="text-xs font-bold text-gray-500">Hành trình & xe</p>
 
             <div>
-                <label class="block mb-1 text-sm font-semibold text-gray-300">Tuyến đường</label>
+                <label class="block mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300">Tuyến đường</label>
                 <select name="routeId" id="ddlRoute" @(Model.IsEdit ? "" : "required")
                         class="bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-lg block w-full p-2.5 focus:ring-2 focus:ring-amber-400">
                     <option value="">-- @(Model.IsEdit ? "Giữ nguyên tuyến cũ" : "Chọn tuyến đường") --</option>
@@ -68,7 +68,7 @@
             </div>
 
             <div>
-                <label class="block mb-1 text-sm font-semibold text-gray-300">Biển số xe</label>
+                <label class="block mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300">Biển số xe</label>
                 <select name="busId" id="ddlBus" @(Model.IsEdit ? "" : "required")
                         class="bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-lg block w-full p-2.5 focus:ring-2 focus:ring-amber-400">
                     <option value="">-- @(Model.IsEdit ? "Giữ nguyên xe cũ" : "Chọn biển số") --</option>
@@ -100,7 +100,7 @@
         <div class="p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl space-y-4 shadow-xl">
             <p class="text-xs font-bold text-gray-500">Giá vé nền</p>
             <div>
-                <label class="block mb-1 text-sm font-semibold text-gray-300">Giá vé (VND)</label>
+                <label class="block mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300">Giá vé (VND)</label>
                 <input type="number" name="baseFare" id="txtBaseFare" min="1000" max="50000000" step="1000" required placeholder="750000"
                        value="@(Model.BaseFare > 0 ? Model.BaseFare.ToString(CultureInfo.InvariantCulture) : "")"
                        class="block w-full px-4 py-2.5 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 font-semibold text-amber-400"/>
@@ -112,12 +112,12 @@
             <p class="text-xs font-bold text-gray-500">Lịch chạy</p>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label class="block mb-1 text-sm font-semibold text-gray-300">Giờ đi</label>
+                    <label class="block mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300">Giờ đi</label>
                     <input type="datetime-local" name="departureTime" id="txtDepartureTime" @(Model.IsEdit ? "" : "required") value="@depValue"
                            class="block w-full px-4 py-2.5 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400"/>
                 </div>
                 <div>
-                    <label class="block mb-1 text-sm font-semibold text-gray-300">Giờ đến</label>
+                    <label class="block mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300">Giờ đến</label>
                     <input type="datetime-local" name="arrivalTime" id="txtArrivalTime" @(Model.IsEdit ? "" : "required") value="@arrValue"
                            class="block w-full px-4 py-2.5 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400"/>
                     <p class="text-xs text-gray-500 mt-1">Tự ước tính theo quãng đường tuyến (~60 km/h, có thể sửa tay)</p>
@@ -127,7 +127,7 @@
                 <p class="text-xs text-amber-500 italic mt-2">* Cứ giữ nguyên ngày giờ cũ và xe nếu chỉ muốn cập nhật thay đổi giá vé</p> 
             }
             <div class="mt-4">
-                <label class="block mb-1 text-sm font-semibold text-gray-300">Trạng thái</label>
+                <label class="block mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300">Trạng thái</label>
                 <select name="status" id="ddlTripStatus" class="bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-lg block w-full p-2.5 focus:ring-2 focus:ring-amber-400">
                     @{
                         var statuses = new[] { "Scheduled", "Active", "Completed", "Cancelled" };

@@ -24,7 +24,8 @@ namespace Bus_ticket.Controllers
     [Authorize(Roles = "Admin,Employee")]
     public class BookingController : Controller
     {
-        private const int SeatSelectionHoldMinutes = 3;
+        private const int PaymentHoldMinutes = 5;
+        private const int MaxUnpaidAttemptsBeforeBlock = 10;
         private const string SeatSelectionHoldSessionKey = "SeatSelectionHoldCode";
 
         private readonly ApplicationDbContext _dbContext;
@@ -449,7 +450,7 @@ namespace Bus_ticket.Controllers
                 {
                     success = false,
                     message =
-                        "Số điện thoại này đã bị khóa do quá 3 lần đặt vé nhưng không thanh toán. Vui lòng liên hệ quầy vé để được hỗ trợ."
+                        $"Số điện thoại này đã bị khóa do quá {MaxUnpaidAttemptsBeforeBlock} lần đặt vé nhưng không thanh toán. Vui lòng liên hệ quầy vé để được hỗ trợ."
                 });
             }
 
@@ -553,7 +554,7 @@ namespace Bus_ticket.Controllers
                     }
 
                     var now = DateTime.Now;
-                    var expireDate = now.AddMinutes(3);
+                    var expireDate = now.AddMinutes(PaymentHoldMinutes);
 
                     var vnpay = new VnPayLibrary();
 
@@ -584,7 +585,9 @@ namespace Bus_ticket.Controllers
                     {
                         success = true,
                         isRedirect = true,
-                        paymentUrl
+                        paymentUrl,
+                        heldUntil = DateTime.UtcNow.AddMinutes(PaymentHoldMinutes),
+                        holdMinutes = PaymentHoldMinutes
                     });
                 }
 
@@ -593,7 +596,7 @@ namespace Bus_ticket.Controllers
                     // MoMo chỉ chấp nhận chữ và số cho orderId nên ta clean tương tự VNPAY
                     var cleanBookingCode = new string(bookingCode.Where(char.IsLetterOrDigit).ToArray());
 
-                    // 1. Chuyển giữ chỗ ở màn chọn ghế sang phiên thanh toán, gia hạn thêm 3 phút
+                    // 1. Giữ ghế khi chuyển sang phiên thanh toán (5 phút)
                     var holdResult = await PreparePaymentHoldAsync(tripId, seatNumbers, seatHoldCode, cleanBookingCode);
                     if (!holdResult.Success)
                     {
@@ -628,7 +631,9 @@ namespace Bus_ticket.Controllers
                         {
                             success = true,
                             isRedirect = true,
-                            paymentUrl = momoResponse.PayUrl
+                            paymentUrl = momoResponse.PayUrl,
+                            heldUntil = DateTime.UtcNow.AddMinutes(PaymentHoldMinutes),
+                            holdMinutes = PaymentHoldMinutes
                         });
                     }
                     else
@@ -697,7 +702,7 @@ namespace Bus_ticket.Controllers
                             Description = desc,
                             ReturnUrl = returnUrl,
                             CancelUrl = cancelUrl,
-                            ExpiredAt = (long)DateTimeOffset.UtcNow.AddMinutes(3).ToUnixTimeSeconds()
+                            ExpiredAt = (long)DateTimeOffset.UtcNow.AddMinutes(PaymentHoldMinutes).ToUnixTimeSeconds()
                         };
 
                         // 4. Gọi API tạo link
@@ -709,7 +714,9 @@ namespace Bus_ticket.Controllers
                         {
                             success = true,
                             isRedirect = true,
-                            paymentUrl = paymentLink.CheckoutUrl // Trả về URL để popup mở
+                            paymentUrl = paymentLink.CheckoutUrl,
+                            heldUntil = DateTime.UtcNow.AddMinutes(PaymentHoldMinutes),
+                            holdMinutes = PaymentHoldMinutes
                         });
                     }
                     catch (Exception ex)
@@ -1326,7 +1333,7 @@ namespace Bus_ticket.Controllers
             }
 
             var newCount = customer.ConsecutiveUnpaidCount + 1;
-            var shouldBlock = newCount >= 3;
+            var shouldBlock = newCount >= MaxUnpaidAttemptsBeforeBlock;
 
             var updates = new List<UpdateDefinition<Customer>>
             {
@@ -1354,7 +1361,7 @@ namespace Bus_ticket.Controllers
             {
                 updates.Add(Builders<Customer>.Update.Set(c => c.IsBlocked, true));
                 updates.Add(Builders<Customer>.Update.Set(c => c.BlockReason,
-                    "Quá 3 lần đặt vé nhưng không thanh toán."));
+                    $"Quá {MaxUnpaidAttemptsBeforeBlock} lần đặt vé nhưng không thanh toán."));
                 updates.Add(Builders<Customer>.Update.Set(c => c.BlockedAt, DateTime.UtcNow));
             }
 
@@ -1414,7 +1421,7 @@ namespace Bus_ticket.Controllers
 
             HttpContext.Session.SetString(SeatSelectionHoldSessionKey, effectiveHoldCode);
 
-            var heldUntil = DateTime.UtcNow.AddMinutes(SeatSelectionHoldMinutes);
+            var heldUntil = DateTime.UtcNow.AddMinutes(PaymentHoldMinutes);
             var holdResult = await TryHoldOneSeatAtomicAsync(tripId, normalizedSeat, effectiveHoldCode, heldUntil);
 
             if (!holdResult.Success)
@@ -1431,7 +1438,7 @@ namespace Bus_ticket.Controllers
                 seatNumber = normalizedSeat,
                 holdCode = effectiveHoldCode,
                 heldUntil,
-                seconds = SeatSelectionHoldMinutes * 60
+                seconds = PaymentHoldMinutes * 60
             });
         }
 
@@ -1570,7 +1577,7 @@ namespace Bus_ticket.Controllers
             await ReleaseExpiredHoldsAsync(tripId);
 
             var normalizedSeats = NormalizeSeatNumbers(seatNumbers);
-            var heldUntil = DateTime.UtcNow.AddMinutes(SeatSelectionHoldMinutes);
+            var heldUntil = DateTime.UtcNow.AddMinutes(PaymentHoldMinutes);
 
             foreach (var seat in normalizedSeats)
             {
@@ -1754,7 +1761,7 @@ namespace Bus_ticket.Controllers
 
             var normalizedSeats = NormalizeSeatNumbers(seatNumbers);
             var now = DateTime.UtcNow;
-            var newHeldUntil = now.AddMinutes(SeatSelectionHoldMinutes);
+            var newHeldUntil = now.AddMinutes(PaymentHoldMinutes);
 
             foreach (var seat in normalizedSeats)
             {

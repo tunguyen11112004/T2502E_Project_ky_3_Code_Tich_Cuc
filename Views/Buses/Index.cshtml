@@ -83,7 +83,7 @@ long endItem = (currentPage * pageSize) > totalItems ? totalItems : (currentPage
 
         @if (!string.IsNullOrEmpty(searchTerm) || !string.IsNullOrEmpty(branchFilter) || !string.IsNullOrEmpty(operatorFilter) || !string.IsNullOrEmpty(statusFilter))
         {
-        <a asp-action="Index" class="px-5 py-2.5 text-sm font-semibold text-gray-300 hover:text-white">Xóa lọc</a>
+        <a asp-action="Index" class="px-5 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">Xóa lọc</a>
         }
     </form>
 
@@ -229,14 +229,14 @@ long endItem = (currentPage * pageSize) > totalItems ? totalItems : (currentPage
     <div class="relative w-full max-w-2xl mx-4 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 max-h-[90vh] overflow-y-auto">
         <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
             <h3 class="text-xl font-semibold text-gray-900 dark:text-white">Thêm Xe Mới</h3>
-            <button type="button" onclick="hideBusModal('modal-bus-create')" class="text-gray-400 hover:text-white text-sm font-semibold">Đóng</button>
+            <button type="button" onclick="hideBusModal('modal-bus-create')" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm font-semibold">Đóng</button>
         </div>
         <form asp-action="Create" method="post" class="p-6 space-y-6">
             @Html.AntiForgeryToken()
             @await Html.PartialAsync("_BusFormFields", createForm)
             <div class="flex justify-end gap-4">
                 <button type="button" onclick="hideBusModal('modal-bus-create')"
-                        class="px-6 py-2.5 text-sm font-semibold text-gray-400 hover:text-white">Hủy</button>
+                        class="px-6 py-2.5 text-sm font-semibold text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Hủy</button>
                 <button type="submit"
                         class="px-6 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg">Lưu</button>
             </div>
@@ -249,14 +249,14 @@ long endItem = (currentPage * pageSize) > totalItems ? totalItems : (currentPage
     <div class="relative w-full max-w-2xl mx-4 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 max-h-[90vh] overflow-y-auto">
         <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
             <h3 class="text-xl font-semibold text-gray-900 dark:text-white">Cập nhật Xe</h3>
-            <button type="button" onclick="hideBusModal('modal-bus-edit')" class="text-gray-400 hover:text-white text-sm font-semibold">Đóng</button>
+            <button type="button" onclick="hideBusModal('modal-bus-edit')" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm font-semibold">Đóng</button>
         </div>
         <form asp-action="Edit" method="post" class="p-6 space-y-6" id="formEditBus">
             @Html.AntiForgeryToken()
             @await Html.PartialAsync("_BusFormFields", createForm, new ViewDataDictionary(ViewData) { { "IdPrefix", "Edit" } })
             <div class="flex justify-end gap-4">
                 <button type="button" onclick="hideBusModal('modal-bus-edit')"
-                        class="px-6 py-2.5 text-sm font-semibold text-gray-400 hover:text-white">Hủy</button>
+                        class="px-6 py-2.5 text-sm font-semibold text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Hủy</button>
                 <button type="submit"
                         class="px-6 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg">Cập nhật</button>
             </div>
@@ -279,7 +279,7 @@ long endItem = (currentPage * pageSize) > totalItems ? totalItems : (currentPage
                 <input type="hidden" name="id" id="deleteBusId" />
                 <div class="flex justify-center gap-4">
                     <button type="button" onclick="hideBusModal('modal-bus-delete')"
-                            class="px-6 py-2.5 text-sm font-semibold text-gray-400 hover:text-white">Hủy</button>
+                            class="px-6 py-2.5 text-sm font-semibold text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Hủy</button>
                     <button type="submit"
                             class="px-6 py-2.5 text-sm font-semibold text-gray-900 dark:text-white bg-rose-500 hover:bg-rose-600 rounded-lg">Xác nhận</button>
                 </div>

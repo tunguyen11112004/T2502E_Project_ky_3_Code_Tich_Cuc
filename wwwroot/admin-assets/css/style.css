@@ -45,6 +45,47 @@ html.dark .admin-seat-btn {
     border-color: #4b5563;
 }
 
+.dashboard-stat-button {
+    border: 1px solid #e5e7eb;
+    border-top-width: 4px;
+    background-color: #ffffff;
+}
+html.dark .dashboard-stat-button {
+    border-color: #374151;
+    background-color: #1f2937;
+}
+
+.dashboard-stat-accent-teal { border-top-color: #14b8a6 !important; }
+.dashboard-stat-accent-blue { border-top-color: #3b82f6 !important; }
+.dashboard-stat-accent-emerald { border-top-color: #10b981 !important; }
+.dashboard-stat-accent-purple { border-top-color: #a855f7 !important; }
+.dashboard-stat-accent-amber { border-top-color: #f59e0b !important; }
+.dashboard-stat-accent-cyan { border-top-color: #06b6d4 !important; }
+.dashboard-stat-accent-orange { border-top-color: #f97316 !important; }
+.dashboard-stat-accent-lime { border-top-color: #84cc16 !important; }
+.dashboard-stat-accent-rose { border-top-color: #f43f5e !important; }
+
+.dashboard-panel {
+    border: 1px solid #e5e7eb;
+    border-top-width: 4px;
+    background-color: #ffffff;
+    border-radius: 0.75rem;
+}
+html.dark .dashboard-panel {
+    border-color: #374151;
+    background-color: rgba(17, 24, 39, 0.4);
+}
+
+.dashboard-panel-accent-teal { border-top-color: #14b8a6 !important; }
+.dashboard-panel-accent-blue { border-top-color: #3b82f6 !important; }
+.dashboard-panel-accent-emerald { border-top-color: #10b981 !important; }
+.dashboard-panel-accent-purple { border-top-color: #a855f7 !important; }
+.dashboard-panel-accent-amber { border-top-color: #f59e0b !important; }
+.dashboard-panel-accent-cyan { border-top-color: #06b6d4 !important; }
+.dashboard-panel-accent-orange { border-top-color: #f97316 !important; }
+.dashboard-panel-accent-lime { border-top-color: #84cc16 !important; }
+.dashboard-panel-accent-rose { border-top-color: #f43f5e !important; }
+
 .dashboard-stat-button.dashboard-stat-active {
     background-color: #f3f4f6;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
@@ -52,4 +93,90 @@ html.dark .admin-seat-btn {
 html.dark .dashboard-stat-button.dashboard-stat-active {
     background-color: #374151;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+}
+
+.admin-date-input {
+    color-scheme: light;
+}
+html.dark .admin-date-input {
+    color-scheme: dark;
+}
+
+.admin-trip-card-media {
+    background-color: #e5e7eb;
+    border-right: 1px solid #d1d5db;
+}
+html.dark .admin-trip-card-media {
+    background-color: #111827;
+    border-right-color: #1f2937;
+}
+
+.admin-trip-card-badge {
+    background-color: rgba(245, 158, 11, 0.15);
+    color: #b45309;
+}
+html.dark .admin-trip-card-badge {
+    background-color: rgba(245, 158, 11, 0.1);
+    color: #fbbf24;
+}
+
+.admin-trip-card-seats {
+    color: #4b5563;
+    background-color: #f3f4f6;
+    border-color: #d1d5db;
+}
+html.dark .admin-trip-card-seats {
+    color: #9ca3af;
+    background-color: rgba(31, 41, 55, 0.8);
+    border-color: #374151;
+}
+
+.admin-trip-card-route {
+    color: #374151;
+    background-color: #f9fafb;
+    border-color: #e5e7eb;
+}
+html.dark .admin-trip-card-route {
+    color: #9ca3af;
+    background-color: rgba(17, 24, 39, 0.4);
+    border-color: #1f2937;
+}
+
+.admin-form-label {
+    color: #374151;
+    font-weight: 600;
+}
+html.dark .admin-form-label {
+    color: #9ca3af;
+}
+
+/* Light mode: fallback cho label/hint form còn class màu dark-only */
+html:not(.dark) #main-content label.text-gray-200,
+html:not(.dark) #main-content label.text-gray-300 {
+    color: #374151 !important;
+}
+
+html:not(.dark) #main-content label.text-gray-400,
+html:not(.dark) #main-content label.text-gray-500 {
+    color: #374151 !important;
+}
+
+html:not(.dark) #main-content .admin-form-hint,
+html:not(.dark) #main-content p.text-gray-400,
+html:not(.dark) #main-content span.text-gray-400.admin-muted {
+    color: #4b5563 !important;
+}
+
+html:not(.dark) #main-content input:not([type="checkbox"]):not([type="radio"]),
+html:not(.dark) #main-content select,
+html:not(.dark) #main-content textarea {
+    border-color: #9ca3af;
+}
+
+html:not(.dark) #main-content a.text-gray-400 {
+    color: #4b5563 !important;
+}
+
+html:not(.dark) #main-content a.text-gray-300 {
+    color: #374151 !important;
 }

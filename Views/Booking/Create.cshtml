@@ -37,34 +37,33 @@
     <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 mb-6 shadow-xl">
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 items-end">
             <div class="relative">
-                <label class="block mb-1.5 text-xs font-semibold text-gray-400 uppercase">Nơi xuất phát</label>
-                <div class="flex items-center bg-gray-900 border border-gray-700 rounded-lg px-3 py-2">
-                    <span class="text-amber-400 mr-2">🔵</span>
+                <label class="block mb-1.5 text-xs font-semibold text-gray-700 dark:text-gray-400 uppercase">Nơi xuất phát</label>
+                <div class="flex items-center bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2">
+                    <span class="text-amber-500 dark:text-amber-400 mr-2">🔵</span>
                     <input type="text" id="txtDeparture" placeholder="Ví dụ: Hà Nội" autocomplete="off"
-                           class="w-full bg-transparent text-sm text-white focus:outline-none"/>
+                           class="w-full bg-transparent text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none"/>
                 </div>
                 <div id="dropDeparture"
                      class="absolute left-0 z-50 hidden w-full mt-1 bg-white text-gray-800 rounded-lg shadow-2xl border border-gray-200 max-h-60 overflow-y-auto text-xs divide-y divide-gray-100"></div>
             </div>
 
             <div class="relative">
-                <label class="block mb-1.5 text-xs font-semibold text-gray-400 uppercase">Nơi đến</label>
-                <div class="flex items-center bg-gray-900 border border-gray-700 rounded-lg px-3 py-2">
+                <label class="block mb-1.5 text-xs font-semibold text-gray-700 dark:text-gray-400 uppercase">Nơi đến</label>
+                <div class="flex items-center bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2">
                     <span class="text-rose-500 mr-2">📍</span>
                     <input type="text" id="txtDestination" placeholder="Ví dụ: Nghệ An" autocomplete="off"
-                           class="w-full bg-transparent text-sm text-white focus:outline-none"/>
+                           class="w-full bg-transparent text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none"/>
                 </div>
                 <div id="dropDestination"
                      class="absolute left-0 z-50 hidden w-full mt-1 bg-white text-gray-800 rounded-lg shadow-2xl border border-gray-200 max-h-60 overflow-y-auto text-xs divide-y divide-gray-100"></div>
             </div>
 
             <div>
-                <label class="block mb-1.5 text-xs font-semibold text-gray-400 uppercase">Ngày đi</label>
-                <div class="flex items-center bg-gray-900 border border-gray-700 rounded-lg px-3 py-2">
-                    <span class="text-blue-400 mr-2">📅</span>
+                <label class="block mb-1.5 text-xs font-semibold text-gray-700 dark:text-gray-400 uppercase">Ngày đi</label>
+                <div class="flex items-center bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2">
+                    <span class="text-blue-500 dark:text-blue-400 mr-2">📅</span>
                     <input type="date" id="txtTravelDate" value="@DateTime.Today.ToString("yyyy-MM-dd")"
-                           class="w-full bg-transparent text-sm text-white focus:outline-none"
-                           style="color-scheme: dark;"/>
+                           class="w-full bg-transparent text-sm text-gray-900 dark:text-white focus:outline-none admin-date-input"/>
                 </div>
             </div>
 
@@ -80,26 +79,26 @@
     <!-- SẮP XẾP KẾT QUẢ -->
     <div
         class="mb-4 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-3 rounded-xl flex flex-wrap items-center justify-between gap-3">
-        <div class="text-xs font-semibold text-gray-400">📊 Sắp xếp chuyến xe:</div>
-        <div class="flex items-center gap-4 flex-wrap text-xs text-white">
+        <div class="text-xs font-semibold text-gray-700 dark:text-gray-400">📊 Sắp xếp chuyến xe:</div>
+        <div class="flex items-center gap-4 flex-wrap text-xs text-gray-700 dark:text-gray-200">
             <label class="flex items-center gap-2 cursor-pointer">
                 <input type="radio" name="tripSort" value="default" checked
-                       class="text-amber-400 focus:ring-0 bg-gray-800 border-gray-600" onchange="renderFilteredTrips()">
+                       class="text-amber-500 focus:ring-amber-400 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600" onchange="renderFilteredTrips()">
                 <span>Mặc định</span>
             </label>
             <label class="flex items-center gap-2 cursor-pointer">
                 <input type="radio" name="tripSort" value="timeAsc"
-                       class="text-amber-400 focus:ring-0 bg-gray-800 border-gray-600" onchange="renderFilteredTrips()">
+                       class="text-amber-500 focus:ring-amber-400 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600" onchange="renderFilteredTrips()">
                 <span>Giờ đi sớm nhất</span>
             </label>
             <label class="flex items-center gap-2 cursor-pointer">
                 <input type="radio" name="tripSort" value="priceAsc"
-                       class="text-amber-400 focus:ring-0 bg-gray-800 border-gray-600" onchange="renderFilteredTrips()">
+                       class="text-amber-500 focus:ring-amber-400 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600" onchange="renderFilteredTrips()">
                 <span>Giá tăng dần</span>
             </label>
             <label class="flex items-center gap-2 cursor-pointer">
                 <input type="radio" name="tripSort" value="priceDesc"
-                       class="text-amber-400 focus:ring-0 bg-gray-800 border-gray-600" onchange="renderFilteredTrips()">
+                       class="text-amber-500 focus:ring-amber-400 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600" onchange="renderFilteredTrips()">
                 <span>Giá giảm dần</span>
             </label>
         </div>
@@ -121,35 +120,35 @@
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Thông tin khách hàng</h3>
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-xs font-semibold text-gray-400 uppercase mb-1">Số điện thoại</label>
+                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-400 uppercase mb-1">Số điện thoại</label>
                         <input type="tel" name="passengerPhone" id="txtPassengerPhone" required
                                class="w-full px-4 py-2 text-gray-900 dark:text-white bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg">
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-xs font-semibold text-gray-400 uppercase mb-1">Tên hành
+                            <label class="block text-xs font-semibold text-gray-700 dark:text-gray-400 uppercase mb-1">Tên hành
                                 khách</label>
                             <input type="text" name="passengerName" id="txtPassengerName" required
                                    class="w-full px-4 py-2 text-gray-900 dark:text-white bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg">
                         </div>
                         <div>
-                            <label class="block text-xs font-semibold text-gray-400 uppercase mb-1">Ngày sinh</label>
+                            <label class="block text-xs font-semibold text-gray-700 dark:text-gray-400 uppercase mb-1">Ngày sinh</label>
                             <input type="date" id="inputDob" name="dob" onchange="calculateAge()" required
                                    class="w-full px-4 py-2 text-gray-900 dark:text-white bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg">
                         </div>
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-gray-400 uppercase mb-1">Email</label>
+                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-400 uppercase mb-1">Email</label>
                         <input type="email" name="passengerEmail" id="txtPassengerEmail"
                                class="w-full px-4 py-2 text-gray-900 dark:text-white bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg">
                     </div>
                     <div class="p-3 bg-amber-400/10 border border-amber-400/30 rounded-lg">
-                        <p class="text-sm text-gray-300">Ghế đã chọn: <span id="txtSeatNum"
-                                                                            class="font-bold text-amber-400">Chưa chọn</span>
+                        <p class="text-sm text-gray-700 dark:text-gray-300">Ghế đã chọn: <span id="txtSeatNum"
+                                                                            class="font-bold text-amber-600 dark:text-amber-400">Chưa chọn</span>
                         </p>
-                        <p id="seatHoldTimerText" class="hidden mt-1 text-xs font-semibold text-amber-300">⏳ Thời gian giữ chỗ còn: <span id="seatHoldCountdown">03:00</span></p>
-                        <p class="text-[11px] text-gray-500 mt-1">Ghế được giữ tối đa 3 phút sau khi chọn. Quá hạn hệ thống sẽ tự tải lại để nhả ghế.</p>
-                        <p class="text-xs text-gray-500">Tuổi hiện tại: <span id="displayAge">--</span></p>
+                        <p id="seatHoldTimerText" class="hidden mt-1 text-xs font-semibold text-amber-700 dark:text-amber-300">⏳ Thời gian giữ chỗ còn: <span id="seatHoldCountdown">05:00</span></p>
+                        <p class="text-[11px] text-gray-600 dark:text-gray-500 mt-1">Ghế chưa bị giữ khi bạn chọn. Sau khi xác nhận đặt vé và chuyển sang thanh toán, ghế sẽ được giữ trong 5 phút.</p>
+                        <p class="text-xs text-gray-600 dark:text-gray-500">Tuổi hiện tại: <span id="displayAge">--</span></p>
                     </div>
                 </div>
             </div>
@@ -157,40 +156,40 @@
             <div class="flex-1 min-w-[320px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 shadow-xl">
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Chi tiết thanh toán</h3>
                 <div class="space-y-4">
-                    <div class="flex justify-between border-b border-gray-700 pb-2">
-                        <span class="text-gray-400">Giá vé gốc:</span>
-                        <span id="basePrice" class="text-white font-medium">0 đ</span>
+                    <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+                        <span class="text-gray-600 dark:text-gray-400">Giá vé gốc:</span>
+                        <span id="basePrice" class="text-gray-900 dark:text-white font-medium">0 đ</span>
                     </div>
-                    <div class="flex justify-between border-b border-gray-700 pb-2">
-                        <span class="text-gray-400">Giảm giá:</span>
-                        <span id="discountAmount" class="text-amber-400 font-medium">0 đ</span>
+                    <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+                        <span class="text-gray-600 dark:text-gray-400">Giảm giá:</span>
+                        <span id="discountAmount" class="text-amber-600 dark:text-amber-400 font-medium">0 đ</span>
                     </div>
-                    <div class="flex justify-between items-center bg-gray-900 p-4 rounded-lg">
+                    <div class="flex justify-between items-center bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-4 rounded-lg">
                         <span class="text-lg font-bold text-gray-900 dark:text-white">Tổng cộng:</span>
-                        <span id="finalTotal" class="text-2xl font-bold text-emerald-400">0 đ</span>
+                        <span id="finalTotal" class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">0 đ</span>
                     </div>
 
                     <h3 class="text-lg font-bold text-gray-900 dark:text-white mt-6 mb-4">Phương thức thanh toán</h3>
                     <div class="space-y-3">
                         <label
-                            class="flex items-center p-3 bg-gray-900 border border-gray-700 rounded-lg cursor-pointer hover:border-amber-400">
+                            class="flex items-center p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:border-amber-400">
                             <input type="radio" name="paymentMethod" value="Cash" checked
-                                   class="text-amber-400 focus:ring-0">
-                            <span class="ml-3 text-white">Thanh toán tại quầy</span>
+                                   class="text-amber-500 focus:ring-amber-400">
+                            <span class="ml-3 text-gray-800 dark:text-white">Thanh toán tại quầy</span>
                         </label>
                         <label
-                            class="flex items-center p-3 bg-gray-900 border border-gray-700 rounded-lg cursor-pointer hover:border-amber-400">
-                            <input type="radio" name="paymentMethod" value="VNPAY" class="text-amber-400 focus:ring-0">
-                            <span class="ml-3 text-white">VNPAY (Quét mã QR)</span>
+                            class="flex items-center p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:border-amber-400">
+                            <input type="radio" name="paymentMethod" value="VNPAY" class="text-amber-500 focus:ring-amber-400">
+                            <span class="ml-3 text-gray-800 dark:text-white">VNPAY (Quét mã QR)</span>
                         </label>
                         <label
-                            class="flex items-center p-3 bg-gray-900 border border-gray-700 rounded-lg cursor-pointer hover:border-amber-400">
-                            <input type="radio" name="paymentMethod" value="MOMO" class="text-amber-400 focus:ring-0">
-                            <span class="ml-3 text-white">MOMO (Quét mã QR)</span>
+                            class="flex items-center p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:border-amber-400">
+                            <input type="radio" name="paymentMethod" value="MOMO" class="text-amber-500 focus:ring-amber-400">
+                            <span class="ml-3 text-gray-800 dark:text-white">MOMO (Quét mã QR)</span>
                         </label>
-                        <label class="flex items-center p-3 bg-gray-900 border border-gray-700 rounded-lg cursor-pointer hover:border-amber-400">
-                            <input type="radio" name="paymentMethod" value="PAYOS" class="text-amber-400 focus:ring-0">
-                            <span class="ml-3 text-white">Thanh toán chuyển khoản QR (PayOS)</span>
+                        <label class="flex items-center p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:border-amber-400">
+                            <input type="radio" name="paymentMethod" value="PAYOS" class="text-amber-500 focus:ring-amber-400">
+                            <span class="ml-3 text-gray-800 dark:text-white">Thanh toán chuyển khoản QR (PayOS)</span>
                         </label>
                     </div>
                     <button type="submit"
@@ -201,10 +200,10 @@
             </div>
 
             <div class="flex-1 min-w-[320px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 shadow-xl">
-                <h2 class="text-sm font-semibold uppercase tracking-wider text-gray-400 border-b border-gray-200 dark:border-gray-700 pb-3 mb-4">
+                <h2 class="text-sm font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700 pb-3 mb-4">
                     Sơ đồ ma trận ghế thực tế
                 </h2>
-                <p id="lblBusType" class="text-sm font-bold text-amber-400 mb-3 text-center">-</p>
+                <p id="lblBusType" class="text-sm font-bold text-amber-600 dark:text-amber-400 mb-3 text-center">-</p>
                 <div id="grid-seats"
                      style="display: grid; width: 100% !important; grid-template-columns: repeat(4, 1fr); gap: 5px;"></div>
             </div>
@@ -229,8 +228,9 @@
     const seatHoldCountdown = document.getElementById('seatHoldCountdown');
 
     const SEAT_HOLD_STORAGE_KEY = 'SRC_TRAVEL_CURRENT_SEAT_HOLD_CODE';
-    let currentSeatHoldCode = sessionStorage.getItem(SEAT_HOLD_STORAGE_KEY) || '';
-    if (seatHoldCodeInput) seatHoldCodeInput.value = currentSeatHoldCode;
+    const PAYMENT_HOLD_MINUTES = 5;
+    let currentSeatHoldCode = '';
+    if (seatHoldCodeInput) seatHoldCodeInput.value = '';
 
     function saveSeatHoldCode(holdCode) {
         currentSeatHoldCode = holdCode || currentSeatHoldCode || '';
@@ -361,7 +361,7 @@
                 clearInterval(seatHoldTimerInterval);
                 seatHoldTimerInterval = null;
 
-                alert('Đã quá 3 phút nhưng chưa chuyển sang thanh toán. Hệ thống sẽ tải lại trang và nhả ghế đã giữ.');
+                alert('Đã quá 5 phút nhưng chưa hoàn tất thanh toán. Hệ thống sẽ tải lại trang và nhả ghế đã giữ.');
                 await releaseCurrentSeatHoldBeforeReload();
                 clearSeatHoldCode();
                 window.location.reload();
@@ -370,114 +370,151 @@
     }
 
     function stopSeatHoldCountdownIfNoSeat() {
-        if (selectedSeats.length > 0) return;
-
         if (seatHoldTimerInterval) {
             clearInterval(seatHoldTimerInterval);
             seatHoldTimerInterval = null;
         }
 
         currentSeatHoldExpiresAt = null;
-        clearSeatHoldCode();
         if (seatHoldTimerText) seatHoldTimerText.classList.add('hidden');
-        if (seatHoldCountdown) seatHoldCountdown.innerText = '03:00';
+        if (seatHoldCountdown) seatHoldCountdown.innerText = '05:00';
     }
 
-    async function holdSeatOnServer(tripId, seatNumber) {
-        const formData = new FormData();
-        formData.append('tripId', tripId);
-        formData.append('seatNumber', seatNumber);
-
-        // Gửi kèm holdCode hiện tại để cùng một phiên có thể giữ nhiều ghế
-        // và khi reload vẫn nhận diện được ghế nào là của chính user này.
-        if (currentSeatHoldCode) {
-            formData.append('holdCode', currentSeatHoldCode);
+    function getSeatStatusMessage(seatNumber, seatInfo) {
+        if (seatInfo?.isBooked) {
+            return `Ghế ${seatNumber} đã được đặt. Vui lòng chọn ghế khác.`;
         }
+        return `Ghế ${seatNumber} đang được người khác giữ. Vui lòng chọn ghế khác.`;
+    }
 
-        const response = await fetch('/Booking/HoldSeatSelection', {
-            method: 'POST',
-            headers: {
-                'RequestVerificationToken': getAntiForgeryToken()
-            },
-            body: formData
-        });
+    async function fetchTripSeatMap(tripId) {
+        const holdQuery = currentSeatHoldCode
+            ? '&holdCode=' + encodeURIComponent(currentSeatHoldCode)
+            : '';
+        const response = await fetch('@Url.Action("GetTripSeatMap", "Booking")?tripId=' + encodeURIComponent(tripId) + holdQuery);
 
         if (!response.ok) {
-            throw new Error('Không thể kết nối API giữ chỗ.');
+            throw new Error('Không thể tải sơ đồ ghế.');
         }
 
-        return await response.json();
+        const result = await response.json();
+        return result.data || result;
     }
 
-    async function releaseSeatOnServer(tripId, seatNumber) {
-        const formData = new FormData();
-        formData.append('tripId', tripId);
-        formData.append('seatNumber', seatNumber);
-        formData.append('holdCode', currentSeatHoldCode || '');
-
-        await fetch('/Booking/ReleaseSeatSelection', {
-            method: 'POST',
-            headers: {
-                'RequestVerificationToken': getAntiForgeryToken()
-            },
-            body: formData
+    function findSeatInMap(seatMapData, seatNumber) {
+        return (seatMapData.seats || []).find(function (s) {
+            return s.seatNumber === seatNumber;
         });
     }
 
-    async function toggleSeat(btn, seatNumber, isLocked) {
-        if (isLocked) return;
+    function isSeatUnavailable(seat) {
+        if (!seat) return true;
+        const heldByOther = seat.isHolding === true && seat.isHeldByMe !== true;
+        return seat.isBooked === true || heldByOther;
+    }
 
+    async function verifySeatCanBeSelected(tripId, seatNumber) {
+        try {
+            const data = await fetchTripSeatMap(tripId);
+            const seat = findSeatInMap(data, seatNumber);
+
+            if (!seat) {
+                return { ok: false, message: `Không tìm thấy thông tin ghế ${seatNumber}.` };
+            }
+
+            if (isSeatUnavailable(seat)) {
+                return { ok: false, message: getSeatStatusMessage(seatNumber, seat) };
+            }
+
+            return { ok: true };
+        } catch (err) {
+            console.error(err);
+            return { ok: false, message: 'Không thể kiểm tra trạng thái ghế. Vui lòng thử lại.' };
+        }
+    }
+
+    async function validateSelectedSeatsBeforeSubmit(tripId) {
+        try {
+            const data = await fetchTripSeatMap(tripId);
+
+            for (const seatNumber of selectedSeats) {
+                const seat = findSeatInMap(data, seatNumber);
+                if (isSeatUnavailable(seat)) {
+                    return { ok: false, message: getSeatStatusMessage(seatNumber, seat) };
+                }
+            }
+
+            return { ok: true };
+        } catch (err) {
+            console.error(err);
+            return { ok: false, message: 'Không thể kiểm tra trạng thái ghế. Vui lòng thử lại.' };
+        }
+    }
+
+    async function parseBookingResponse(response) {
+        const rawText = await response.text();
+        if (!rawText) {
+            return { success: false, message: 'Máy chủ không trả về dữ liệu.' };
+        }
+
+        try {
+            return JSON.parse(rawText);
+        } catch (parseError) {
+            console.error(parseError, rawText);
+            return { success: false, message: 'Máy chủ trả về dữ liệu không hợp lệ.' };
+        }
+    }
+
+    async function toggleSeat(btn, seatNumber, isLocked, seatInfo) {
         const tripId = document.getElementById('hidTripId')?.value;
         if (!tripId) {
             alert('Vui lòng chọn chuyến xe trước khi chọn ghế.');
             return;
         }
 
-        btn.disabled = true;
-        const originalText = btn.innerText;
+        if (isLocked) {
+            alert(getSeatStatusMessage(seatNumber, seatInfo));
+            await loadSeatMatrix(tripId);
+            return;
+        }
+
         const seatIndex = selectedSeats.indexOf(seatNumber);
 
+        if (seatIndex > -1) {
+            selectedSeats.splice(seatIndex, 1);
+            btn.classList.remove('bg-amber-500', 'text-black', 'border-amber-400');
+            btn.classList.add('admin-seat-btn');
+            btn.innerText = seatNumber;
+            updateSelectedSeatsDisplay();
+            return;
+        }
+
+        btn.disabled = true;
+        const originalText = btn.innerText;
+        btn.innerText = '...';
+
         try {
-            if (seatIndex > -1) {
-                btn.innerText = '...';
-                await releaseSeatOnServer(tripId, seatNumber);
-
-                selectedSeats.splice(seatIndex, 1);
-                btn.classList.remove('bg-amber-500', 'text-black', 'border-amber-400');
-                btn.classList.add('admin-seat-btn');
-                btn.innerText = originalText.replace('✓', '');
-
-                updateSelectedSeatsDisplay();
-                stopSeatHoldCountdownIfNoSeat();
-            } else {
-                btn.innerText = '...';
-                const result = await holdSeatOnServer(tripId, seatNumber);
-
-                if (!result.success) {
-                    alert(result.message || 'Ghế này đang được người khác giữ hoặc đã đặt.');
-
-                    // Chỉ refresh lại ma trận để cập nhật ghế bị người khác giữ.
-                    // loadSeatMatrix mới sẽ tự khôi phục các ghế đang giữ bởi chính user hiện tại.
-                    await loadSeatMatrix(tripId);
-                    return;
-                }
-
-                saveSeatHoldCode(result.holdCode || currentSeatHoldCode);
-
-                selectedSeats.push(seatNumber);
-                btn.classList.add('bg-amber-500', 'text-black', 'border-amber-400');
-                btn.classList.remove('admin-seat-btn');
-                btn.innerText = `${seatNumber}✓`;
-
-                updateSelectedSeatsDisplay();
-                startSeatHoldCountdown(result.heldUntil);
+            const check = await verifySeatCanBeSelected(tripId, seatNumber);
+            if (!check.ok) {
+                alert(check.message);
+                await loadSeatMatrix(tripId);
+                return;
             }
+
+            selectedSeats.push(seatNumber);
+            btn.classList.add('bg-amber-500', 'text-black', 'border-amber-400');
+            btn.classList.remove('admin-seat-btn');
+            btn.innerText = `${seatNumber}✓`;
+            updateSelectedSeatsDisplay();
         } catch (err) {
             console.error(err);
-            alert(err.message || 'Không thể giữ hoặc nhả ghế. Vui lòng thử lại.');
+            alert('Không thể kiểm tra trạng thái ghế. Vui lòng thử lại.');
             await loadSeatMatrix(tripId);
         } finally {
             btn.disabled = false;
+            if (!selectedSeats.includes(seatNumber)) {
+                btn.innerText = originalText.replace('✓', '');
+            }
         }
     }
 
@@ -630,7 +667,7 @@
         }
 
         if (area) {
-            area.innerHTML = '<p class="text-xs text-gray-400 col-span-full text-center py-6">🔍 Đang tìm kiếm chuyến xe phù hợp...</p>';
+            area.innerHTML = '<p class="text-xs text-gray-500 dark:text-gray-400 col-span-full text-center py-6">🔍 Đang tìm kiếm chuyến xe phù hợp...</p>';
         }
 
         try {
@@ -687,37 +724,36 @@
             }
             
             card.innerHTML = `
-    <div class="w-1/3 max-w-[150px] relative overflow-hidden bg-gray-900 border-r border-gray-800 flex-shrink-0">
+    <div class="admin-trip-card-media w-1/3 max-w-[150px] relative overflow-hidden flex-shrink-0">
         <img src="${busImgUrl}" alt="Ảnh xe" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
     </div>
 
     <div class="w-2/3 flex-1 p-4 flex flex-col justify-between space-y-2">
         <div class="flex justify-between items-start gap-1">
             <div class="flex flex-col gap-1 min-w-0">
-                <span class="text-[10px] bg-amber-400/10 text-amber-400 px-2 py-0.5 rounded font-bold tracking-wider truncate">
+                <span class="admin-trip-card-badge text-[10px] px-2 py-0.5 rounded font-bold tracking-wider truncate">
                     🚌 ${trip.licensePlate || trip.busCode} (${trip.busType || 'Ghế ngồi'})
                 </span>
-                <!-- HIỂN THỊ TÊN NHÀ XE Ở ĐÂY -->
-                <span class="text-[10px] text-gray-400 font-semibold px-2">
-                     🏢 Nhà xe: <span class="text-white">${trip.operatorName || 'Chưa xác định'}</span>
+                <span class="text-[10px] text-gray-600 dark:text-gray-400 font-semibold px-2">
+                     🏢 Nhà xe: <span class="text-gray-900 dark:text-white font-bold">${trip.operatorName || 'Chưa xác định'}</span>
                 </span>
             </div>
-            <span class="text-sm font-black text-emerald-400 whitespace-nowrap">${fareStr}</span>
+            <span class="text-sm font-black text-emerald-600 dark:text-emerald-400 whitespace-nowrap">${fareStr}</span>
         </div>
         
         <div class="flex items-center justify-between gap-2">
-            <div class="text-white font-bold text-base">
-                🕒 Giờ chạy: <span class="text-amber-400">${timeStr}</span>
+            <div class="text-gray-900 dark:text-white font-bold text-base">
+                🕒 Giờ chạy: <span class="text-amber-600 dark:text-amber-400">${timeStr}</span>
             </div>
-            <div class="text-[10px] text-gray-400 bg-gray-800/80 px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-700 whitespace-nowrap">
-                🪑 Trống: <span class="text-emerald-400 font-bold">${trip.availableSeats ?? 0}</span> chỗ
+            <div class="admin-trip-card-seats text-[10px] px-1.5 py-0.5 rounded border whitespace-nowrap">
+                🪑 Trống: <span class="text-emerald-600 dark:text-emerald-400 font-bold">${trip.availableSeats ?? 0}</span> chỗ
             </div>
         </div>
 
-        <div class="text-[11px] text-gray-400 flex items-center justify-between bg-gray-900/40 p-2 rounded border border-gray-800 gap-1">
-            <span class="truncate">🔵 ${dep}</span>
-            <span class="text-gray-600 font-bold">➔</span>
-            <span class="truncate text-right">📍 ${dest}</span>
+        <div class="admin-trip-card-route text-[11px] flex items-center justify-between p-2 rounded border gap-1">
+            <span class="truncate text-gray-700 dark:text-gray-400">🔵 ${dep}</span>
+            <span class="text-gray-400 dark:text-gray-600 font-bold">➔</span>
+            <span class="truncate text-right text-gray-700 dark:text-gray-400">📍 ${dest}</span>
         </div>
     </div>
 `;
@@ -726,8 +762,11 @@
                 const hidTripId = document.getElementById('hidTripId');
                 const oldTripId = hidTripId?.value;
 
-                if (oldTripId && oldTripId !== trip.id && selectedSeats.length > 0 && currentSeatHoldCode) {
-                    await releaseCurrentSeatHoldBeforeReload();
+                if (oldTripId && oldTripId !== trip.id) {
+                    if (currentSeatHoldCode) {
+                        await releaseCurrentSeatHoldBeforeReload();
+                        clearSeatHoldCode();
+                    }
                     selectedSeats = [];
                     updateSelectedSeatsDisplay();
                     stopSeatHoldCountdownIfNoSeat();
@@ -752,6 +791,10 @@
 
             area.appendChild(card);
         });
+
+        if (window.tailwind && typeof window.tailwind.refresh === 'function') {
+            window.tailwind.refresh();
+        }
     }
 
     // MAP CHUẨN XÁC VÀO THE GRID SEATS CỦA FILE HTML
@@ -759,6 +802,7 @@
         if (!gridSeats) return;
 
         gridSeats.innerHTML = '<p class="text-xs text-amber-400"> Đang tải sơ đồ...</p>';
+        const previousSelected = [...selectedSeats];
 
         try {
             const holdQuery = currentSeatHoldCode
@@ -775,12 +819,18 @@
 
             gridSeats.innerHTML = '';
 
-            // Sau khi reload/refresh seat map, không được làm mất ghế của chính user đang giữ.
-            // Server trả isHeldByMe=true để UI render lại ghế đó như đang được chọn.
-            selectedSeats = [];
             if (data.holdCode || currentSeatHoldCode) {
                 saveSeatHoldCode(data.holdCode || currentSeatHoldCode);
             }
+
+            selectedSeats = previousSelected.filter(function (seatNum) {
+                const seat = (data.seats || []).find(function (s) {
+                    return s.seatNumber === seatNum;
+                });
+                if (!seat) return false;
+                const heldByOther = seat.isHolding === true && seat.isHeldByMe !== true;
+                return !seat.isBooked && !heldByOther;
+            });
 
             const totalCols = data.cols || 4;
 
@@ -793,13 +843,26 @@
             // Render ghế
             data.seats.forEach(function (seat) {
                 const btn = document.createElement('button');
-                btn.type = "button"; // Tránh form tự submit khi click vào button
+                btn.type = "button";
 
                 const isHeldByMe = seat.isHeldByMe === true;
-                const isLocked = seat.isBooked || (seat.isHolding && !isHeldByMe) || (seat.isLocked && !isHeldByMe);
+                const heldByOther = seat.isHolding === true && !isHeldByMe;
+                const isLocallySelected = selectedSeats.includes(seat.seatNumber);
+
+                if (heldByOther || seat.isBooked) {
+                    const staleIndex = selectedSeats.indexOf(seat.seatNumber);
+                    if (staleIndex > -1) {
+                        selectedSeats.splice(staleIndex, 1);
+                    }
+                }
+
+                const isSelected = (isHeldByMe || isLocallySelected) && !heldByOther && !seat.isBooked;
+                const isLocked = seat.isBooked || heldByOther || (seat.isLocked && !isHeldByMe);
 
                 if (isHeldByMe) {
-                    selectedSeats.push(seat.seatNumber);
+                    if (!selectedSeats.includes(seat.seatNumber)) {
+                        selectedSeats.push(seat.seatNumber);
+                    }
                     if (seat.heldUntil) {
                         const heldUntilDate = new Date(seat.heldUntil);
                         if (!myLatestHeldUntil || heldUntilDate > myLatestHeldUntil) {
@@ -809,36 +872,31 @@
                 }
 
                 btn.className = `h-8 w-10 text-[10px] font-bold rounded border flex items-center justify-center transition-all ${
-                    isHeldByMe
+                    isSelected
                         ? "bg-amber-500 border-amber-400 text-black cursor-pointer"
                         : isLocked
-                            ? "bg-black border-gray-800 text-gray-600 opacity-45 cursor-not-allowed grayscale"
+                            ? "bg-gray-200 dark:bg-black border-gray-300 dark:border-gray-800 text-gray-600 dark:text-gray-500 opacity-90 grayscale cursor-pointer"
                             : "admin-seat-btn hover:border-amber-400 cursor-pointer"
                 }`;
 
-                btn.innerText = isHeldByMe
+                btn.innerText = isSelected
                     ? `${seat.seatNumber}✓`
                     : seat.isHolding
                         ? `${seat.seatNumber}⏳`
                         : seat.seatNumber;
-                btn.disabled = isLocked;
 
                 if (seat.isBooked) {
                     btn.title = "Ghế đã được đặt";
-                } else if (isHeldByMe) {
-                    btn.title = "Ghế bạn đang giữ. Bấm lại để bỏ chọn.";
+                } else if (isSelected) {
+                    btn.title = "Ghế bạn đang chọn. Bấm lại để bỏ chọn.";
                 } else if (seat.isHolding) {
                     btn.title = "Ghế đang được người khác giữ chỗ";
                 } else {
                     btn.title = "Ghế còn trống";
                 }
 
-                btn.onclick = async function () {
-                    if (isLocked) {
-                        return;
-                    }
-
-                    await toggleSeat(btn, seat.seatNumber, isLocked);
+                btn.onclick = function () {
+                    toggleSeat(btn, seat.seatNumber, isLocked, seat);
                 };
 
                 gridSeats.appendChild(btn);
@@ -846,7 +904,7 @@
 
             updateSelectedSeatsDisplay();
 
-            if (selectedSeats.length > 0 && myLatestHeldUntil) {
+            if (myLatestHeldUntil) {
                 startSeatHoldCountdown(myLatestHeldUntil);
             } else {
                 stopSeatHoldCountdownIfNoSeat();
@@ -895,15 +953,17 @@
                 return;
             }
 
-            // 3. Chuẩn bị dữ liệu và gửi AJAX
-            if (!currentSeatHoldCode) {
-                alert('Phiên giữ chỗ không hợp lệ hoặc đã hết hạn. Vui lòng chọn lại ghế.');
+            // 3. Kiểm tra ghế còn trống trước khi gửi — tránh báo lỗi kết nối chung chung
+            const seatCheck = await validateSelectedSeatsBeforeSubmit(hidTripId.value);
+            if (!seatCheck.ok) {
+                alert(seatCheck.message);
+                await loadSeatMatrix(hidTripId.value);
                 return;
             }
 
             isSubmittingBooking = true;
             const formData = new FormData(this);
-            formData.set('seatHoldCode', currentSeatHoldCode);
+            formData.set('seatHoldCode', '');
 
             try {
                 const response = await fetch(this.action, {
@@ -911,11 +971,15 @@
                     body: formData
                 });
 
-                const result = await response.json();
+                const result = await parseBookingResponse(response);
 
                 if (result.success) {
                     // Nếu Backend trả về link thanh toán (VNPAY hoặc MoMo)
                     if (result.paymentUrl) {
+                        if (result.heldUntil) {
+                            startSeatHoldCountdown(result.heldUntil);
+                        }
+
                         const isMomo = result.paymentUrl.includes("momo.vn");
                         const isPayOS = result.paymentUrl.includes("pay.payos.vn");
                         const titleWindow = isMomo ? "MOMOPayment" : (isPayOS ? "PAYOSPayment" : "VNPAYPayment");
@@ -926,7 +990,7 @@
                             "width=1100,height=800,left=100,top=50"
                         );
 
-                        let paymentTimeLeft = 180; // 3 phút bằng với thời gian hết hạn backend
+                        let paymentTimeLeft = (result.holdMinutes || PAYMENT_HOLD_MINUTES) * 60;
 
                         const paymentTimer = setInterval(function () {
                             paymentTimeLeft--;
@@ -948,7 +1012,7 @@
                                     paymentWindow.close();
                                 }
 
-                                alert("Quá thời gian thanh toán 3 phút. Ghế giữ chỗ đã được mở lại. Trang sẽ được tải lại để cập nhật trạng thái ghế.");
+                                alert("Quá thời gian thanh toán 5 phút. Ghế giữ chỗ đã được mở lại. Trang sẽ được tải lại để cập nhật trạng thái ghế.");
                                 window.location.reload();
                             }
                         }, 1000);
@@ -959,12 +1023,18 @@
                     }
                 } else {
                     isSubmittingBooking = false;
-                    alert("Thất bại! " + (result.message || "Có lỗi xảy ra."));
+                    const message = result.message || 'Có lỗi xảy ra.';
+                    const isSeatConflict = /giữ|giu|đặt|dat|holding|booked/i.test(message);
+                    alert(isSeatConflict ? message : ('Thất bại! ' + message));
+                    const tripId = document.getElementById('hidTripId')?.value;
+                    if (tripId) {
+                        await loadSeatMatrix(tripId);
+                    }
                 }
             } catch (err) {
                 isSubmittingBooking = false;
                 console.error(err);
-                alert("Không thể kết nối đến máy chủ. Vui lòng thử lại sau.");
+                alert('Không thể kết nối đến máy chủ. Vui lòng thử lại sau.');
             }
         });
     }

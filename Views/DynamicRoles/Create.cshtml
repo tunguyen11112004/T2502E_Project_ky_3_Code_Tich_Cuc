@@ -13,7 +13,7 @@ var groupedPermissions = allPermissions
 
 <div class="p-6 sm:p-8 space-y-6 max-w-6xl mx-auto">
     <div class="border-b border-gray-200 dark:border-gray-700 pb-4">
-        <a asp-action="Index" class="inline-flex items-center text-sm font-medium text-gray-400 hover:text-amber-400 transition-colors duration-150 mb-2">
+        <a asp-action="Index" class="inline-flex items-center text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 transition-colors duration-150 mb-2">
             Quay lại danh sách
         </a>
         <h1 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Thêm Vai Trò & Thiết Lập Ma Trận Quyền</h1>
@@ -25,7 +25,7 @@ var groupedPermissions = allPermissions
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                     @* ĐÃ SỬA: Đổi toàn bộ Name thành RoleName để khớp với Model *@
-                    <label asp-for="RoleName" class="block mb-2 text-sm font-medium text-gray-300">Tên Vai Trò</label>
+                    <label asp-for="RoleName" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Tên Vai Trò</label>
                     <input asp-for="RoleName" class="w-full px-4 py-2.5 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400" placeholder="Ví dụ: Admin, TicketAgent..." required/>
                     <span asp-validation-for="RoleName" class="text-xs text-red-400"></span>
                 </div>
