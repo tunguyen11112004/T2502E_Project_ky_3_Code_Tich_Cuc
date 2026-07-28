@@ -381,6 +381,16 @@ public class BusClassesController : Controller
     {
         var name = className.Trim().ToLowerInvariant();
 
+        if (name.Contains("volvo") && name.Contains("non"))
+        {
+            return "Volvo_NonAC";
+        }
+
+        if (name.Contains("volvo"))
+        {
+            return "Volvo_AC";
+        }
+
         if (name.Contains("limousine"))
         {
             return "Limousine_Sleeper";

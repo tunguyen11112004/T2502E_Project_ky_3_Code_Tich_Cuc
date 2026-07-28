@@ -40,12 +40,12 @@
 
     <form method="get" asp-controller="Admin" asp-action="PriceConfig" id="filterForm" class="bg-white dark:bg-gray-800 p-4 border border-gray-200 dark:border-gray-700 rounded-xl grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
         <div>
-            <label class="block mb-1 text-xs font-semibold text-gray-400 uppercase">Lọc theo ngày đi</label>
+            <label class="block mb-1 text-xs font-semibold text-gray-700 dark:text-gray-400 uppercase">Lọc theo ngày đi</label>
             <input type="date" name="searchDate" id="searchDate" value="@searchDate"
                    class="block w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-amber-400 focus:border-amber-400"/>
         </div>
         <div>
-            <label class="block mb-1 text-xs font-semibold text-gray-400 uppercase">Tìm nhanh mã chuyến / biển số / tuyến</label>
+            <label class="block mb-1 text-xs font-semibold text-gray-700 dark:text-gray-400 uppercase">Tìm nhanh mã chuyến / biển số / tuyến</label>
             <input type="text" name="searchText" value="@searchText" placeholder="Nhập từ khóa cần tìm..."
                    class="block w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-amber-400 focus:border-amber-400"/>
         </div>
@@ -83,11 +83,11 @@
                         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-150">
                             <td class="px-6 py-4 font-semibold text-amber-400 text-xs">@trip.TripCode</td>
                             <td class="px-6 py-4 font-bold text-gray-900 dark:text-white">@trip.LicensePlate</td>
-                            <td class="px-6 py-4 text-xs text-gray-400 max-w-[160px] truncate" title="@trip.BusClassName">@trip.BusClassName</td>
+                            <td class="px-6 py-4 text-xs text-gray-600 dark:text-gray-400 max-w-[160px] truncate" title="@trip.BusClassName">@trip.BusClassName</td>
                             <td class="px-6 py-4 text-xs max-w-[180px] truncate" title="@trip.RouteLabel">@trip.RouteLabel</td>
                             <td class="px-6 py-4 text-gray-300">@trip.DepartureTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
                             <td class="px-6 py-4 font-semibold text-gray-900 dark:text-white">@trip.BaseFare.ToString("N0") đ</td>
-                            <td class="px-6 py-4 text-xs text-gray-400">@trip.BookedSeats/@trip.TotalSeats</td>
+                            <td class="px-6 py-4 text-xs text-gray-600 dark:text-gray-400">@trip.BookedSeats/@trip.TotalSeats</td>
                             <td class="px-6 py-4 text-xs @TripStatusHelper.GetBadgeClass(trip.Status)">@TripStatusHelper.GetDisplayName(trip.Status)</td>
                             <td class="px-6 py-4">
                                 <div class="flex items-center justify-center gap-2">
@@ -155,7 +155,7 @@
             var pageBtnDisabled = pageBtn + " text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 opacity-40 pointer-events-none";
 
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
-                <span class="text-xs text-gray-400 whitespace-nowrap">
+                <span class="text-xs text-gray-600 dark:text-gray-400 whitespace-nowrap">
                     @totalItems chuyến — Trang <span class="text-gray-900 dark:text-white font-semibold">@currentPage</span> / @totalPages
                 </span>
                 <div class="inline-flex flex-wrap items-center gap-1">

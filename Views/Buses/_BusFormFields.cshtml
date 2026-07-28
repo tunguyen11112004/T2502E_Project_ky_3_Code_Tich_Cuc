@@ -7,7 +7,7 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <!-- Mã xe -->
         <div>
-            <label class="block text-sm font-medium text-gray-300 mb-2">Mã xe</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Mã xe</label>
             <input type="text" id="@(prefix)BusCode" name="BusCode" value="@Model.BusCode"
                    class="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white rounded-lg px-4 py-3 focus:ring-2 focus:ring-amber-500"
                    placeholder="BUS-001" required />
@@ -15,7 +15,7 @@
 
         <!-- Biển số -->
         <div>
-            <label class="block text-sm font-medium text-gray-300 mb-2">Biển số xe</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Biển số xe</label>
             <input type="text" id="@(prefix)LicensePlate" name="LicensePlate" value="@Model.LicensePlate"
                    class="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white rounded-lg px-4 py-3 focus:ring-2 focus:ring-amber-500"
                    placeholder="29A-123.45" required />
@@ -23,7 +23,7 @@
 
         <!-- Loại xe -->
         <div class="md:col-span-2">
-            <label class="block text-sm font-medium text-gray-300 mb-2">Loại xe</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Loại xe</label>
             <select id="@(prefix)BusClassId" name="BusClassId" 
                     class="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white rounded-lg px-4 py-3 focus:ring-2 focus:ring-amber-500" required>
                 <option value="">-- Chọn loại xe --</option>
@@ -36,7 +36,7 @@
 
         <!-- Chi nhánh -->
         <div>
-            <label class="block text-sm font-medium text-gray-300 mb-2">Chi nhánh</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Chi nhánh</label>
             <select id="@(prefix)BranchId" name="BranchId" 
                     class="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white rounded-lg px-4 py-3">
                 <option value="">-- Không chọn --</option>
@@ -49,7 +49,7 @@
 
         <!-- Nhà xe -->
         <div>
-            <label class="block text-sm font-medium text-gray-300 mb-2">Nhà xe / Đối tác</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nhà xe / Đối tác</label>
             <select id="@(prefix)OperatorId" name="OperatorId" 
                     class="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white rounded-lg px-4 py-3">
                 <option value="">-- Không chọn --</option>
@@ -62,7 +62,7 @@
 
         <!-- Trạng thái -->
         <div class="md:col-span-2">
-            <label class="block text-sm font-medium text-gray-300 mb-2">Trạng thái</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Trạng thái</label>
             <select id="@(prefix)Status" name="Status" 
                     class="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white rounded-lg px-4 py-3">
                 <option value="Active" selected="@(Model.Status == "Active")">Hoạt động</option>

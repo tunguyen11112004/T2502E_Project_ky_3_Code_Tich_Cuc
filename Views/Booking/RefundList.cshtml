@@ -17,13 +17,13 @@
         <form method="get" action="@Url.Action("RefundList", "Booking")"
               class="grid grid-cols-1 sm:grid-cols-3 gap-4 flex-1">
             <div>
-                <label class="block mb-1 text-xs font-semibold text-gray-400 uppercase">Lọc theo ngày yêu cầu</label>
+                <label class="block mb-1 text-xs font-semibold text-gray-700 dark:text-gray-400 uppercase">Lọc theo ngày yêu cầu</label>
                 <input type="date" name="filterDate" value="@ViewBag.FilterDate"
                        class="block w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-rose-500 focus:border-rose-500"/>
             </div>
 
             <div>
-                <label class="block mb-1 text-xs font-semibold text-gray-400 uppercase">Tìm kiếm mã đơn vé</label>
+                <label class="block mb-1 text-xs font-semibold text-gray-700 dark:text-gray-400 uppercase">Tìm kiếm mã đơn vé</label>
                 <input type="text" name="searchCode" value="@ViewBag.SearchCode" placeholder="Nhập mã đơn BK-..."
                        class="block w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-rose-500 focus:border-rose-500"/>
             </div>
@@ -182,40 +182,40 @@
         <div class="p-6 space-y-4 text-sm text-gray-300">
             <div class="grid grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-xs font-semibold text-gray-400 uppercase mb-1">Mã Đơn Vé</label>
+                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-400 uppercase mb-1">Mã Đơn Vé</label>
                     <div id="modalBookingCode" class="px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg font-bold text-amber-400"></div>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-gray-400 uppercase mb-1">Hình Thức Hoàn</label>
-                    <div id="modalMethod" class="px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-white"></div>
+                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-400 uppercase mb-1">Hình Thức Hoàn</label>
+                    <div id="modalMethod" class="px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white"></div>
                 </div>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-xs font-semibold text-gray-400 uppercase mb-1">Tên Khách Hàng</label>
-                    <div id="modalCustomerName" class="px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-white"></div>
+                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-400 uppercase mb-1">Tên Khách Hàng</label>
+                    <div id="modalCustomerName" class="px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white"></div>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-gray-400 uppercase mb-1">Số Điện Thoại</label>
-                    <div id="modalCustomerPhone" class="px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-white"></div>
+                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-400 uppercase mb-1">Số Điện Thoại</label>
+                    <div id="modalCustomerPhone" class="px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white"></div>
                 </div>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-xs font-semibold text-gray-400 uppercase mb-1">Số Tiền Gốc</label>
+                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-400 uppercase mb-1">Số Tiền Gốc</label>
                     <div id="modalOriginalAmount" class="px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-400 line-through"></div>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-gray-400 uppercase mb-1">Số Tiền Hoàn Trả</label>
+                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-400 uppercase mb-1">Số Tiền Hoàn Trả</label>
                     <div id="modalRefundAmount" class="px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg font-bold text-rose-400"></div>
                 </div>
             </div>
 
             <div>
-                <label class="block text-xs font-semibold text-gray-400 uppercase mb-1">Lý Do Hoàn Tiền</label>
-                <div id="modalReason" class="px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-300 min-h-[60px] whitespace-pre-wrap"></div>
+                <label class="block text-xs font-semibold text-gray-700 dark:text-gray-400 uppercase mb-1">Lý Do Hoàn Tiền</label>
+                <div id="modalReason" class="px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-800 dark:text-gray-300 min-h-[60px] whitespace-pre-wrap"></div>
             </div>
         </div>
 
