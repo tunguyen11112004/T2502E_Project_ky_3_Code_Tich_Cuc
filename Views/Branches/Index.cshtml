@@ -22,8 +22,8 @@
 <div class="p-6 sm:p-8 space-y-6">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-            <h1 class="text-2xl font-bold tracking-tight text-white">Danh sách Chi nhánh</h1>
-            <p class="text-sm text-gray-400 mt-1">Quản lý văn phòng, bến xe và điểm điều hành của nhà xe.</p>
+            <h1 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Danh sách Chi nhánh</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Quản lý văn phòng, bến xe và điểm điều hành của nhà xe.</p>
         </div>
         <a asp-controller="Branches" asp-action="Create"
            class="inline-flex items-center justify-center px-4 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg transition-colors shadow-sm">
@@ -33,25 +33,25 @@
 
     @if (TempData["SuccessMessage"] != null)
     {
-        <div class="p-4 text-sm text-emerald-400 rounded-lg bg-gray-800 border border-emerald-700">
+        <div class="p-4 text-sm text-emerald-800 dark:text-emerald-400 rounded-lg bg-emerald-50 dark:bg-gray-800 border border-emerald-200 dark:border-emerald-700">
             @TempData["SuccessMessage"]
         </div>
     }
 
     @if (TempData["ErrorMessage"] != null)
     {
-        <div class="p-4 text-sm text-red-400 rounded-lg bg-gray-800 border border-red-700">
+        <div class="p-4 text-sm text-red-800 dark:text-red-400 rounded-lg bg-red-50 dark:bg-gray-800 border border-red-200 dark:border-red-700">
             @TempData["ErrorMessage"]
         </div>
     }
 
     <form method="get" asp-controller="Branches" asp-action="Index" class="grid grid-cols-1 md:grid-cols-4 gap-3">
         <input type="text" name="searchTerm" value="@searchTerm"
-               class="md:col-span-2 block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400"
+               class="md:col-span-2 block w-full px-4 py-2.5 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400"
                placeholder="Tìm theo mã, tên, địa chỉ, hotline..." />
 
         <select name="status"
-                class="block w-full px-4 py-2.5 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400">
+                class="block w-full px-4 py-2.5 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400">
             <option value="">Tất cả trạng thái</option>
             <option value="Active" selected="@activeSelected">Active</option>
             <option value="Inactive" selected="@inactiveSelected">Inactive</option>
@@ -63,10 +63,10 @@
         </button>
     </form>
 
-    <div class="overflow-hidden bg-[#1e1e24] border border-gray-700/50 rounded-xl shadow-xl">
+    <div class="overflow-hidden bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl">
         <div class="overflow-x-auto">
-            <table class="w-full text-sm text-left text-gray-300 whitespace-nowrap">
-                <thead class="text-xs uppercase bg-[#141419] text-gray-400 border-b border-gray-700/60">
+            <table class="w-full text-sm text-left text-gray-600 dark:text-gray-300 whitespace-nowrap">
+                <thead class="text-xs uppercase bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
                     <tr>
                         <th class="px-6 py-4">Mã chi nhánh</th>
                         <th class="px-6 py-4">Tên chi nhánh</th>
@@ -76,11 +76,11 @@
                         <th class="px-6 py-4 text-right">Hành động</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-700/50">
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                     @if (!Model.Any())
                     {
                         <tr>
-                            <td colspan="6" class="px-6 py-10 text-center text-gray-500 bg-[#1e1e24]">
+                            <td colspan="6" class="px-6 py-10 text-center text-gray-500 bg-white dark:bg-gray-800">
                                 Không có chi nhánh phù hợp.
                             </td>
                         </tr>
@@ -95,8 +95,8 @@
                                     ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
                                     : "bg-rose-500/10 text-rose-400 border-rose-500/20";
 
-                            <tr class="hover:bg-gray-800/30 transition-colors">
-                                <td class="px-6 py-4 font-semibold text-white">@item.BranchCode</td>
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                                <td class="px-6 py-4 font-semibold text-gray-900 dark:text-white">@item.BranchCode</td>
                                 <td class="px-6 py-4">@item.BranchName</td>
                                 <td class="px-6 py-4 text-gray-400 max-w-xs truncate">@item.Address</td>
                                 <td class="px-6 py-4 text-gray-400">@item.PhoneNumber</td>
@@ -123,21 +123,21 @@
             </table>
         </div>
 
-        <div class="flex flex-col md:flex-row items-center justify-between gap-3 px-6 py-4 bg-[#141419] border-t border-gray-700/60 text-sm text-gray-400">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-3 px-6 py-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 text-sm text-gray-400">
             <div>Hiển thị @startItem - @endItem trong tổng số @totalItems chi nhánh</div>
             <div class="flex items-center gap-2">
                 @if (currentPage > 1)
                 {
                     <a asp-action="Index" asp-route-page="@(currentPage - 1)" asp-route-searchTerm="@searchTerm" asp-route-status="@status"
-                       class="px-3 py-1.5 rounded-md border border-gray-700 hover:bg-gray-800">Trước</a>
+                       class="px-3 py-1.5 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">Trước</a>
                 }
 
-                <span class="px-3 py-1.5 rounded-md bg-gray-800 text-white">@currentPage / @(totalPages == 0 ? 1 : totalPages)</span>
+                <span class="px-3 py-1.5 rounded-md bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white">@currentPage / @(totalPages == 0 ? 1 : totalPages)</span>
 
                 @if (currentPage < totalPages)
                 {
                     <a asp-action="Index" asp-route-page="@(currentPage + 1)" asp-route-searchTerm="@searchTerm" asp-route-status="@status"
-                       class="px-3 py-1.5 rounded-md border border-gray-700 hover:bg-gray-800">Sau</a>
+                       class="px-3 py-1.5 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">Sau</a>
                 }
             </div>
         </div>

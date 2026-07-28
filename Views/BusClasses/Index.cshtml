@@ -16,8 +16,8 @@
 <div class="p-4 sm:p-6 lg:p-8 space-y-6 max-w-full overflow-x-hidden">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-            <h1 class="text-2xl font-bold tracking-tight text-white">Cấu hình Loại Xe (BusClasses)</h1>
-            <p class="text-sm text-gray-400 mt-1">Danh sách cấu hình loại xe: tên, hàng/cột/tầng ghế, ảnh và trạng thái.</p>
+            <h1 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Cấu hình Loại Xe (BusClasses)</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Danh sách cấu hình loại xe: tên, hàng/cột/tầng ghế, ảnh và trạng thái.</p>
         </div>
 
         <a asp-action="Create" id="btnCreateBusClass"
@@ -31,14 +31,14 @@
 
     @if (TempData["SuccessMessage"] != null)
     {
-        <div class="flex items-center p-4 text-sm text-emerald-400 rounded-lg bg-gray-800 border border-emerald-800">
+        <div class="flex items-center p-4 text-sm text-emerald-800 dark:text-emerald-400 rounded-lg bg-emerald-50 dark:bg-gray-800 border border-emerald-200 dark:border-emerald-800">
             <div><span class="font-medium">Thành công!</span> @TempData["SuccessMessage"]</div>
         </div>
     }
 
     @if (TempData["ErrorMessage"] != null)
     {
-        <div class="flex items-center p-4 text-sm text-red-400 rounded-lg bg-gray-800 border border-red-800">
+        <div class="flex items-center p-4 text-sm text-red-800 dark:text-red-400 rounded-lg bg-red-50 dark:bg-gray-800 border border-red-200 dark:border-red-800">
             <div><span class="font-medium">Thất bại!</span> @TempData["ErrorMessage"]</div>
         </div>
     }
@@ -55,16 +55,16 @@
                 <input type="text"
                        name="searchTerm"
                        value="@searchTerm"
-                       class="block w-full pl-10 pr-4 py-2 text-sm text-white bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 placeholder-gray-500"
+                       class="block w-full pl-10 pr-4 py-2 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 placeholder-gray-500"
                        placeholder="Tìm kiếm hạng xe..." />
             </div>
         </form>
     </div>
 
-    <div class="w-full max-w-full overflow-hidden bg-[#1e1e24] border border-gray-700/50 rounded-xl shadow-xl">
+    <div class="w-full max-w-full overflow-hidden bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl">
         <div class="w-full overflow-x-auto">
-            <table class="w-full min-w-[960px] table-fixed text-sm text-left text-gray-300">
-                <thead class="text-xs uppercase bg-[#141419] text-gray-400 border-b border-gray-700/60">
+            <table class="w-full min-w-[960px] table-fixed text-sm text-left text-gray-600 dark:text-gray-300">
+                <thead class="text-xs uppercase bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
                     <tr>
                         <th class="w-20 px-4 py-4 font-semibold tracking-wider">Ảnh</th>
                         <th class="w-48 px-4 py-4 font-semibold tracking-wider">Tên loại xe</th>
@@ -77,7 +77,7 @@
                     </tr>
                 </thead>
 
-                <tbody class="divide-y divide-gray-700/50">
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                     @if (Model == null || !Model.Any())
                     {
                         <tr>
@@ -90,7 +90,7 @@
                     {
                         foreach (var item in Model)
                         {
-                            <tr class="hover:bg-gray-800/30 transition-colors duration-150">
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-150">
                                 <td class="px-4 py-4">
                                     @if (!string.IsNullOrEmpty(item.ImageUrl))
                                     {
@@ -108,10 +108,10 @@
                                     @(string.IsNullOrWhiteSpace(item.ClassName) ? "—" : item.ClassName)
                                 </td>
 
-                                <td class="px-4 py-4 text-white">@(item.TotalRows > 0 ? item.TotalRows : "—")</td>
-                                <td class="px-4 py-4 text-white">@(item.TotalColumns > 0 ? item.TotalColumns : "—")</td>
-                                <td class="px-4 py-4 text-white">@(item.TotalFloors > 0 ? item.TotalFloors : "—")</td>
-                                <td class="px-4 py-4 font-semibold text-white">@(item.TotalSeats > 0 ? item.TotalSeats : "—")</td>
+                                <td class="px-4 py-4 text-gray-900 dark:text-white">@(item.TotalRows > 0 ? item.TotalRows : "—")</td>
+                                <td class="px-4 py-4 text-gray-900 dark:text-white">@(item.TotalColumns > 0 ? item.TotalColumns : "—")</td>
+                                <td class="px-4 py-4 text-gray-900 dark:text-white">@(item.TotalFloors > 0 ? item.TotalFloors : "—")</td>
+                                <td class="px-4 py-4 font-semibold text-gray-900 dark:text-white">@(item.TotalSeats > 0 ? item.TotalSeats : "—")</td>
 
                                 <td class="px-4 py-4">
                                     @if (string.Equals(item.Status, "Active", StringComparison.OrdinalIgnoreCase))
@@ -157,11 +157,11 @@
             </table>
         </div>
 
-        <div class="flex flex-col sm:flex-row items-center justify-between p-4 bg-[#141419] border-t border-gray-700/60 gap-4">
+        <div class="flex flex-col sm:flex-row items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 gap-4">
             <span class="text-sm text-gray-400">
-                Hiển thị từ <span class="font-semibold text-white">@startItem</span> đến
-                <span class="font-semibold text-white">@endItem</span> trong tổng số
-                <span class="font-semibold text-white">@totalItems</span> loại xe
+                Hiển thị từ <span class="font-semibold text-gray-900 dark:text-white">@startItem</span> đến
+                <span class="font-semibold text-gray-900 dark:text-white">@endItem</span> trong tổng số
+                <span class="font-semibold text-gray-900 dark:text-white">@totalItems</span> loại xe
             </span>
 
             @if (totalPages > 1)
@@ -170,7 +170,7 @@
                     <a asp-action="Index"
                        asp-route-page="@(currentPage - 1)"
                        asp-route-searchTerm="@searchTerm"
-                       class="relative inline-flex items-center rounded-l-md px-3 py-2 text-sm font-medium border border-gray-700 bg-gray-900 text-gray-400 hover:bg-gray-800 hover:text-white @(currentPage == 1 ? "pointer-events-none opacity-40" : "")">
+                       class="relative inline-flex items-center rounded-l-md px-3 py-2 text-sm font-medium border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white @(currentPage == 1 ? "pointer-events-none opacity-40" : "")">
                         Trước
                     </a>
 
@@ -187,7 +187,7 @@
                             <a asp-action="Index"
                                asp-route-page="@i"
                                asp-route-searchTerm="@searchTerm"
-                               class="relative inline-flex items-center border border-gray-700 bg-gray-900 px-4 py-2 text-sm font-medium text-gray-400 hover:bg-gray-800 hover:text-white">
+                               class="relative inline-flex items-center border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white">
                                 @i
                             </a>
                         }
@@ -196,7 +196,7 @@
                     <a asp-action="Index"
                        asp-route-page="@(currentPage + 1)"
                        asp-route-searchTerm="@searchTerm"
-                       class="relative inline-flex items-center rounded-r-md px-3 py-2 text-sm font-medium border border-gray-700 bg-gray-900 text-gray-400 hover:bg-gray-800 hover:text-white @(currentPage == totalPages ? "pointer-events-none opacity-40" : "")">
+                       class="relative inline-flex items-center rounded-r-md px-3 py-2 text-sm font-medium border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white @(currentPage == totalPages ? "pointer-events-none opacity-40" : "")">
                         Tiếp
                     </a>
                 </nav>

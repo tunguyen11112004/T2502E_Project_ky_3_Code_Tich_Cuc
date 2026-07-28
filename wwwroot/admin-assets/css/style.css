@@ -32,3 +32,24 @@
     -ms-overflow-style: none !important;  /* IE and Edge */
     scrollbar-width: none !important;  /* Firefox */
 }
+
+/* Admin theme surfaces — đồng bộ light/dark với toggle (html.dark) */
+.admin-seat-btn {
+    background-color: #f3f4f6;
+    color: #374151;
+    border-color: #d1d5db;
+}
+html.dark .admin-seat-btn {
+    background-color: #1f2937;
+    color: #d1d5db;
+    border-color: #4b5563;
+}
+
+.dashboard-stat-button.dashboard-stat-active {
+    background-color: #f3f4f6;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+}
+html.dark .dashboard-stat-button.dashboard-stat-active {
+    background-color: #374151;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+}

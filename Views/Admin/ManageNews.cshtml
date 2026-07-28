@@ -4,7 +4,7 @@
     Layout = "_AdminLayout";
 }
 
-<div class="p-6 bg-gray-900 min-h-screen text-white">
+<div class="p-6 bg-white dark:bg-gray-900 min-h-screen text-gray-900 dark:text-white">
     <div class="max-w-7xl mx-auto">
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-2xl font-bold flex items-center gap-2">
@@ -17,15 +17,15 @@
 
         @if (TempData["SuccessMessage"] != null)
         {
-            <div class="bg-green-950 border border-green-800 text-green-300 p-4 rounded-lg mb-6 text-sm">
+            <div class="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-300 p-4 rounded-lg mb-6 text-sm">
                 @TempData["SuccessMessage"]
             </div>
         }
 
-        <div class="bg-gray-800 rounded-xl overflow-hidden border border-gray-700 shadow-xl">
+        <div class="bg-white dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-xl">
             <table class="w-full text-left text-sm border-collapse">
                 <thead>
-                    <tr class="bg-gray-750 text-gray-300 uppercase text-xs font-bold border-b border-gray-700">
+                    <tr class="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 uppercase text-xs font-bold border-b border-gray-200 dark:border-gray-700">
                         <th class="p-4 w-28">Hình ảnh</th>
                         <th class="p-4">Tiêu đề bài viết</th>
                         <th class="p-4 w-36">Nguồn</th>
@@ -34,33 +34,33 @@
                         <th class="p-4 w-32 text-center">Hành động</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-700/50">
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                     @if (Model != null && Model.Any())
                     {
                         foreach (var item in Model)
                         {
-                            <tr class="hover:bg-gray-750/30 transition-all">
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-all">
                                 <td class="p-4">
-                                    <img src="@item.ThumbnailUrl" class="w-20 h-12 object-cover rounded border border-gray-700" alt="Thumbnail" />
+                                    <img src="@item.ThumbnailUrl" class="w-20 h-12 object-cover rounded border border-gray-200 dark:border-gray-700" alt="Thumbnail" />
                                 </td>
-                                <td class="p-4 font-semibold text-gray-100">
+                                <td class="p-4 font-semibold text-gray-900 dark:text-gray-100">
                                     @item.Title
                                 </td>
                                 <td class="p-4">
-                                    <span class="bg-gray-700 text-gray-300 text-xs px-2.5 py-1 rounded-md">
+                                    <span class="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs px-2.5 py-1 rounded-md">
                                         @item.SourceSite
                                     </span>
                                 </td>
                                 <td class="p-4">
                                     @if (item.IsApproved)
                                     {
-                                        <span class="bg-green-950 text-green-400 border border-green-900 text-xs px-2.5 py-1 rounded-full font-medium">
+                                        <span class="bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-900 text-xs px-2.5 py-1 rounded-full font-medium">
                                             Đã Xuất Bản
                                         </span>
                                     }
                                     else
                                     {
-                                        <span class="bg-yellow-950 text-yellow-400 border border-yellow-900 text-xs px-2.5 py-1 rounded-full font-medium">
+                                        <span class="bg-yellow-50 dark:bg-yellow-950 text-yellow-700 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-900 text-xs px-2.5 py-1 rounded-full font-medium">
                                             Bản Nháp (Chờ Duyệt)
                                         </span>
                                     }

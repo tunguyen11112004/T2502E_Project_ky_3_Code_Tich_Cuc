@@ -5,11 +5,11 @@
     Layout = "_AdminLayout";
 }
 
-<div class="p-4 sm:p-6 bg-gray-900 min-h-screen text-gray-200">
-    <div class="max-w-7xl mx-auto p-4 sm:p-6 border border-gray-800 rounded-xl bg-gray-900/50 shadow-xl">
+<div class="p-4 sm:p-6 bg-white dark:bg-gray-900 min-h-screen text-gray-900 dark:text-gray-200">
+    <div class="max-w-7xl mx-auto p-4 sm:p-6 border border-gray-200 dark:border-gray-800 rounded-xl bg-white dark:bg-gray-900/50 shadow-xl">
         
         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-gray-800">
-            <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                 📝 Biên Tập Tin Tức
             </h2>
             <a href="/Admin/ManageNews" class="text-sm text-blue-400 hover:text-blue-300 hover:underline flex items-center gap-1 transition-colors">
@@ -37,7 +37,7 @@
             <input type="hidden" asp-for="CreatedDate" />
 
             <div class="p-6 bg-gray-800/80 rounded-xl border border-gray-700/80 shadow-sm space-y-4">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pb-2 border-b border-gray-700/50">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pb-2 border-b border-gray-200 dark:border-gray-700">
                     <h3 class="text-lg font-semibold text-yellow-400 flex items-center gap-2">
                         ⚙️ Cấu Hình Bộ Cào XPath Cho Liên Kết
                     </h3>
@@ -49,19 +49,19 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="block mb-2 text-sm font-medium text-gray-300">XPath Tiêu đề (Title)</label>
-                        <input type="text" asp-for="TitleXpath" class="bg-gray-900/90 border border-gray-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent block w-full p-2.5 transition-all" placeholder="//h1" />
+                        <input type="text" asp-for="TitleXpath" class="bg-white dark:bg-gray-900/90 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent block w-full p-2.5 transition-all" placeholder="//h1" />
                     </div>
                     <div>
                         <label class="block mb-2 text-sm font-medium text-gray-300">XPath Mô tả ngắn (Description)</label>
-                        <input type="text" asp-for="DescXpath" class="bg-gray-900/90 border border-gray-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent block w-full p-2.5 transition-all" placeholder="//h2" />
+                        <input type="text" asp-for="DescXpath" class="bg-white dark:bg-gray-900/90 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent block w-full p-2.5 transition-all" placeholder="//h2" />
                     </div>
                     <div>
                         <label class="block mb-2 text-sm font-medium text-gray-300">XPath Nội dung chính (Content)</label>
-                        <input type="text" asp-for="ContentXpath" class="bg-gray-900/90 border border-gray-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent block w-full p-2.5 transition-all" placeholder="//div[contains(@@class,'content')]" />
+                        <input type="text" asp-for="ContentXpath" class="bg-white dark:bg-gray-900/90 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent block w-full p-2.5 transition-all" placeholder="//div[contains(@@class,'content')]" />
                     </div>
                     <div>
                         <label class="block mb-2 text-sm font-medium text-gray-300">XPath Ảnh bài viết (Thumbnail)</label>
-                        <input type="text" asp-for="ThumbXpath" class="bg-gray-900/90 border border-gray-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent block w-full p-2.5 transition-all" placeholder="//img" />
+                        <input type="text" asp-for="ThumbXpath" class="bg-white dark:bg-gray-900/90 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent block w-full p-2.5 transition-all" placeholder="//img" />
                     </div>
                 </div>
 
@@ -73,19 +73,19 @@
             </div>
 
             <div class="p-6 bg-gray-800/80 rounded-xl border border-gray-700/80 shadow-sm space-y-5">
-                <h3 class="text-lg font-semibold text-yellow-400 flex items-center gap-2 pb-2 border-b border-gray-700/50">
+                <h3 class="text-lg font-semibold text-yellow-400 flex items-center gap-2 pb-2 border-b border-gray-200 dark:border-gray-700">
                     ✍️ Nội Dung Bài Viết Thu Hoạch
                 </h3>
 
                 <div>
                     <label class="block mb-2 text-sm font-medium text-gray-300">Tiêu Đề Tin Tức</label>
-                    <input type="text" asp-for="Title" id="Title" class="bg-gray-900/90 border border-gray-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent block w-full p-2.5 font-semibold" required />
+                    <input type="text" asp-for="Title" id="Title" class="bg-white dark:bg-gray-900/90 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent block w-full p-2.5 font-semibold" required />
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                     <div class="md:col-span-3">
                         <label class="block mb-2 text-sm font-medium text-gray-300">Đường Dẫn Ảnh Đại Diện (Thumbnail URL)</label>
-                        <input type="text" asp-for="ThumbnailUrl" id="ThumbnailUrl" class="bg-gray-900/90 border border-gray-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent block w-full p-2.5" />
+                        <input type="text" asp-for="ThumbnailUrl" id="ThumbnailUrl" class="bg-white dark:bg-gray-900/90 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent block w-full p-2.5" />
                     </div>
                     <div>
                         <label class="block mb-2 text-xs font-medium text-gray-400 text-center">Xem trước ảnh</label>
@@ -97,16 +97,16 @@
 
                 <div>
                     <label class="block mb-2 text-sm font-medium text-gray-300">Mô Tả Sapo Ngắn</label>
-                    <textarea asp-for="Description" id="Description" rows="3" class="bg-gray-900/90 border border-gray-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent block w-full p-2.5" placeholder="Tóm tắt ngắn bài viết..."></textarea>
+                    <textarea asp-for="Description" id="Description" rows="3" class="bg-white dark:bg-gray-900/90 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent block w-full p-2.5" placeholder="Tóm tắt ngắn bài viết..."></textarea>
                 </div>
 
                 <div>
                     <label class="block mb-2 text-sm font-medium text-gray-300">Nội Dung Chi Tiết (Mã nguồn HTML/Text)</label>
-                    <textarea asp-for="Content" id="Content" rows="12" class="font-mono bg-gray-900/90 border border-gray-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent block w-full p-2.5 text-xs leading-relaxed" placeholder="Mã HTML bài viết chi tiết..."></textarea>
+                    <textarea asp-for="Content" id="Content" rows="12" class="font-mono bg-white dark:bg-gray-900/90 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent block w-full p-2.5 text-xs leading-relaxed" placeholder="Mã HTML bài viết chi tiết..."></textarea>
                 </div>
 
                 <div class="flex items-center pt-2">
-                    <input type="checkbox" asp-for="IsApproved" id="IsApproved" class="w-4 h-4 text-blue-600 bg-gray-900 border-gray-700 rounded focus:ring-blue-500 focus:ring-offset-gray-800 cursor-pointer" />
+                    <input type="checkbox" asp-for="IsApproved" id="IsApproved" class="w-4 h-4 text-blue-600 bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700 rounded focus:ring-blue-500 focus:ring-offset-white dark:focus:ring-offset-gray-800 cursor-pointer" />
                     <label for="IsApproved" class="ml-2 text-sm font-medium text-gray-300 cursor-pointer select-none">Xuất bản bài viết này lên trang chủ ngay sau khi lưu</label>
                 </div>
             </div>
@@ -125,9 +125,9 @@
 
 <div id="previewModal" class="fixed inset-0 z-50 hidden overflow-y-auto bg-black/80 backdrop-blur-sm flex justify-center items-start p-4 sm:p-10">
     <div class="relative w-full max-w-4xl my-auto">
-        <div class="relative bg-gray-900 rounded-xl shadow-2xl border border-gray-700 text-gray-200 overflow-hidden">
+        <div class="relative bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-200 overflow-hidden">
             <div class="flex justify-between items-center p-4 border-b border-gray-800 bg-gray-800/50">
-                <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                     🖥️ Bản xem trước giao diện Client (Chưa Lưu)
                 </h3>
                 <button type="button" onclick="closePreviewModal()" class="text-gray-400 bg-transparent hover:bg-gray-700 hover:text-white rounded-lg text-sm p-1.5 ml-auto inline-flex items-center transition-colors">
