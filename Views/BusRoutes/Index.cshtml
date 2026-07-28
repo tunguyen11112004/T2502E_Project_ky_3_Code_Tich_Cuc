@@ -1,0 +1,366 @@
+﻿@model List<Bus_ticket.Models.BusRoute>
+
+@{
+Layout = "_AdminLayout";
+ViewData["Title"] = "Quản lý Tuyến đường";
+}
+
+<div class="p-4 sm:p-6 lg:p-8 space-y-6 max-w-full overflow-x-hidden">
+
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+
+        <div>
+            <h1 class="text-2xl font-bold tracking-tight text-white">
+                Danh mục Tuyến đường
+            </h1>
+
+            <p class="text-sm text-gray-400 mt-1">
+                Quản lý các tuyến xe được sử dụng khi tạo chuyến.
+            </p>
+        </div>
+
+        <button type="button"
+                onclick="showRouteModal('modal-route-create')"
+                class="inline-flex items-center justify-center px-4 py-2.5 text-sm font-semibold text-gray-900 bg-amber-400 hover:bg-amber-500 rounded-lg transition-colors duration-200 shadow-sm">
+
+            Thêm tuyến mới
+
+        </button>
+
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="flex items-center p-4 text-sm text-emerald-400 rounded-lg bg-gray-800 border border-emerald-800">
+            <span class="font-medium">
+                @TempData["SuccessMessage"]
+            </span>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="flex items-center p-4 text-sm text-red-400 rounded-lg bg-gray-800 border border-red-800">
+            <span class="font-medium">
+                @TempData["ErrorMessage"]
+            </span>
+        </div>
+    }
+
+    <div class="w-full max-w-full overflow-hidden bg-[#1e1e24] border border-gray-700/50 rounded-xl shadow-xl">
+
+        <div class="w-full overflow-x-auto">
+
+            <table class="w-full table-auto text-sm text-left text-gray-300">
+
+                <thead class="text-xs uppercase bg-[#141419] text-gray-400 border-b border-gray-700">
+
+                <tr>
+
+                    <th class="px-5 py-4">
+                        Điểm đi
+                    </th>
+
+                    <th class="px-5 py-4">
+                        Điểm đến
+                    </th>
+
+                    <th class="px-5 py-4">
+                        Khoảng cách
+                    </th>
+
+                    <th class="px-5 py-4 text-right">
+                        Hành động
+                    </th>
+
+                </tr>
+
+                </thead>
+
+                <tbody class="divide-y divide-gray-700">
+
+                @if (!Model.Any())
+                {
+                    <tr>
+
+                        <td colspan="4"
+                            class="px-6 py-10 text-center text-gray-500">
+
+                            Chưa có tuyến đường.
+
+                        </td>
+
+                    </tr>
+                }
+
+                @foreach (var item in Model)
+                {
+                    <tr class="hover:bg-gray-800/40">
+
+                        <td class="px-5 py-4 text-white">
+
+                            @item.DeparturePoint
+
+                        </td>
+
+                        <td class="px-5 py-4">
+
+                            @item.DestinationPoint
+
+                        </td>
+
+                        <td class="px-5 py-4">
+
+                            @item.DistanceKm km
+
+                        </td>
+
+                        <td class="px-5 py-4 text-right">
+
+                            <button
+                                type="button"
+                                onclick="editRoute('@item.Id')"
+                                class="text-amber-400 hover:text-amber-300 font-semibold">
+
+                                Sửa
+
+                            </button>
+
+                            <span class="mx-2 text-gray-600">|</span>
+
+                            <button
+                                type="button"
+                                onclick="deleteRoute('@item.Id')"
+                                class="text-rose-400 hover:text-rose-300 font-semibold">
+
+                                Xóa
+
+                            </button>
+
+                        </td>
+
+                    </tr>
+                }
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+<!-- Modal Delete -->
+<div id="modal-route-delete"
+     tabindex="-1"
+     aria-hidden="true"
+     class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+
+    <div class="relative w-full max-w-md mx-4 bg-[#1e1e24] rounded-xl shadow-xl border border-gray-700">
+
+        <div class="p-6">
+
+            <h3 class="text-xl font-semibold text-white mb-4">
+                Xác nhận xóa
+            </h3>
+
+            <p class="text-gray-300 mb-6">
+                Bạn có chắc chắn muốn xóa tuyến đường này không?
+            </p>
+
+            <form asp-action="Delete" method="post">
+
+                @Html.AntiForgeryToken()
+
+                <input type="hidden"
+                       id="DeleteId"
+                       name="id" />
+
+                <div class="flex justify-end gap-3">
+
+                    <button type="button"
+                            onclick="hideRouteModal('modal-route-delete')"
+                            class="px-6 py-2.5 text-sm font-semibold text-gray-300">
+
+                        Hủy
+
+                    </button>
+
+                    <button type="submit"
+                            class="px-6 py-2.5 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-700">
+
+                        Xóa
+
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+<!-- Modal Create -->
+<div id="modal-route-create"
+     tabindex="-1"
+     aria-hidden="true"
+     class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+
+    <div class="relative w-full max-w-2xl mx-4 bg-[#1e1e24] rounded-xl shadow-xl border border-gray-700 max-h-[90vh] overflow-y-auto">
+
+        <div class="flex items-center justify-between p-6 border-b border-gray-700">
+
+            <h3 class="text-xl font-semibold text-white">
+
+                Thêm tuyến đường
+
+            </h3>
+
+            <button type="button"
+                    onclick="hideRouteModal('modal-route-create')"
+                    class="text-gray-400 hover:text-white">
+
+                Đóng
+
+            </button>
+
+        </div>
+
+        <form asp-action="Create"
+              method="post"
+              class="p-6 space-y-6">
+
+            @Html.AntiForgeryToken()
+
+            @await Html.PartialAsync("_BusRouteFormFields",
+                new Bus_ticket.ViewModels.BusRouteFormViewModel())
+
+            <div class="flex justify-end gap-3">
+
+                <button type="button"
+                        onclick="hideRouteModal('modal-route-create')"
+                        class="px-6 py-2.5 text-sm font-semibold text-gray-300">
+
+                    Hủy
+
+                </button>
+
+                <button type="submit"
+                        class="px-6 py-2.5 rounded-lg bg-amber-400 text-gray-900 font-semibold hover:bg-amber-500">
+
+                    Lưu
+
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+<!-- Modal Edit -->
+<div id="modal-route-edit"
+     tabindex="-1"
+     aria-hidden="true"
+     class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+
+    <div class="relative w-full max-w-2xl mx-4 bg-[#1e1e24] rounded-xl shadow-xl border border-gray-700 max-h-[90vh] overflow-y-auto">
+
+        <div class="flex items-center justify-between p-6 border-b border-gray-700">
+
+            <h3 class="text-xl font-semibold text-white">
+                Cập nhật tuyến đường
+            </h3>
+
+            <button type="button"
+                    onclick="hideRouteModal('modal-route-edit')"
+                    class="text-gray-400 hover:text-white">
+
+                Đóng
+
+            </button>
+
+        </div>
+
+        <form asp-action="Edit"
+              method="post"
+              class="p-6 space-y-6">
+
+            @Html.AntiForgeryToken()
+
+            <input type="hidden"
+                   id="EditId"
+                   name="Id" />
+
+            @await Html.PartialAsync(
+                "_BusRouteFormFields",
+                new Bus_ticket.ViewModels.BusRouteFormViewModel(),
+                new ViewDataDictionary(ViewData)
+                {
+                    ["IdPrefix"] = "Edit"
+                })
+
+            <div class="flex justify-end gap-3">
+
+                <button type="button"
+                        onclick="hideRouteModal('modal-route-edit')"
+                        class="px-6 py-2.5 text-sm font-semibold text-gray-300">
+
+                    Hủy
+
+                </button>
+
+                <button type="submit"
+                        class="px-6 py-2.5 rounded-lg bg-amber-400 text-gray-900 font-semibold hover:bg-amber-500">
+
+                    Cập nhật
+
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+<script>
+    function showRouteModal(id) {
+        document
+            .getElementById(id)
+            .classList.remove("hidden");
+    }
+
+    function hideRouteModal(id) {
+        document
+            .getElementById(id)
+            .classList.add("hidden");
+    }
+
+    async function editRoute(id) {
+
+        const response = await fetch("/BusRoutes/GetForEdit?id=" + id);
+
+        const data = await response.json();
+
+        document.getElementById("EditId").value = data.id;
+        document.getElementById("EditDeparturePoint").value = data.departurePoint;
+        document.getElementById("EditDestinationPoint").value = data.destinationPoint;
+        document.getElementById("EditDistanceKm").value = data.distanceKm;
+
+        showRouteModal("modal-route-edit");
+    }
+
+    function deleteRoute(id) {
+
+        document.getElementById("DeleteId").value = id;
+
+        showRouteModal("modal-route-delete");
+    }
+</script>

@@ -1,0 +1,62 @@
+﻿@model Bus_ticket.ViewModels.BusRouteFormViewModel
+
+@{
+    var prefix = ViewData["IdPrefix"]?.ToString() ?? "";
+}
+
+@if (!string.IsNullOrEmpty(prefix))
+{
+    <input asp-for="Id" id="@(prefix)Id" type="hidden" />
+}
+else
+{
+    <input asp-for="Id" type="hidden" />
+}
+
+<div class="grid grid-cols-1 gap-6">
+
+    <div>
+        <label class="block mb-2 text-sm font-medium text-white">
+            Điểm đi
+        </label>
+
+        <input asp-for="DeparturePoint"
+               id="@(prefix)DeparturePoint"
+               class="w-full rounded-lg border border-gray-700 bg-gray-900 text-white px-4 py-2.5"
+               placeholder="Ví dụ: Hà Nội" />
+
+        <span asp-validation-for="DeparturePoint"
+              class="text-red-400 text-sm"></span>
+    </div>
+
+    <div>
+        <label class="block mb-2 text-sm font-medium text-white">
+            Điểm đến
+        </label>
+
+        <input asp-for="DestinationPoint"
+               id="@(prefix)DestinationPoint"
+               class="w-full rounded-lg border border-gray-700 bg-gray-900 text-white px-4 py-2.5"
+               placeholder="Ví dụ: Hải Phòng" />
+
+        <span asp-validation-for="DestinationPoint"
+              class="text-red-400 text-sm"></span>
+    </div>
+
+    <div>
+        <label class="block mb-2 text-sm font-medium text-white">
+            Khoảng cách (Km)
+        </label>
+
+        <input asp-for="DistanceKm"
+               id="@(prefix)DistanceKm"
+               type="number"
+               step="0.1"
+               class="w-full rounded-lg border border-gray-700 bg-gray-900 text-white px-4 py-2.5"
+               placeholder="120" />
+
+        <span asp-validation-for="DistanceKm"
+              class="text-red-400 text-sm"></span>
+    </div>
+
+</div>
