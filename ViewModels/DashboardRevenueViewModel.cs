@@ -7,6 +7,9 @@ namespace Bus_ticket.ViewModels
     {
         public List<RevenueByCategoryDto> ChartData { get; set; } = new();
         public List<TransactionDetailDto> TableData { get; set; } = new();
+        
+        // THÊM DÒNG NÀY ĐỂ HỨNG DATA VÉ HỦY TỪ SERVICE -> VIEW
+        public int TotalCanceled { get; set; } 
     }
 
     public class RevenueByCategoryDto
@@ -22,5 +25,8 @@ namespace Bus_ticket.ViewModels
         public string BusClass { get; set; } = string.Empty;
         public DateTime PaymentDate { get; set; }
         public decimal Amount { get; set; }
+        
+        // Hứng dữ liệu phương thức thanh toán
+        public string PaymentMethod { get; set; } = string.Empty; 
     }
 }

@@ -286,14 +286,20 @@ namespace Bus_ticket.Services
         }
 
 
+        // ĐÃ CẬP NHẬT: Tính vé hủy, map PaymentMethod
         public async Task<DashboardRevenueViewModel> GetSystemTotalRevenueAsync(DateTime fromDate, DateTime toDate)
         {
             var (fromUtc, toUtc) = ToUtcDateRange(fromDate, toDate);
 
+            // 1. Lấy toàn bộ booking trong khoảng thời gian
             var bookings = await _dbContext.Bookings
                 .Find(b => b.BookingTime >= fromUtc && b.BookingTime <= toUtc)
                 .ToListAsync();
 
+            // 2. TÍNH TOÁN SỐ VÉ HỦY 
+            var canceledCount = bookings.Count(b => IsCancelled(b.BookingStatus));
+
+            // 3. Lọc ra các booking hợp lệ để tính doanh thu
             var validBookings = bookings
                 .Where(b => IsCompletedBooking(b.BookingStatus) && IsPaidBooking(b.PaymentStatus))
                 .ToList();
@@ -307,8 +313,6 @@ namespace Bus_ticket.Services
             var tableData = validBookings.Select(b => 
             {
                 var trip = trips.FirstOrDefault(t => t.Id == b.TripId);
-                
-                // Sử dụng số ghế thực tế từ Trip để tránh lỗi thiếu thuộc tính TotalSeats trong Model Bus
                 var totalSeats = trip?.RealtimeSeats?.Count ?? 0;
                 
                 var busClass = "Tiêu chuẩn"; 
@@ -317,13 +321,18 @@ namespace Bus_ticket.Services
                     busClass = totalSeats > 30 ? "Giường Nằm" : "Limousine"; 
                 }
 
+                // Map Payment Method từ PaymentInfo
+                var paymentMethodStr = b.Payment?.PaymentMethod;
+
                 return new TransactionDetailDto
                 {
                     BookingCode = b.Id, 
-                    CustomerName = "Khách Hàng", // Tuỳ chỉnh lấy tên nếu có trong model booking
+                    CustomerName = "Khách Hàng", 
                     BusClass = busClass,
                     PaymentDate = b.BookingTime.ToLocalTime(),
-                    Amount = b.FinalAmount
+                    Amount = b.FinalAmount,
+                    // Map Payment Method, nếu rỗng thì cho mặc định là "Tiền mặt"
+                    PaymentMethod = string.IsNullOrEmpty(paymentMethodStr) ? "Tiền mặt" : paymentMethodStr
                 };
             })
             .OrderByDescending(x => x.PaymentDate)
@@ -340,7 +349,8 @@ namespace Bus_ticket.Services
             return new DashboardRevenueViewModel
             {
                 TableData = tableData,
-                ChartData = chartData
+                ChartData = chartData,
+                TotalCanceled = canceledCount // Truyền số lượng vé hủy ra ngoài
             };
         }
 
