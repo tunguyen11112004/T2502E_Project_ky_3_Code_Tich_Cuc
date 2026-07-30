@@ -1,0 +1,24 @@
+@{
+    var activeFilter = ViewBag.ActiveFilter as string;
+    var activeFilterLabel = ViewBag.ActiveFilterLabel as string ?? string.Empty;
+    var detailAction = ViewData["DetailAction"] as string ?? string.Empty;
+    var fromDateValue = ViewBag.FromDateValue as string ?? string.Empty;
+    var toDateValue = ViewBag.ToDateValue as string ?? string.Empty;
+}
+
+@if (!string.IsNullOrWhiteSpace(activeFilter) && !string.IsNullOrWhiteSpace(activeFilterLabel))
+{
+    <div class="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800 text-sm text-purple-700 dark:text-purple-300">
+        <span>Đang lọc @activeFilterLabel: <strong>@activeFilter</strong></span>
+        @if (!string.IsNullOrWhiteSpace(detailAction))
+        {
+            <a asp-controller="Dashboard"
+               asp-action="@detailAction"
+               asp-route-fromDate="@fromDateValue"
+               asp-route-toDate="@toDateValue"
+               class="text-purple-600 dark:text-purple-400 hover:underline font-medium">
+                Bỏ lọc
+            </a>
+        }
+    </div>
+}

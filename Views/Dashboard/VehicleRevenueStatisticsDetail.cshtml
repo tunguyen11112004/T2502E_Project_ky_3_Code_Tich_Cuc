@@ -1,0 +1,104 @@
+@model Bus_ticket.ViewModels.VehicleRevenueStatisticsViewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Chi tiết Doanh thu phương tiện";
+    ViewData["ReportTitle"] = "Chi tiết Doanh thu phương tiện";
+    ViewData["ReportSubtitle"] = "Doanh thu theo loại xe và xếp hạng từng xe";
+    ViewData["PickerType"] = "VehicleRevenueStatisticsDetail";
+    ViewData["StatType"] = "VehicleRevenueStatistics";
+    ViewData["ExportHandler"] = "exportVehicleRevenueStatisticsDetailExcel";
+    ViewData["ShowChartToggle"] = true;
+    ViewData["ChartSectionId"] = "vehicleRevenueDetailCharts";
+    ViewData["ChartInitFunction"] = "initializeVehicleRevenueDetailCharts";
+    var fromDateValue = ViewBag.FromDateValue as string ?? string.Empty;
+    var toDateValue = ViewBag.ToDateValue as string ?? string.Empty;
+}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="/admin-assets/js/dashboard-date-range.js?v=1"></script>
+<script src="/admin-assets/js/dashboard-detail-charts.js?v=2"></script>
+
+<div class="p-4 sm:p-6 lg:p-8 space-y-6 max-w-full overflow-x-hidden">
+    @await Html.PartialAsync("_ReportDetailHeader")
+    @await Html.PartialAsync("_VehicleRevenueStatisticsDetailChartsPartial", Model)
+    @await Html.PartialAsync("_VehicleRevenueStatisticsDetailTablesPartial", Model)
+</div>
+
+@await Html.PartialAsync("_ReportDetailDateScript")
+
+<script>
+    const vehicleDetailBusCode = @Html.Raw(Json.Serialize(ViewBag.BusCodeFilter as string ?? string.Empty));
+    const vehicleDetailLicensePlate = @Html.Raw(Json.Serialize(ViewBag.LicensePlateFilter as string ?? string.Empty));
+    const vehicleDetailBusClassName = @Html.Raw(Json.Serialize(ViewBag.BusClassNameFilter as string ?? string.Empty));
+
+    function buildVehicleRevenueDetailUrl(options) {
+        options = options || {};
+        const params = new URLSearchParams();
+        params.set('fromDate', detailFromDate);
+        params.set('toDate', detailToDate);
+
+        const vehicleClass = options.vehicleClass !== undefined ? options.vehicleClass : detailFilterValue;
+        const busCode = options.busCode !== undefined ? options.busCode : (document.getElementById('vehicleBusCodeFilter')?.value || '').trim();
+        const licensePlate = options.licensePlate !== undefined ? options.licensePlate : (document.getElementById('vehicleLicensePlateFilter')?.value || '').trim();
+        const busClassName = options.busClassName !== undefined ? options.busClassName : (document.getElementById('vehicleBusClassFilter')?.value || '').trim();
+
+        if (detailFilterParam === 'vehicleClass' && vehicleClass) {
+            params.set('vehicleClass', vehicleClass);
+        } else if (busClassName) {
+            params.set('busClassName', busClassName);
+        }
+
+        if (busCode) params.set('busCode', busCode);
+        if (licensePlate) params.set('licensePlate', licensePlate);
+
+        return `/Dashboard/VehicleRevenueStatisticsDetail?${params.toString()}`;
+    }
+
+    window.applyVehicleRevenueBusFilters = function () {
+        window.location.href = buildVehicleRevenueDetailUrl();
+    };
+
+    window.clearVehicleRevenueBusFilters = function () {
+        window.location.href = buildVehicleRevenueDetailUrl({
+            busCode: '',
+            licensePlate: '',
+            busClassName: ''
+        });
+    };
+
+    window.dashboardDateRangeApplyHandlers[detailPickerType] = function (start, end) {
+        const params = new URLSearchParams();
+        params.set('fromDate', start);
+        params.set('toDate', end);
+
+        if (detailFilterParam === 'vehicleClass' && detailFilterValue) {
+            params.set('vehicleClass', detailFilterValue);
+        } else if (vehicleDetailBusClassName) {
+            params.set('busClassName', vehicleDetailBusClassName);
+        }
+
+        if (vehicleDetailBusCode) params.set('busCode', vehicleDetailBusCode);
+        if (vehicleDetailLicensePlate) params.set('licensePlate', vehicleDetailLicensePlate);
+
+        window.location.href = `/Dashboard/VehicleRevenueStatisticsDetail?${params.toString()}`;
+    };
+
+    document.addEventListener('DOMContentLoaded', function () {
+        ['vehicleBusCodeFilter', 'vehicleLicensePlateFilter'].forEach(function (id) {
+            const input = document.getElementById(id);
+            if (input) {
+                input.addEventListener('keydown', function (event) {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        applyVehicleRevenueBusFilters();
+                    }
+                });
+            }
+        });
+    });
+
+    function exportVehicleRevenueStatisticsDetailExcel() {
+        const range = getDashboardDateRangeValues('VehicleRevenueStatisticsDetail', detailFromDate, detailToDate);
+        window.location.href = `/Dashboard/ExportVehicleRevenueStatistics?fromDate=${range.start}&endDate=${range.end}`;
+    }
+</script>

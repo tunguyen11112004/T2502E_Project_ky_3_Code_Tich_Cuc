@@ -1,107 +1,90 @@
 @model IEnumerable<Bus_ticket.ViewModels.OperatorRevenueViewModel>
-@using System.Text.Json
 
 @{
     var items = Model?.ToList() ?? new List<Bus_ticket.ViewModels.OperatorRevenueViewModel>();
-    var fromDateValue = ViewBag.FromDateValue != null ? ((DateTime)ViewBag.FromDateValue).ToString("yyyy-MM-dd") : DateTime.Today.AddDays(-30).ToString("yyyy-MM-dd");
-    var toDateValue = ViewBag.ToDateValue != null ? ((DateTime)ViewBag.ToDateValue).ToString("yyyy-MM-dd") : DateTime.Today.ToString("yyyy-MM-dd");
-
-    var chartLabels = JsonSerializer.Serialize(items.Select(x => x.OperatorName));
-    var chartData = JsonSerializer.Serialize(items.Select(x => x.TotalRevenue));
-    var chartRows = JsonSerializer.Serialize(items.Select((x, i) => $"operator-revenue-row-{i}"));
+    var fromDateValue = ViewBag.FromDateValue is DateTime fromDt ? fromDt.ToString("yyyy-MM-dd") : ViewBag.FromDateValue as string ?? DateTime.Today.AddDays(-30).ToString("yyyy-MM-dd");
+    var toDateValue = ViewBag.ToDateValue is DateTime toDt ? toDt.ToString("yyyy-MM-dd") : ViewBag.ToDateValue as string ?? DateTime.Today.ToString("yyyy-MM-dd");
+    var totalRevenue = items.Sum(x => x.TotalRevenue);
+    var totalBookings = items.Sum(x => x.TotalBookings);
+    var topOperator = items.OrderByDescending(x => x.TotalRevenue).FirstOrDefault();
+    var palette = new[] { "#8b5cf6", "#10b981", "#0ea5e9", "#f59e0b", "#ef4444", "#6b7280" };
+    var labels = items.Select(x => x.OperatorName).ToList();
+    var values = items.Select(x => x.TotalRevenue).ToList();
+    var colors = labels.Select((_, i) => palette[i % palette.Length]).ToList();
 }
 
-<div class="p-4 sm:p-6 lg:p-8 space-y-6 max-w-full overflow-x-hidden animate-fade-in">
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+<div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div>
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white">Doanh thu nhà xe</h2>
+        <p class="text-sm text-gray-500 dark:text-gray-400">Xếp hạng nhà xe bán chạy theo doanh thu</p>
+    </div>
+    <div class="flex items-center gap-3">
+        <input type="text" id="date_range_OperatorRevenue" readonly
+               class="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-[260px] p-2.5 cursor-pointer shadow-sm"
+               placeholder="Chọn khoảng ngày...">
+        <button type="button" onclick="exportOperatorRevenueExcel()"
+                class="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-lg text-sm px-4 py-2.5 shadow-sm transition-colors flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            Xuất Excel
+        </button>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
+        <p class="text-sm text-gray-500 mb-1">Tổng doanh thu</p>
+        <h4 class="text-xl font-bold text-emerald-600 dark:text-emerald-400">@totalRevenue.ToString("N0") đ</h4>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
+        <p class="text-sm text-gray-500 mb-1">Tổng booking</p>
+        <h4 class="text-xl font-bold text-blue-600 dark:text-blue-400">@totalBookings.ToString("N0")</h4>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
+        <p class="text-sm text-gray-500 mb-1">Số nhà xe</p>
+        <h4 class="text-xl font-bold text-purple-600 dark:text-purple-400">@items.Count.ToString("N0")</h4>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
+        <p class="text-sm text-gray-500 mb-1">Nhà xe dẫn đầu</p>
+        <h4 class="text-base font-bold text-amber-600 dark:text-amber-400 truncate">@(topOperator?.OperatorName ?? "—")</h4>
+    </div>
+</div>
+
+<div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm mb-6">
+    <div class="flex justify-between items-center mb-4">
         <div>
-            <h1 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Xếp hạng doanh thu nhà xe</h1>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Bảng xếp hạng nhà xe bán chạy nhất theo doanh thu booking đã thanh toán.</p>
+            <h3 class="text-md font-semibold text-gray-900 dark:text-white">Tỷ trọng doanh thu theo nhà xe</h3>
+            <p class="text-xs text-gray-500 mt-1">Click biểu đồ để xem chi tiết theo nhà xe</p>
         </div>
-
-        <div class="flex flex-wrap items-center gap-3">
-            <input id="date_range_OperatorRevenue"
-                   type="text"
-                   readonly
-                   class="min-w-[240px] rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2.5 text-sm text-gray-900 dark:text-white cursor-pointer focus:border-amber-400 focus:ring-2 focus:ring-amber-400"
-                   placeholder="Chọn khoảng ngày" />
-
-            <a asp-controller="Dashboard"
-               asp-action="ExportOperatorRevenue"
-               asp-route-fromDate="@fromDateValue"
-               asp-route-toDate="@toDateValue"
-               class="inline-flex items-center justify-center px-4 py-2.5 text-sm font-semibold text-gray-900 bg-emerald-400 hover:bg-emerald-500 rounded-lg transition-colors duration-200 shadow-sm whitespace-nowrap">
-                Xuất Excel
-            </a>
-        </div>
+        <a asp-controller="Dashboard" asp-action="OperatorRevenueDetail"
+           asp-route-fromDate="@fromDateValue" asp-route-toDate="@toDateValue"
+           class="text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1">
+            Mở trang chi tiết
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+        </a>
     </div>
-
-    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <div class="xl:col-span-1 bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-xl">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Biểu đồ tỷ trọng doanh thu</h2>
-            <p class="text-sm text-gray-400 mb-4">Click vào lát biểu đồ để highlight dòng tương ứng trong bảng.</p>
-
-            @if (!items.Any())
-            {
-                <div class="py-16 text-center text-gray-500">Không có dữ liệu doanh thu trong khoảng thời gian này.</div>
-            }
-            else
-            {
-                <div class="h-[360px]">
-                    <canvas id="operatorRevenuePieChart"></canvas>
-                </div>
-            }
+    @if (!items.Any() || totalRevenue <= 0)
+    {
+        <div class="py-16 text-center text-gray-500">Không có dữ liệu doanh thu trong khoảng thời gian này.</div>
+    }
+    else
+    {
+        <div class="relative h-[320px] w-full flex justify-center">
+            <canvas id="operatorRevenuePieChart"></canvas>
         </div>
-
-        <div class="xl:col-span-2 bg-white dark:bg-gray-800 rounded-xl border border-gray-700 overflow-hidden shadow-xl">
-            <div class="p-5 border-b border-gray-200 dark:border-gray-700">
-                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Bảng xếp hạng doanh thu</h2>
-                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Đã sắp xếp giảm dần theo doanh thu.</p>
-            </div>
-
-            <div class="w-full overflow-x-auto">
-                <table class="w-full min-w-[760px] text-left text-sm text-gray-600 dark:text-gray-300">
-                    <thead class="bg-gray-100 dark:bg-gray-700 text-gray-400 uppercase">
-                    <tr>
-                        <th class="px-6 py-4">Hạng</th>
-                        <th class="px-6 py-4">Nhà xe</th>
-                        <th class="px-6 py-4 text-right">Tổng đơn</th>
-                        <th class="px-6 py-4 text-right">Doanh thu</th>
-                    </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                    @if (!items.Any())
-                    {
-                        <tr>
-                            <td colspan="4" class="px-6 py-10 text-center text-gray-500">Không có dữ liệu hiển thị.</td>
-                        </tr>
-                    }
-                    else
-                    {
-                        for (var i = 0; i < items.Count; i++)
-                        {
-                            var item = items[i];
-                            <tr id="operator-revenue-row-@i" data-linked-row="true" class="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-150">
-                                <td class="px-6 py-4 font-bold text-amber-400">#@(i + 1)</td>
-                                <td class="px-6 py-4 font-semibold text-gray-900 dark:text-white">@item.OperatorName</td>
-                                <td class="px-6 py-4 text-right">@item.TotalBookings.ToString("N0")</td>
-                                <td class="px-6 py-4 text-right text-emerald-400 font-bold">@item.TotalRevenue.ToString("N0") VNĐ</td>
-                            </tr>
-                        }
-                    }
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+    }
 </div>
 
 <script>
     initializeDashboardDateRangePicker('OperatorRevenue', '@fromDateValue', '@toDateValue');
-    renderDashboardPieChart(
-        'operatorRevenuePieChart',
-        @Html.Raw(chartLabels),
-        @Html.Raw(chartData),
-        @Html.Raw(chartRows),
-        'Doanh thu'
-    );
+    renderDashboardPieChart('operatorRevenuePieChart', @Html.Raw(Json.Serialize(labels)), @Html.Raw(Json.Serialize(values)), @Html.Raw(Json.Serialize(colors)), 'Doanh thu', function (index, chartLabels) {
+        const operatorName = chartLabels[index];
+        if (!operatorName) return null;
+        return buildDashboardDetailUrl('OperatorRevenueDetail', currentFromDate || '@fromDateValue', currentToDate || '@toDateValue', 'operatorName', operatorName);
+    });
+
+    function exportOperatorRevenueExcel() {
+        var start = currentFromDate || '@fromDateValue';
+        var end = currentToDate || '@toDateValue';
+        window.location.href = `/Dashboard/ExportOperatorRevenue?fromDate=${start}&endDate=${end}`;
+    }
 </script>

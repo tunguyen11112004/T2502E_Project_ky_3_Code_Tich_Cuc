@@ -1,0 +1,54 @@
+@model Bus_ticket.ViewModels.TicketStatusStatisticsViewModel
+@{
+    var items = Model.Items.OrderByDescending(x => x.TicketCount).ToList();
+    var fromDateValue = ViewBag.FromDateValue as string ?? string.Empty;
+    var toDateValue = ViewBag.ToDateValue as string ?? string.Empty;
+    var palette = new[] { "#10b981", "#ef4444", "#8b5cf6", "#0ea5e9", "#f59e0b", "#6b7280" };
+    var labels = items.Select(x => x.StatusLabel).ToList();
+    var statusKeys = items.Select(x => x.StatusKey).ToList();
+    var values = items.Select(x => x.TicketCount).ToList();
+    var colors = items.Select((x, i) => x.StatusKey == "successful" ? "#10b981" : x.StatusKey == "cancelled" ? "#ef4444" : palette[i % palette.Length]).ToList();
+}
+
+<div id="ticketStatusStatisticsDetailCharts" class="hidden space-y-6">
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
+        <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-1">Tỷ trọng vé theo trạng thái</h3>
+        <p class="text-xs text-gray-500 mb-4">Click biểu đồ để lọc theo trạng thái vé</p>
+        @if (!items.Any() || Model.TotalTickets <= 0)
+        {
+            <div class="py-16 text-center text-gray-500">Không có dữ liệu biểu đồ.</div>
+        }
+        else
+        {
+            <div class="relative h-[320px] w-full flex justify-center">
+                <canvas id="detailTicketStatusPieChart"></canvas>
+            </div>
+        }
+    </div>
+</div>
+
+<script>
+    window.ticketStatusStatisticsDetailChartsInitialized = false;
+    function initializeTicketStatusStatisticsDetailCharts() {
+        if (window.ticketStatusStatisticsDetailChartsInitialized) return;
+        const detailFromDate = @Html.Raw(Json.Serialize(fromDateValue));
+        const detailToDate = @Html.Raw(Json.Serialize(toDateValue));
+        const statusKeys = @Html.Raw(Json.Serialize(statusKeys));
+        renderDetailPieChart(
+            'detailTicketStatusPieChart',
+            @Html.Raw(Json.Serialize(labels)),
+            @Html.Raw(Json.Serialize(values)),
+            @Html.Raw(Json.Serialize(colors)),
+            'Số vé',
+            {
+                valueSuffix: ' vé',
+                onSliceClick: function (index) {
+                    const statusKey = statusKeys[index];
+                    if (!statusKey) return null;
+                    return buildDashboardDetailUrl('TicketStatusStatisticsDetail', detailFromDate, detailToDate, 'statusKey', statusKey);
+                }
+            }
+        );
+        window.ticketStatusStatisticsDetailChartsInitialized = true;
+    }
+</script>

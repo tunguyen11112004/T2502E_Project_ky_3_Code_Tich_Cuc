@@ -21,6 +21,7 @@ namespace Bus_ticket.ViewModels
     {
         public string BookingCode { get; set; } = string.Empty;
         public string CustomerName { get; set; } = string.Empty;
+        public string RouteName { get; set; } = string.Empty;
         public string BusClass { get; set; } = string.Empty;
         public DateTime PaymentDate { get; set; }
         public decimal Amount { get; set; }

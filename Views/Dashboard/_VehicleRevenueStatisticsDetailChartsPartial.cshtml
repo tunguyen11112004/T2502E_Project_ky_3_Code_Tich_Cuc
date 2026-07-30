@@ -1,0 +1,52 @@
+@model Bus_ticket.ViewModels.VehicleRevenueStatisticsViewModel
+@{
+    var typeItems = Model.BusTypeRevenueItems.OrderByDescending(x => x.TotalRevenue).ToList();
+    var fromDateValue = ViewBag.FromDateValue as string ?? string.Empty;
+    var toDateValue = ViewBag.ToDateValue as string ?? string.Empty;
+    var palette = new[] { "#8b5cf6", "#10b981", "#0ea5e9", "#f59e0b", "#ef4444", "#6b7280" };
+    var labels = typeItems.Select(x => $"{x.BusType} - {x.BusClassName}").ToList();
+    var values = typeItems.Select(x => x.TotalRevenue).ToList();
+    var colors = labels.Select((_, i) => palette[i % palette.Length]).ToList();
+}
+
+<div id="vehicleRevenueDetailCharts" class="hidden space-y-6">
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
+        <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-1">Doanh thu theo loại xe</h3>
+        <p class="text-xs text-gray-500 mb-4">Click biểu đồ để lọc theo loại xe</p>
+        @if (!typeItems.Any() || Model.GrandTotalRevenue <= 0)
+        {
+            <div class="py-16 text-center text-gray-500">Không có dữ liệu biểu đồ.</div>
+        }
+        else
+        {
+            <div class="relative h-[320px] w-full flex justify-center">
+                <canvas id="detailVehicleRevenuePieChart"></canvas>
+            </div>
+        }
+    </div>
+</div>
+
+<script>
+    window.vehicleRevenueDetailChartsInitialized = false;
+    function initializeVehicleRevenueDetailCharts() {
+        if (window.vehicleRevenueDetailChartsInitialized) return;
+        const detailFromDate = @Html.Raw(Json.Serialize(fromDateValue));
+        const detailToDate = @Html.Raw(Json.Serialize(toDateValue));
+        renderDetailPieChart(
+            'detailVehicleRevenuePieChart',
+            @Html.Raw(Json.Serialize(labels)),
+            @Html.Raw(Json.Serialize(values)),
+            @Html.Raw(Json.Serialize(colors)),
+            'Doanh thu',
+            {
+                valueSuffix: ' đ',
+                onSliceClick: function (index, chartLabels) {
+                    const vehicleClass = chartLabels[index];
+                    if (!vehicleClass) return null;
+                    return buildDashboardDetailUrl('VehicleRevenueStatisticsDetail', detailFromDate, detailToDate, 'vehicleClass', vehicleClass);
+                }
+            }
+        );
+        window.vehicleRevenueDetailChartsInitialized = true;
+    }
+</script>

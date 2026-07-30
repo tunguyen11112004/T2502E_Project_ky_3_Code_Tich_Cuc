@@ -1,0 +1,52 @@
+@model Bus_ticket.ViewModels.RouteRevenueReportViewModel
+@{
+    var items = Model.Items.OrderByDescending(x => x.TotalRevenue).ToList();
+    var fromDateValue = ViewBag.FromDateValue as string ?? string.Empty;
+    var toDateValue = ViewBag.ToDateValue as string ?? string.Empty;
+    var palette = new[] { "#8b5cf6", "#10b981", "#0ea5e9", "#f59e0b", "#ef4444", "#6b7280" };
+    var labels = items.Select(x => x.RouteName).ToList();
+    var values = items.Select(x => x.TotalRevenue).ToList();
+    var colors = labels.Select((_, i) => palette[i % palette.Length]).ToList();
+}
+
+<div id="routeRevenueDetailCharts" class="hidden space-y-6">
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
+        <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-1">Phân bổ doanh thu theo tuyến</h3>
+        <p class="text-xs text-gray-500 mb-4">Click biểu đồ để lọc theo tuyến đường</p>
+        @if (!items.Any() || Model.GrandTotalRevenue <= 0)
+        {
+            <div class="py-16 text-center text-gray-500">Không có dữ liệu biểu đồ.</div>
+        }
+        else
+        {
+            <div class="relative h-[320px] w-full flex justify-center">
+                <canvas id="detailRouteRevenuePieChart"></canvas>
+            </div>
+        }
+    </div>
+</div>
+
+<script>
+    window.routeRevenueDetailChartsInitialized = false;
+    function initializeRouteRevenueDetailCharts() {
+        if (window.routeRevenueDetailChartsInitialized) return;
+        const detailFromDate = @Html.Raw(Json.Serialize(fromDateValue));
+        const detailToDate = @Html.Raw(Json.Serialize(toDateValue));
+        renderDetailPieChart(
+            'detailRouteRevenuePieChart',
+            @Html.Raw(Json.Serialize(labels)),
+            @Html.Raw(Json.Serialize(values)),
+            @Html.Raw(Json.Serialize(colors)),
+            'Doanh thu',
+            {
+                valueSuffix: ' đ',
+                onSliceClick: function (index, chartLabels) {
+                    const routeName = chartLabels[index];
+                    if (!routeName) return null;
+                    return buildDashboardDetailUrl('RouteRevenueDetail', detailFromDate, detailToDate, 'routeName', routeName);
+                }
+            }
+        );
+        window.routeRevenueDetailChartsInitialized = true;
+    }
+</script>

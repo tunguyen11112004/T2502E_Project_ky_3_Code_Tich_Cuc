@@ -1,0 +1,148 @@
+@model List<Bus_ticket.ViewModels.SeatAnalyticsViewModel>
+
+@{
+    var items = Model ?? new List<Bus_ticket.ViewModels.SeatAnalyticsViewModel>();
+    var routeFilterOptions = ViewBag.RouteFilterOptions as List<string> ?? new List<string>();
+    var busTypeFilterOptions = ViewBag.BusTypeFilterOptions as List<string> ?? new List<string>();
+    var operatorFilterOptions = ViewBag.OperatorFilterOptions as List<string> ?? new List<string>();
+    var routeNameFilter = ViewBag.RouteNameFilter as string ?? string.Empty;
+    var busTypeFilter = ViewBag.BusTypeFilter as string ?? string.Empty;
+    var operatorNameFilter = ViewBag.OperatorNameFilter as string ?? string.Empty;
+    var licensePlateFilter = ViewBag.LicensePlateFilter as string ?? string.Empty;
+    var hasTableFilters = !string.IsNullOrWhiteSpace(routeNameFilter)
+        || !string.IsNullOrWhiteSpace(busTypeFilter)
+        || !string.IsNullOrWhiteSpace(operatorNameFilter)
+        || !string.IsNullOrWhiteSpace(licensePlateFilter);
+}
+
+<div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+    <div class="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
+        <div class="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-4">
+            <div>
+                <h3 class="text-md font-semibold text-gray-900 dark:text-white">Danh sách chuyến xe cháy ghế</h3>
+                <p class="text-xs text-gray-500 mt-1">@items.Count.ToString("N0") chuyến đã bán hết 100% vé</p>
+            </div>
+            <div class="flex flex-wrap items-end gap-3">
+                <div>
+                    <label for="soldOutRouteFilter" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Tuyến đường</label>
+                    <select id="soldOutRouteFilter"
+                            class="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-[200px] p-2 shadow-sm">
+                        <option value="">Tất cả tuyến</option>
+                        @foreach (var route in routeFilterOptions)
+                        {
+                            if (string.Equals(route, routeNameFilter, StringComparison.OrdinalIgnoreCase))
+                            {
+                                <option value="@route" selected="selected">@route</option>
+                            }
+                            else
+                            {
+                                <option value="@route">@route</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div>
+                    <label for="soldOutBusTypeFilter" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Loại xe</label>
+                    <select id="soldOutBusTypeFilter"
+                            class="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-[160px] p-2 shadow-sm">
+                        <option value="">Tất cả loại xe</option>
+                        @foreach (var type in busTypeFilterOptions)
+                        {
+                            if (string.Equals(type, busTypeFilter, StringComparison.OrdinalIgnoreCase))
+                            {
+                                <option value="@type" selected="selected">@type</option>
+                            }
+                            else
+                            {
+                                <option value="@type">@type</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div>
+                    <label for="soldOutOperatorFilter" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Nhà xe</label>
+                    <select id="soldOutOperatorFilter"
+                            class="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-[180px] p-2 shadow-sm">
+                        <option value="">Tất cả nhà xe</option>
+                        @foreach (var operatorName in operatorFilterOptions)
+                        {
+                            if (string.Equals(operatorName, operatorNameFilter, StringComparison.OrdinalIgnoreCase))
+                            {
+                                <option value="@operatorName" selected="selected">@operatorName</option>
+                            }
+                            else
+                            {
+                                <option value="@operatorName">@operatorName</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div>
+                    <label for="soldOutLicensePlateFilter" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Biển số xe</label>
+                    <input type="text"
+                           id="soldOutLicensePlateFilter"
+                           value="@licensePlateFilter"
+                           placeholder="Tìm biển số..."
+                           class="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-[140px] p-2 shadow-sm" />
+                </div>
+                <button type="button"
+                        onclick="applySoldOutStatsTableFilters()"
+                        class="px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
+                    Tìm kiếm
+                </button>
+                @if (hasTableFilters)
+                {
+                    <button type="button"
+                            onclick="clearSoldOutStatsTableFilters()"
+                            class="px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
+                        Xóa lọc bảng
+                    </button>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="overflow-x-auto max-h-[520px]">
+        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+            <thead class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-300 sticky top-0 z-10">
+            <tr>
+                <th class="px-6 py-4">Mã chuyến</th>
+                <th class="px-6 py-4">Tuyến đường</th>
+                <th class="px-6 py-4">Loại xe</th>
+                <th class="px-6 py-4">Nhà xe</th>
+                <th class="px-6 py-4">Biển số xe</th>
+                <th class="px-6 py-4">Thời gian đi</th>
+                <th class="px-6 py-4 text-right">Tỷ lệ lấp đầy</th>
+            </tr>
+            </thead>
+            <tbody>
+            @if (!items.Any())
+            {
+                <tr><td colspan="7" class="px-6 py-10 text-center text-gray-500">Không có chuyến xe nào cháy vé trong khoảng thời gian này.</td></tr>
+            }
+            else
+            {
+                foreach (var item in items)
+                {
+                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td class="px-6 py-4 font-semibold text-gray-900 dark:text-white">@item.TripCode</td>
+                        <td class="px-6 py-4">@item.RouteName</td>
+                        <td class="px-6 py-4">@item.BusType</td>
+                        <td class="px-6 py-4">@item.OperatorName</td>
+                        <td class="px-6 py-4">
+                            <span class="bg-gray-100 text-gray-800 text-xs font-semibold px-2.5 py-1 rounded dark:bg-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600">
+                                @item.LicensePlate
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">@item.DepartureTime.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td class="px-6 py-4 text-right">
+                            <span class="bg-rose-100 text-rose-800 text-xs font-semibold px-2.5 py-1 rounded dark:bg-rose-900 dark:text-rose-300">
+                                @item.OccupancyRate% (@item.BookedSeats/@item.TotalSeats)
+                            </span>
+                        </td>
+                    </tr>
+                }
+            }
+            </tbody>
+        </table>
+    </div>
+</div>

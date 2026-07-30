@@ -1,0 +1,34 @@
+@model Bus_ticket.ViewModels.RouteRevenueReportViewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Chi tiết Doanh thu theo tuyến";
+    ViewData["ReportTitle"] = "Chi tiết Doanh thu theo tuyến";
+    ViewData["ReportSubtitle"] = "Bảng doanh thu theo tuyến đường, sắp xếp giảm dần";
+    ViewData["PickerType"] = "RouteRevenueDetail";
+    ViewData["StatType"] = "RouteRevenue";
+    ViewData["ExportHandler"] = "exportRouteRevenueDetailExcel";
+    ViewData["ShowChartToggle"] = true;
+    ViewData["ChartSectionId"] = "routeRevenueDetailCharts";
+    ViewData["ChartInitFunction"] = "initializeRouteRevenueDetailCharts";
+    var fromDateValue = ViewBag.FromDateValue as string ?? string.Empty;
+    var toDateValue = ViewBag.ToDateValue as string ?? string.Empty;
+}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="/admin-assets/js/dashboard-date-range.js?v=1"></script>
+<script src="/admin-assets/js/dashboard-detail-charts.js?v=2"></script>
+
+<div class="p-4 sm:p-6 lg:p-8 space-y-6 max-w-full overflow-x-hidden">
+    @await Html.PartialAsync("_ReportDetailHeader")
+    @await Html.PartialAsync("_RouteRevenueDetailChartsPartial", Model)
+    @await Html.PartialAsync("_RouteRevenueDetailTablesPartial", Model)
+</div>
+
+@await Html.PartialAsync("_ReportDetailDateScript")
+
+<script>
+    function exportRouteRevenueDetailExcel() {
+        const range = getDashboardDateRangeValues('RouteRevenueDetail', '@fromDateValue', '@toDateValue');
+        window.location.href = `/Dashboard/ExportRouteRevenue?fromDate=${range.start}&endDate=${range.end}`;
+    }
+</script>

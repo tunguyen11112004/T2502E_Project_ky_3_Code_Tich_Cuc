@@ -33,121 +33,163 @@ var canViewVehicleRevenue = isAdmin;
 
 <div class="p-6 space-y-6">
     <div>
-        <h1 class="text-2xl font-bold text-gray-950 dark:text-white mb-1">Xin chào Admin!</h1>
+        <h1 class="text-2xl font-bold text-gray-950 dark:text-white mb-1">Báo cáo Dashboard</h1>
         <p class="text-sm text-gray-600 dark:text-gray-400">
-            Hệ thống gộp báo cáo tổng quan dưới dạng tương tác trực tiếp. Các báo cáo mới được mở bằng button tại trang Dashboard, không đưa thêm vào dropdown sidebar.
+            Chọn chủ đề và loại báo cáo để xem thống kê tương tác trực tiếp.
         </p>
     </div>
 
-    <!-- KHUNG CHỨA CÁC THẺ ĐIỀU HƯỚNG CHUẨN GIAO DIỆN GỐC -->
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+    @{
+        var hasFinancial = canViewTotalRevenue || canViewOperatorRevenue || canViewRouteRevenue || canViewVehicleRevenue;
+        var hasOperations = canViewSeatAnalytics || canViewLowOccupancy || canViewSoldOutStats;
+        var hasCancellations = canViewBranchCancellation || canViewTicketStatus;
+        var defaultMainTab = canViewTotalRevenue || canViewOperatorRevenue || canViewRouteRevenue || canViewVehicleRevenue
+            ? "financial"
+            : hasOperations ? "operations" : "cancellations";
+        var defaultStatType = canViewTotalRevenue ? "TotalRevenue"
+            : canViewOperatorRevenue ? "OperatorRevenue"
+            : canViewRouteRevenue ? "RouteRevenue"
+            : canViewVehicleRevenue ? "VehicleRevenueStatistics"
+            : canViewSeatAnalytics ? "SeatAnalytics"
+            : canViewLowOccupancy ? "LowOccupancyTrips"
+            : canViewSoldOutStats ? "SoldOutStats"
+            : canViewBranchCancellation ? "BranchCancellation"
+            : "TicketStatusStatistics";
+    }
 
-            <!-- 1. Tổng doanh thu -->
-            @if (canViewTotalRevenue)
-            {
-            <button type="button" onclick="loadStatistic('TotalRevenue')"
-                    class="dashboard-stat-button text-left p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-blue-500 hover:shadow-md transition-all duration-200 focus:outline-none"
-                    data-stat-type="TotalRevenue">
-                <h3 class="font-semibold text-gray-900 dark:text-white text-base">Tổng doanh thu</h3>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Toàn hệ thống</p>
-            </button>
-            }
+    <!-- THANH TAB CHỦ ĐỀ LỚN -->
+    @if (hasFinancial || hasOperations || hasCancellations)
+    {
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+            <div class="border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6">
+                <nav class="flex flex-wrap gap-1 -mb-px" aria-label="Chủ đề báo cáo">
+                    @if (hasFinancial)
+                    {
+                        <button type="button"
+                                data-main-tab="financial"
+                                onclick="switchDashboardMainTab('financial')"
+                                class="px-4 py-3 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap">
+                            Tổng quan / Doanh thu
+                        </button>
+                    }
+                    @if (hasOperations)
+                    {
+                        <button type="button"
+                                data-main-tab="operations"
+                                onclick="switchDashboardMainTab('operations')"
+                                class="px-4 py-3 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap">
+                            Hiệu suất vận hành
+                        </button>
+                    }
+                    @if (hasCancellations)
+                    {
+                        <button type="button"
+                                data-main-tab="cancellations"
+                                onclick="switchDashboardMainTab('cancellations')"
+                                class="px-4 py-3 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap">
+                            Tỷ lệ hủy vé & chuyến
+                        </button>
+                    }
+                </nav>
+            </div>
 
-            <!-- 2. Doanh thu nhà xe -->
-            @if (canViewOperatorRevenue)
-            {
-            <button type="button" onclick="loadStatistic('OperatorRevenue')"
-                    class="dashboard-stat-button text-left p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-blue-500 hover:shadow-md transition-all duration-200 focus:outline-none"
-                    data-stat-type="OperatorRevenue">
-                <h3 class="font-semibold text-gray-900 dark:text-white text-base">Doanh thu nhà xe</h3>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Xếp hạng nhà xe bán chạy</p>
-            </button>
-            }
-
-            <!-- 3. Tỷ lệ hủy chuyến -->
-            @if (canViewBranchCancellation)
-            {
-            <button type="button" onclick="loadStatistic('BranchCancellation')"
-                    class="dashboard-stat-button text-left p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-blue-500 hover:shadow-md transition-all duration-200 focus:outline-none"
-                    data-stat-type="BranchCancellation">
-                <h3 class="font-semibold text-gray-900 dark:text-white text-base">Tỷ lệ hủy chuyến</h3>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Độ uy tín vận hành</p>
-            </button>
-            }
-
-            <!-- 4. Hiệu suất lấp đầy -->
-            @if (canViewSeatAnalytics)
-            {
-            <button type="button" onclick="loadStatistic('SeatAnalytics')"
-                    class="dashboard-stat-button text-left p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-blue-500 hover:shadow-md transition-all duration-200 focus:outline-none"
-                    data-stat-type="SeatAnalytics">
-                <h3 class="font-semibold text-gray-900 dark:text-white text-base">Hiệu suất lấp đầy</h3>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Chuyến xe và ghế trống</p>
-            </button>
-            }
-
-            <!-- 5. Doanh thu tuyến đường -->
-            @if (canViewRouteRevenue)
-            {
-            <button type="button" onclick="loadStatistic('RouteRevenue')"
-                    class="dashboard-stat-button text-left p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-blue-500 hover:shadow-md transition-all duration-200 focus:outline-none"
-                    data-stat-type="RouteRevenue">
-                <h3 class="font-semibold text-gray-900 dark:text-white text-base">Doanh thu tuyến đường</h3>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Xếp hạng tuyến bán chạy</p>
-            </button>
-            }
-
-            <!-- 6. Doanh thu phương tiện -->
-            @if (canViewVehicleRevenue)
-            {
-            <button type="button" onclick="loadStatistic('VehicleRevenueStatistics')"
-                    class="dashboard-stat-button text-left p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-blue-500 hover:shadow-md transition-all duration-200 focus:outline-none"
-                    data-stat-type="VehicleRevenueStatistics">
-                <h3 class="font-semibold text-gray-900 dark:text-white text-base">Doanh thu phương tiện</h3>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Theo loại xe và từng xe</p>
-            </button>
-            }
-
-            <!-- 7. Chuyến ít khách -->
-            @if (canViewLowOccupancy)
-            {
-            <button type="button" onclick="loadStatistic('LowOccupancyTrips')"
-                    class="dashboard-stat-button text-left p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-blue-500 hover:shadow-md transition-all duration-200 focus:outline-none"
-                    data-stat-type="LowOccupancyTrips">
-                <h3 class="font-semibold text-gray-900 dark:text-white text-base">Chuyến ít khách</h3>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Tỷ lệ lấp đầy thấp</p>
-            </button>
-            }
-
-            <!-- 8. Chuyến cháy ghế -->
-            @if (canViewSoldOutStats)
-            {
-            <button type="button" onclick="loadStatistic('SoldOutStats')"
-                    class="dashboard-stat-button text-left p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-blue-500 hover:shadow-md transition-all duration-200 focus:outline-none"
-                    data-stat-type="SoldOutStats">
-                <h3 class="font-semibold text-gray-900 dark:text-white text-base">Chuyến cháy ghế</h3>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Danh sách xe hết chỗ</p>
-            </button>
-            }
-
-            <!-- 9. Tỷ lệ vé hủy -->
-            @if (canViewTicketStatus)
-            {
-            <button type="button" onclick="loadStatistic('TicketStatusStatistics')"
-                    class="dashboard-stat-button text-left p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-blue-500 hover:shadow-md transition-all duration-200 focus:outline-none"
-                    data-stat-type="TicketStatusStatistics">
-                <h3 class="font-semibold text-gray-900 dark:text-white text-base">Tỷ lệ vé hủy</h3>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Vé thành công và vé hủy</p>
-            </button>
-            }
+            <!-- THẺ CON (FILTER NHỎ) -->
+            <div class="px-4 sm:px-6 py-4 bg-gray-50/60 dark:bg-gray-900/30">
+                @if (hasFinancial)
+                {
+                    <div data-sub-tabs="financial" class="flex flex-wrap gap-2 @(defaultMainTab == "financial" ? "" : "hidden")">
+                        @if (canViewTotalRevenue)
+                        {
+                            <button type="button" onclick="loadStatistic('TotalRevenue')"
+                                    class="dashboard-sub-tab px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg border transition-all"
+                                    data-stat-type="TotalRevenue">
+                                Tổng doanh thu
+                            </button>
+                        }
+                        @if (canViewOperatorRevenue)
+                        {
+                            <button type="button" onclick="loadStatistic('OperatorRevenue')"
+                                    class="dashboard-sub-tab px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg border transition-all"
+                                    data-stat-type="OperatorRevenue">
+                                Doanh thu nhà xe
+                            </button>
+                        }
+                        @if (canViewRouteRevenue)
+                        {
+                            <button type="button" onclick="loadStatistic('RouteRevenue')"
+                                    class="dashboard-sub-tab px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg border transition-all"
+                                    data-stat-type="RouteRevenue">
+                                Doanh thu tuyến đường
+                            </button>
+                        }
+                        @if (canViewVehicleRevenue)
+                        {
+                            <button type="button" onclick="loadStatistic('VehicleRevenueStatistics')"
+                                    class="dashboard-sub-tab px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg border transition-all"
+                                    data-stat-type="VehicleRevenueStatistics">
+                                Doanh thu phương tiện
+                            </button>
+                        }
+                    </div>
+                }
+                @if (hasOperations)
+                {
+                    <div data-sub-tabs="operations" class="flex flex-wrap gap-2 @(defaultMainTab == "operations" ? "" : "hidden")">
+                        @if (canViewSeatAnalytics)
+                        {
+                            <button type="button" onclick="loadStatistic('SeatAnalytics')"
+                                    class="dashboard-sub-tab px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg border transition-all"
+                                    data-stat-type="SeatAnalytics">
+                                Hiệu suất lấp đầy
+                            </button>
+                        }
+                        @if (canViewLowOccupancy)
+                        {
+                            <button type="button" onclick="loadStatistic('LowOccupancyTrips')"
+                                    class="dashboard-sub-tab px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg border transition-all"
+                                    data-stat-type="LowOccupancyTrips">
+                                Chuyến ít khách
+                            </button>
+                        }
+                        @if (canViewSoldOutStats)
+                        {
+                            <button type="button" onclick="loadStatistic('SoldOutStats')"
+                                    class="dashboard-sub-tab px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg border transition-all"
+                                    data-stat-type="SoldOutStats">
+                                Chuyến cháy ghế
+                            </button>
+                        }
+                    </div>
+                }
+                @if (hasCancellations)
+                {
+                    <div data-sub-tabs="cancellations" class="flex flex-wrap gap-2 @(defaultMainTab == "cancellations" ? "" : "hidden")">
+                        @if (canViewBranchCancellation)
+                        {
+                            <button type="button" onclick="loadStatistic('BranchCancellation')"
+                                    class="dashboard-sub-tab px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg border transition-all"
+                                    data-stat-type="BranchCancellation">
+                                Tỷ lệ hủy chuyến
+                            </button>
+                        }
+                        @if (canViewTicketStatus)
+                        {
+                            <button type="button" onclick="loadStatistic('TicketStatusStatistics')"
+                                    class="dashboard-sub-tab px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg border transition-all"
+                                    data-stat-type="TicketStatusStatistics">
+                                Tỷ lệ vé hủy
+                            </button>
+                        }
+                    </div>
+                }
+            </div>
         </div>
-    </div>
+    }
 
     <!-- KHU VỰC HIỂN THỊ DỮ LIỆU ĐỘNG -->
     <div id="statisticContainer" class="bg-gray-50 dark:bg-gray-900/40 rounded-xl min-h-[250px] p-4 relative border border-dashed border-gray-300 dark:border-gray-700">
-        <div id="placeholderText" class="text-center py-16 text-gray-400" style="display: none;">
-            <p>Vui lòng click chọn 1 thẻ thống kê phía trên để hiển thị biểu đồ tròn và bảng dữ liệu chi tiết.</p>
+        <div id="placeholderText" class="text-center py-16 text-gray-400">
+            <p>Chọn loại báo cáo ở thanh tab phía trên để hiển thị dữ liệu.</p>
         </div>
 
         <div id="loadingSpinner" class="hidden absolute inset-0 bg-white/50 dark:bg-gray-900/60 flex items-center justify-center rounded-xl z-10">
@@ -167,22 +209,48 @@ var canViewVehicleRevenue = isAdmin;
     }
 </style>
 
+<script src="/admin-assets/js/dashboard-date-range.js"></script>
+<script src="/admin-assets/js/dashboard-tabs.js?v=1"></script>
+<script src="/admin-assets/js/revenue-chart-table-filters.js?v=3"></script>
 <script>
     let currentType = '';
     let currentFromDate = '';
     let currentToDate = '';
     window.dashboardCharts = window.dashboardCharts || {};
-    window.dashboardRangePickers = window.dashboardRangePickers || {};
+
+    const statTypeToMainTab = {
+        TotalRevenue: 'financial',
+        OperatorRevenue: 'financial',
+        RouteRevenue: 'financial',
+        VehicleRevenueStatistics: 'financial',
+        SeatAnalytics: 'operations',
+        LowOccupancyTrips: 'operations',
+        SoldOutStats: 'operations',
+        BranchCancellation: 'cancellations',
+        TicketStatusStatistics: 'cancellations'
+    };
 
     function setActiveStatisticButton(type) {
-        document.querySelectorAll('.dashboard-stat-button').forEach(button => {
-            const isActive = button.dataset.statType === type;
-            button.classList.toggle('border-blue-500', isActive);
-            button.classList.toggle('ring-2', isActive);
-            button.classList.toggle('ring-blue-500/20', isActive);
-            button.classList.toggle('bg-blue-50/50', isActive);
-            button.classList.toggle('dark:bg-blue-900/20', isActive);
-        });
+        if (typeof setActiveSubTab === 'function') {
+            setActiveSubTab(type);
+        }
+
+        const mainTab = statTypeToMainTab[type];
+        if (mainTab && typeof switchDashboardMainTab === 'function') {
+            document.querySelectorAll('[data-main-tab]').forEach(function (btn) {
+                const active = btn.dataset.mainTab === mainTab;
+                btn.classList.toggle('border-blue-600', active);
+                btn.classList.toggle('text-blue-600', active);
+                btn.classList.toggle('dark:text-blue-400', active);
+                btn.classList.toggle('border-transparent', !active);
+                btn.classList.toggle('text-gray-500', !active);
+                btn.classList.toggle('dark:text-gray-400', !active);
+            });
+
+            document.querySelectorAll('[data-sub-tabs]').forEach(function (panel) {
+                panel.classList.toggle('hidden', panel.dataset.subTabs !== mainTab);
+            });
+        }
     }
 
     function destroyDashboardCharts() {
@@ -192,19 +260,6 @@ var canViewVehicleRevenue = isAdmin;
                 delete window.dashboardCharts[chartId];
             }
         });
-    }
-
-    function closeDashboardRangePicker(type) {
-        const state = window.dashboardRangePickers[type];
-        if (!state) return;
-
-        if (state.popup) state.popup.remove();
-        if (state.closeHandler) document.removeEventListener('mousedown', state.closeHandler);
-        if (state.resizeHandler) {
-            window.removeEventListener('resize', state.resizeHandler);
-            window.removeEventListener('scroll', state.resizeHandler, true);
-        }
-        delete window.dashboardRangePickers[type];
     }
 
     async function loadStatistic(type, page = 1, fromDate = '', toDate = '') {
@@ -254,154 +309,19 @@ var canViewVehicleRevenue = isAdmin;
         });
     }
 
-    function toDateInputValue(date) {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
+    function buildDashboardDetailUrl(action, fromDate, toDate, filterParam, filterValue) {
+        const params = new URLSearchParams();
+        if (fromDate) params.set('fromDate', fromDate);
+        if (toDate) params.set('toDate', toDate);
+        if (filterParam && filterValue) params.set(filterParam, filterValue);
+        return `/Dashboard/${action}?${params.toString()}`;
     }
 
-    function parseDateInputValue(value) {
-        if (!value) return new Date();
-        const parts = value.split('-').map(Number);
-        return new Date(parts[0], parts[1] - 1, parts[2]);
-    }
-
-    function addDays(date, days) {
-        const cloned = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-        cloned.setDate(cloned.getDate() + days);
-        return cloned;
-    }
-
-    function getDashboardPresetRange(presetKey) {
-        const today = new Date();
-        const current = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-
-        switch (presetKey) {
-            case 'today': return { from: current, to: current };
-            case 'yesterday': return { from: addDays(current, -1), to: addDays(current, -1) };
-            case 'last7': return { from: addDays(current, -6), to: current };
-            case 'last30': return { from: addDays(current, -29), to: current };
-            case 'last90': return { from: addDays(current, -89), to: current };
-            case 'weekToDate': {
-                const firstDay = addDays(current, -current.getDay());
-                return { from: firstDay, to: current };
-            }
-            case 'monthToDate': return { from: new Date(current.getFullYear(), current.getMonth(), 1), to: current };
-            default: return null;
-        }
-    }
-
-    function positionDashboardRangePopup(input, popup) {
-        const rect = input.getBoundingClientRect();
-        const popupWidth = Math.min(720, window.innerWidth - 32);
-        let left = rect.left;
-        if (left + popupWidth > window.innerWidth - 16) left = window.innerWidth - popupWidth - 16;
-        if (left < 16) left = 16;
-
-        popup.style.width = `${popupWidth}px`;
-        popup.style.left = `${left}px`;
-        popup.style.top = `${rect.bottom + 8}px`;
-    }
-
-    function initializeDashboardDateRangePicker(type, fromDate, toDate) {
-        const input = document.getElementById(`date_range_${type}`);
-        if (!input) return;
-
-        closeDashboardRangePicker(type);
-
-        const defaultFromDate = fromDate || currentFromDate || toDateInputValue(addDays(new Date(), -30));
-        const defaultToDate = toDate || currentToDate || toDateInputValue(new Date());
-        input.value = `${defaultFromDate} - ${defaultToDate}`;
-
-        input.addEventListener('click', function (event) {
-            event.preventDefault();
-            event.stopPropagation();
-
-            if (window.dashboardRangePickers[type]) {
-                closeDashboardRangePicker(type);
-                return;
-            }
-
-            const popup = document.createElement('div');
-            popup.id = `dashboard_range_popup_${type}`;
-            popup.className = 'dashboard-range-popup fixed z-[9999] rounded-xl border border-gray-700 bg-white text-gray-900 dark:bg-[#111827] dark:text-white overflow-hidden';
-            popup.innerHTML = `
-                <div class="grid grid-cols-1 md:grid-cols-[220px_1fr]">
-                    <div class="border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-3 space-y-1">
-                        <button type="button" data-preset="custom" class="dashboard-preset-btn w-full text-left rounded-lg px-3 py-2 text-sm font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-200">Custom</button>
-                        <button type="button" data-preset="today" class="dashboard-preset-btn w-full text-left rounded-lg px-3 py-2 text-sm hover:bg-gray-200 dark:hover:bg-gray-800">Today</button>
-                        <button type="button" data-preset="yesterday" class="dashboard-preset-btn w-full text-left rounded-lg px-3 py-2 text-sm hover:bg-gray-200 dark:hover:bg-gray-800">Yesterday</button>
-                        <button type="button" data-preset="last7" class="dashboard-preset-btn w-full text-left rounded-lg px-3 py-2 text-sm hover:bg-gray-200 dark:hover:bg-gray-800">Last 7 days</button>
-                        <button type="button" data-preset="last30" class="dashboard-preset-btn w-full text-left rounded-lg px-3 py-2 text-sm hover:bg-gray-200 dark:hover:bg-gray-800">Last 30 days</button>
-                        <button type="button" data-preset="last90" class="dashboard-preset-btn w-full text-left rounded-lg px-3 py-2 text-sm hover:bg-gray-200 dark:hover:bg-gray-800">Last 90 days</button>
-                        <button type="button" data-preset="weekToDate" class="dashboard-preset-btn w-full text-left rounded-lg px-3 py-2 text-sm hover:bg-gray-200 dark:hover:bg-gray-800">Week to date</button>
-                        <button type="button" data-preset="monthToDate" class="dashboard-preset-btn w-full text-left rounded-lg px-3 py-2 text-sm hover:bg-gray-200 dark:hover:bg-gray-800">Month to date</button>
-                    </div>
-                    <div class="p-4 space-y-4">
-                        <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-                            <input type="date" data-range-start class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-white" value="${defaultFromDate}" />
-                            <span class="text-gray-400">→</span>
-                            <input type="date" data-range-end class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-white" value="${defaultToDate}" />
-                        </div>
-                        <div class="flex justify-end gap-3 border-t border-gray-200 dark:border-gray-700 pt-4">
-                            <button type="button" data-range-cancel class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-800">Cancel</button>
-                            <button type="button" data-range-apply class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600">Apply</button>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            document.body.appendChild(popup);
-            positionDashboardRangePopup(input, popup);
-
-            const startInput = popup.querySelector('[data-range-start]');
-            const endInput = popup.querySelector('[data-range-end]');
-
-            popup.querySelectorAll('[data-preset]').forEach(button => {
-                button.addEventListener('click', function () {
-                    popup.querySelectorAll('[data-preset]').forEach(item => {
-                        item.classList.remove('bg-blue-100', 'text-blue-700', 'dark:bg-blue-900/50', 'dark:text-blue-200');
-                    });
-                    this.classList.add('bg-blue-100', 'text-blue-700', 'dark:bg-blue-900/50', 'dark:text-blue-200');
-                    const range = getDashboardPresetRange(this.dataset.preset);
-                    if (!range) return;
-                    startInput.value = toDateInputValue(range.from);
-                    endInput.value = toDateInputValue(range.to);
-                });
-            });
-
-            function applySelectedRange() {
-                let start = startInput.value;
-                let end = endInput.value;
-                if (!start || !end) return;
-                if (parseDateInputValue(start) > parseDateInputValue(end)) {
-                    const temp = start; start = end; end = temp;
-                }
-                input.value = `${start} - ${end}`;
-                closeDashboardRangePicker(type);
-                loadStatistic(type, 1, start, end);
-            }
-
-            popup.querySelector('[data-range-apply]').addEventListener('click', applySelectedRange);
-            popup.querySelector('[data-range-cancel]').addEventListener('click', () => closeDashboardRangePicker(type));
-
-            const closeHandler = (e) => {
-                if (!popup.contains(e.target) && !input.contains(e.target)) closeDashboardRangePicker(type);
-            };
-            const resizeHandler = () => { if (document.body.contains(popup)) positionDashboardRangePopup(input, popup); };
-
-            document.addEventListener('mousedown', closeHandler);
-            window.addEventListener('resize', resizeHandler);
-            window.addEventListener('scroll', resizeHandler, true);
-
-            window.dashboardRangePickers[type] = { popup, closeHandler, resizeHandler };
-        });
-    }
-
-    function renderDashboardPieChart(chartId, labels, data, rowIds, labelText) {
+    function renderDashboardPieChart(chartId, labels, data, colors, labelText, onSliceClick, enableTableFilter) {
         const canvas = document.getElementById(chartId);
         if (!canvas || typeof Chart === 'undefined') return;
+
+        window.dashboardCharts = window.dashboardCharts || {};
 
         if (window.dashboardCharts[chartId]) {
             window.dashboardCharts[chartId].destroy();
@@ -411,26 +331,79 @@ var canViewVehicleRevenue = isAdmin;
         const numericData = (data || []).map(v => Number(v || 0));
         if (!numericData.some(v => v > 0)) return;
 
+        const isDark = document.documentElement.classList.contains('dark');
+        const legendColor = isDark ? '#d1d5db' : '#4b5563';
+        const chartColors = (colors && colors.length > 0)
+            ? colors
+            : ['#8b5cf6', '#10b981', '#0ea5e9', '#f59e0b', '#ef4444', '#6b7280'];
+
+        const legendOptions = {
+            position: 'bottom',
+            labels: { color: legendColor, boxWidth: 12, padding: 12 }
+        };
+
+        if (enableTableFilter && typeof window.createRevenuePieLegendClickHandler === 'function') {
+            legendOptions.onClick = window.createRevenuePieLegendClickHandler();
+        }
+
         window.dashboardCharts[chartId] = new Chart(canvas.getContext('2d'), {
             type: 'pie',
-            data: { labels, datasets: [{ label: labelText, data: numericData, borderWidth: 1 }] },
+            data: {
+                labels,
+                datasets: [{
+                    label: labelText,
+                    data: numericData,
+                    backgroundColor: chartColors,
+                    borderWidth: 1,
+                    borderColor: isDark ? '#1f2937' : '#ffffff'
+                }]
+            },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { position: 'bottom', labels: { color: '#d1d5db' } }
+                    legend: legendOptions,
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                const value = Number(context.raw || 0);
+                                return `${context.label}: ${value.toLocaleString('vi-VN')} đ`;
+                            }
+                        }
+                    }
+                },
+                onClick: function (event, elements) {
+                    if (elements.length > 0 && typeof onSliceClick === 'function') {
+                        const url = onSliceClick(elements[0].index, labels);
+                        if (url) {
+                            window.location.href = url;
+                        }
+                    }
+                },
+                onHover: function (event, elements) {
+                    if (typeof onSliceClick === 'function') {
+                        event.native.target.style.cursor = elements.length ? 'pointer' : 'default';
+                    }
                 }
             }
         });
+
+        if (enableTableFilter && typeof applyRevenueChartTableFilters === 'function') {
+            applyRevenueChartTableFilters();
+        }
     }
 
-    // TỰ ĐỘNG LOAD TỔNG DOANH THU KHI VÀO TRANG (7 NGÀY GẦN NHẤT)
+    // TỰ ĐỘNG LOAD BÁO CÁO MẶC ĐỊNH KHI VÀO TRANG (7 NGÀY GẦN NHẤT)
     document.addEventListener('DOMContentLoaded', function() {
-        const totalRevenueBtn = document.querySelector('[data-stat-type="TotalRevenue"]');
-        if (totalRevenueBtn && typeof loadStatistic === 'function') {
-            const today = new Date();
-            const last7Days = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 6);
-            loadStatistic('TotalRevenue', 1, toDateInputValue(last7Days), toDateInputValue(today));
+        const today = new Date();
+        const last7Days = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 6);
+        const defaultFrom = toDateInputValue(last7Days);
+        const defaultTo = toDateInputValue(today);
+
+        if (typeof initDashboardTabs === 'function') {
+            initDashboardTabs('@defaultMainTab', '@defaultStatType', defaultFrom, defaultTo);
+        } else if (typeof loadStatistic === 'function') {
+            loadStatistic('@defaultStatType', 1, defaultFrom, defaultTo);
         }
     });
 </script>

@@ -1,0 +1,181 @@
+@model Bus_ticket.ViewModels.LowOccupancyTripsViewModel
+
+@{
+    var lowItems = Model.LowOccupancyTrips
+        .OrderBy(x => x.OccupancyRate)
+        .ThenByDescending(x => x.EmptySeats)
+        .ThenBy(x => x.DepartureTime)
+        .ToList();
+
+    var soldOutItems = Model.SoldOutTimeFrames
+        .OrderBy(x => x.TimeFrame)
+        .ToList();
+
+    var routeFilterOptions = ViewBag.RouteFilterOptions as List<string> ?? new List<string>();
+    var routeNameFilter = ViewBag.RouteNameFilter as string ?? string.Empty;
+    var busCodeFilter = ViewBag.BusCodeFilter as string ?? string.Empty;
+    var licensePlateFilter = ViewBag.LicensePlateFilter as string ?? string.Empty;
+    var hasTableFilters = !string.IsNullOrWhiteSpace(routeNameFilter)
+        || !string.IsNullOrWhiteSpace(busCodeFilter)
+        || !string.IsNullOrWhiteSpace(licensePlateFilter);
+}
+
+<div class="space-y-6">
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
+            <div class="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-4">
+                <div>
+                    <h3 class="text-md font-semibold text-gray-900 dark:text-white">Danh sách chuyến xe ít khách</h3>
+                    <p class="text-xs text-gray-500 mt-1">Dưới @Model.OccupancyThreshold.ToString("N0")% lấp đầy — @lowItems.Count.ToString("N0") chuyến, sắp xếp theo tỷ lệ thấp nhất</p>
+                </div>
+                @if (routeFilterOptions.Any())
+                {
+                    <div class="flex flex-wrap items-end gap-3">
+                        <div>
+                            <label for="lowOccupancyRouteFilter" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Tuyến đường</label>
+                            <select id="lowOccupancyRouteFilter"
+                                    class="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-[220px] p-2 shadow-sm">
+                                <option value="">Tất cả tuyến</option>
+                                @foreach (var route in routeFilterOptions)
+                                {
+                                    if (string.Equals(route, routeNameFilter, StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        <option value="@route" selected="selected">@route</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@route">@route</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        <div>
+                            <label for="lowOccupancyBusCodeFilter" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Mã xe / Biển số</label>
+                            <input type="text"
+                                   id="lowOccupancyBusCodeFilter"
+                                   value="@busCodeFilter"
+                                   placeholder="Mã xe hoặc biển số..."
+                                   class="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-[160px] p-2 shadow-sm" />
+                        </div>
+                        <div>
+                            <label for="lowOccupancyLicensePlateFilter" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Biển số xe</label>
+                            <input type="text"
+                                   id="lowOccupancyLicensePlateFilter"
+                                   value="@licensePlateFilter"
+                                   placeholder="Tìm biển số..."
+                                   class="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-[160px] p-2 shadow-sm" />
+                        </div>
+                        <button type="button"
+                                onclick="applyLowOccupancyTableFilters()"
+                                class="px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
+                            Tìm kiếm
+                        </button>
+                        @if (hasTableFilters)
+                        {
+                            <button type="button"
+                                    onclick="clearLowOccupancyTableFilters()"
+                                    class="px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
+                                Xóa lọc bảng
+                            </button>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+        <div class="overflow-x-auto max-h-[520px]">
+            <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-300 sticky top-0 z-10">
+                <tr>
+                    <th class="px-6 py-4">STT</th>
+                    <th class="px-6 py-4">Mã chuyến</th>
+                    <th class="px-6 py-4">Tuyến đường</th>
+                    <th class="px-6 py-4">Xe</th>
+                    <th class="px-6 py-4">Biển số</th>
+                    <th class="px-6 py-4">Khởi hành</th>
+                    <th class="px-6 py-4 text-right">Tổng ghế</th>
+                    <th class="px-6 py-4 text-right">Đã đặt</th>
+                    <th class="px-6 py-4 text-right">Ghế trống</th>
+                    <th class="px-6 py-4 text-right">Lấp đầy</th>
+                </tr>
+                </thead>
+                <tbody>
+                @if (!lowItems.Any())
+                {
+                    <tr><td colspan="10" class="px-6 py-10 text-center text-gray-500">Không có dữ liệu chuyến ít khách.</td></tr>
+                }
+                else
+                {
+                    for (var i = 0; i < lowItems.Count; i++)
+                    {
+                        var item = lowItems[i];
+                        <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <td class="px-6 py-4 text-gray-400">@(i + 1)</td>
+                            <td class="px-6 py-4 font-semibold text-gray-900 dark:text-white">@item.TripCode</td>
+                            <td class="px-6 py-4">@item.RouteName</td>
+                            <td class="px-6 py-4">@item.BusCode</td>
+                            <td class="px-6 py-4">@item.LicensePlate</td>
+                            <td class="px-6 py-4 whitespace-nowrap">@item.DepartureTime.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td class="px-6 py-4 text-right">@item.TotalSeats.ToString("N0")</td>
+                            <td class="px-6 py-4 text-right">@item.BookedSeats.ToString("N0")</td>
+                            <td class="px-6 py-4 text-right font-bold text-orange-600 dark:text-orange-400">@item.EmptySeats.ToString("N0")</td>
+                            <td class="px-6 py-4 text-right font-semibold text-amber-600 dark:text-amber-400">@item.OccupancyRate.ToString("N2")%</td>
+                        </tr>
+                    }
+                }
+                </tbody>
+                @if (lowItems.Any())
+                {
+                    <tfoot class="bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
+                    <tr>
+                        <td colspan="6" class="px-6 py-4 font-bold text-gray-900 dark:text-white">Tổng cộng</td>
+                        <td class="px-6 py-4 text-right font-bold text-gray-900 dark:text-white">@lowItems.Sum(x => x.TotalSeats).ToString("N0")</td>
+                        <td class="px-6 py-4 text-right font-bold text-gray-900 dark:text-white">@lowItems.Sum(x => x.BookedSeats).ToString("N0")</td>
+                        <td class="px-6 py-4 text-right font-bold text-orange-600 dark:text-orange-400">@lowItems.Sum(x => x.EmptySeats).ToString("N0")</td>
+                        <td class="px-6 py-4 text-right font-bold text-gray-900 dark:text-white">—</td>
+                    </tr>
+                    </tfoot>
+                }
+            </table>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
+            <h3 class="text-md font-semibold text-gray-900 dark:text-white">Khung giờ thường sold out</h3>
+            <p class="text-xs text-gray-500 mt-1">Gom nhóm chuyến đã bán hết ghế theo giờ khởi hành</p>
+        </div>
+        <div class="overflow-x-auto max-h-[520px]">
+            <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-300 sticky top-0 z-10">
+                <tr>
+                    <th class="px-6 py-4">STT</th>
+                    <th class="px-6 py-4">Khung giờ</th>
+                    <th class="px-6 py-4 text-right">Số chuyến sold out</th>
+                    <th class="px-6 py-4 text-right">Tổng ghế</th>
+                    <th class="px-6 py-4 text-right">Ghế đã đặt</th>
+                </tr>
+                </thead>
+                <tbody>
+                @if (!soldOutItems.Any())
+                {
+                    <tr><td colspan="5" class="px-6 py-10 text-center text-gray-500">Chưa có khung giờ sold out trong khoảng này.</td></tr>
+                }
+                else
+                {
+                    for (var i = 0; i < soldOutItems.Count; i++)
+                    {
+                        var item = soldOutItems[i];
+                        <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <td class="px-6 py-4 text-gray-400">@(i + 1)</td>
+                            <td class="px-6 py-4 font-semibold text-gray-900 dark:text-white">@item.TimeFrame</td>
+                            <td class="px-6 py-4 text-right font-bold text-emerald-600 dark:text-emerald-400">@item.SoldOutTripCount.ToString("N0")</td>
+                            <td class="px-6 py-4 text-right">@item.TotalSeats.ToString("N0")</td>
+                            <td class="px-6 py-4 text-right">@item.BookedSeats.ToString("N0")</td>
+                        </tr>
+                    }
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

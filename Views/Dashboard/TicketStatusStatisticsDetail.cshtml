@@ -1,0 +1,34 @@
+@model Bus_ticket.ViewModels.TicketStatusStatisticsViewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Chi tiết thống kê trạng thái vé";
+    ViewData["ReportTitle"] = "Chi tiết vé thành công và vé hủy";
+    ViewData["ReportSubtitle"] = "Bảng thống kê booking và vé theo trạng thái";
+    ViewData["PickerType"] = "TicketStatusStatisticsDetail";
+    ViewData["StatType"] = "TicketStatusStatistics";
+    ViewData["ExportHandler"] = "exportTicketStatusStatisticsDetailExcel";
+    ViewData["ShowChartToggle"] = true;
+    ViewData["ChartSectionId"] = "ticketStatusStatisticsDetailCharts";
+    ViewData["ChartInitFunction"] = "initializeTicketStatusStatisticsDetailCharts";
+    var fromDateValue = ViewBag.FromDateValue as string ?? string.Empty;
+    var toDateValue = ViewBag.ToDateValue as string ?? string.Empty;
+}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="/admin-assets/js/dashboard-date-range.js?v=1"></script>
+<script src="/admin-assets/js/dashboard-detail-charts.js?v=2"></script>
+
+<div class="p-4 sm:p-6 lg:p-8 space-y-6 max-w-full overflow-x-hidden">
+    @await Html.PartialAsync("_ReportDetailHeader")
+    @await Html.PartialAsync("_TicketStatusStatisticsDetailChartsPartial", Model)
+    @await Html.PartialAsync("_TicketStatusStatisticsDetailTablesPartial", Model)
+</div>
+
+@await Html.PartialAsync("_ReportDetailDateScript")
+
+<script>
+    function exportTicketStatusStatisticsDetailExcel() {
+        const range = getDashboardDateRangeValues('TicketStatusStatisticsDetail', '@fromDateValue', '@toDateValue');
+        window.location.href = `/Dashboard/ExportTicketStatusStatistics?fromDate=${range.start}&toDate=${range.end}`;
+    }
+</script>
