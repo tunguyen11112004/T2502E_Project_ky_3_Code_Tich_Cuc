@@ -9,6 +9,8 @@
     int currentPage = ViewBag.CurrentPage ?? 1;
     int totalPages = ViewBag.TotalPages ?? 1;
     string searchDate = ViewBag.SearchDate ?? "";
+    string searchBus = ViewBag.SearchBus ?? "";
+    string searchRouteId = ViewBag.SearchRouteId ?? "";
 }
 
 <div class="p-6 sm:p-8 space-y-6">
@@ -40,14 +42,25 @@
 
         <div>
             <label class="block mb-1 text-xs font-bold text-gray-700 dark:text-gray-400 uppercase">Tìm theo thông tin xe</label>
-            <input type="text" id="searchBusText" placeholder="Biển số, mã xe, loại xe, nhà xe..."
+            <input type="text" name="searchBus" id="searchBusText" value="@searchBus"
+                   placeholder="Biển số, mã xe, loại xe, nhà xe..."
                    class="block w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-amber-400 focus:border-amber-400"/>
         </div>
 
         <div>
-            <label class="block mb-1 text-xs font-bold text-gray-700 dark:text-gray-400 uppercase">Tìm theo tuyến đường</label>
-            <input type="text" id="searchRouteText" placeholder="Hà Nội, Hải Phòng, Cát Bà..."
-                   class="block w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-amber-400 focus:border-amber-400"/>
+            <label class="block mb-1 text-xs font-bold text-gray-700 dark:text-gray-400 uppercase">Tuyến đường</label>
+            <select name="searchRouteId" id="searchRouteSelect"
+                    class="block w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-amber-400 focus:border-amber-400">
+                <option value="">-- Tất cả tuyến --</option>
+                @if (routeList != null)
+                {
+                    foreach (var route in routeList)
+                    {
+                        var routeLabel = $"{route.DeparturePoint} → {route.DestinationPoint}";
+                        <option value="@route.Id" selected="@(searchRouteId == route.Id)">@routeLabel</option>
+                    }
+                }
+            </select>
         </div>
 
         <div class="flex gap-2">
@@ -193,18 +206,18 @@
                         <span class="text-xs font-medium text-gray-700 dark:text-gray-400">Trang <span
                                 class="text-gray-900 dark:text-white font-bold">@currentPage</span> / @totalPages</span>
                         <div class="inline-flex space-x-1">
-                            <a href="@Url.Action("Index", "Booking", new { page = currentPage - 1, searchDate = searchDate })"
+                            <a href="@Url.Action("Index", "Booking", new { page = currentPage - 1, searchDate, searchBus, searchRouteId })"
                                class="@(currentPage == 1 ? "pointer-events-none opacity-40" : "") px-3 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 rounded border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white">
                                 Trước
                             </a>
                             @for (int i = 1; i <= totalPages; i++)
                             {
-                                <a href="@Url.Action("Index", "Booking", new { page = i, searchDate = searchDate })"
+                                <a href="@Url.Action("Index", "Booking", new { page = i, searchDate, searchBus, searchRouteId })"
                                    class="px-3 py-1 text-xs font-medium rounded @(i == currentPage ? "bg-amber-400 text-gray-900 font-bold" : "text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white")">
                                     @i
                                 </a>
                             }
-                            <a href="@Url.Action("Index", "Booking", new { page = currentPage + 1, searchDate = searchDate })"
+                            <a href="@Url.Action("Index", "Booking", new { page = currentPage + 1, searchDate, searchBus, searchRouteId })"
                                class="@(currentPage == totalPages ? "pointer-events-none opacity-40" : "") px-3 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 rounded border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white">
                                 Tiếp
                             </a>
@@ -420,36 +433,6 @@
     let currentRouteName = "";
     let currentTripId = "";
 
-
-    // Xử lý bộ lọc thông minh Realtime kết hợp cả 2 điều kiện tại Client
-    const searchBusInput = document.getElementById('searchBusText');
-    const searchRouteInput = document.getElementById('searchRouteText');
-
-    function filterTripTable() {
-        const busQuery = searchBusInput ? searchBusInput.value.toLowerCase().trim() : "";
-        const routeQuery = searchRouteInput ? searchRouteInput.value.toLowerCase().trim() : "";
-
-        document.querySelectorAll('#tripTableBody .trip-row').forEach(row => {
-            // Lấy dữ liệu text cột Xe (Cột 1 - index 0) và cột Tuyến đường (Cột 2 - index 1)
-            const busCellText = row.cells[0] ? row.cells[0].textContent.toLowerCase() : "";
-            const routeCellText = row.cells[1] ? row.cells[1].textContent.toLowerCase() : "";
-
-            const matchesBus = busCellText.includes(busQuery);
-            const matchesRoute = routeCellText.includes(routeQuery);
-
-            // Dòng hiển thị khi khớp đồng thời cả hai điều kiện lọc
-            if (matchesBus && matchesRoute) {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
-            }
-        });
-    }
-
-    // Lắng nghe sự kiện gõ chữ trên cả 2 ô tìm kiếm
-    searchBusInput?.addEventListener('input', filterTripTable);
-    searchRouteInput?.addEventListener('input', filterTripTable);
-
     async function loadPassengerManifest(tripId, busCode, routeName, tripDepartureTime) {
         currentTripId = tripId;
         document.querySelectorAll('#tripTableBody .trip-row').forEach(r => r.classList.remove('bg-amber-500/10', 'ring-1', 'ring-amber-400/50'));
@@ -502,11 +485,17 @@
                 item.className = "p-3 rounded-lg bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 flex items-center justify-between";
 
                 let cancelButtonHtml = '';
+                let exchangeButtonHtml = '';
                 if (isExpired) {
                     cancelButtonHtml = `
                         <button type="button" disabled 
                                 class="px-2 py-1 text-[11px] font-medium text-gray-500 bg-gray-100 dark:bg-gray-800 rounded border border-gray-300 dark:border-gray-700 cursor-not-allowed opacity-60">
                             Không thể hủy
+                        </button>`;
+                    exchangeButtonHtml = `
+                        <button type="button" disabled 
+                                class="px-2 py-1 text-[11px] font-medium text-gray-500 bg-gray-100 dark:bg-gray-800 rounded border border-gray-300 dark:border-gray-700 cursor-not-allowed opacity-60">
+                            Không thể đổi
                         </button>`;
                 } else {
                     // Ép kiểu chữ thường chính xác theo dữ liệu Json trả về
@@ -521,6 +510,11 @@
                         <button type="button" onclick="openCancelModal('${bCode}', '${safePassengerName}', '${sNumber}', ${fare}, '${depTime}')" 
                                 class="px-2 py-1 text-[11px] font-medium text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-600 rounded border border-rose-500/20 transition-all">
                             Hủy vé
+                        </button>`;
+                    exchangeButtonHtml = `
+                        <button type="button" onclick="goToExchange('${bCode}', '${sNumber}')" 
+                                class="px-2 py-1 text-[11px] font-medium text-blue-400 hover:text-white bg-blue-500/10 hover:bg-blue-600 rounded border border-blue-500/20 transition-all">
+                            Đổi vé
                         </button>`;
                 }
 
@@ -538,6 +532,7 @@
                         <div class="text-[10px] text-gray-700 dark:text-gray-500 mt-1">Mã: ${displayCode} | ${displayStatus}</div>
                     </div>
                     <div class="flex items-center gap-2">
+                        ${exchangeButtonHtml}
                         ${cancelButtonHtml}
                         <div class="px-2.5 py-1 text-xs font-black text-amber-400 bg-amber-400/10 rounded border border-amber-400/20 shadow-inner">
                             Ghế ${displaySeat}
@@ -577,6 +572,14 @@
             '</body></html>');
         printWindow.document.close();
         printWindow.print();
+    }
+
+    function goToExchange(bookingCode, seatNumber) {
+        if (!bookingCode || !seatNumber) {
+            alert('Thiếu thông tin vé cần đổi.');
+            return;
+        }
+        window.location.href = '/Booking/Exchange?bookingCode=' + encodeURIComponent(bookingCode) + '&seatNumber=' + encodeURIComponent(seatNumber);
     }
 
     function openCancelModal(bookingCode, passengerName, seatNumber, originalFare, departureTimeInput) {
