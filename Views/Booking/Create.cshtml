@@ -1,16 +1,21 @@
 @model List<Bus_ticket.Models.Trip>
 @{
     Layout = "_AdminLayout";
-    ViewData["Title"] = "Quản Lý Chuyến Xe & Đặt Vé";
+    var isExchangeMode = ViewBag.IsExchangeMode as bool? ?? false;
+    var exchangeContextJson = ViewBag.ExchangeContextJson as string ?? "{}";
+    ViewData["Title"] = isExchangeMode ? "Đổi Vé Tại Quầy" : "Quản Lý Chuyến Xe & Đặt Vé";
     var tripCount = Model?.Count ?? 0;
 }
 
 <div class="p-6 sm:p-8 flex flex-col gap-6">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-            <h1 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Hệ Thống Đặt Vé Tại Quầy</h1>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Tìm kiếm hành trình, chọn chuyến chạy thực tế và giữ chỗ cho
-                khách.</p>
+            <h1 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">@(isExchangeMode ? "Đổi Vé Tại Quầy" : "Hệ Thống Đặt Vé Tại Quầy")</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                @(isExchangeMode
+                    ? "Chọn chuyến xe mới, hệ thống tự tính phí phạt và chênh lệch giá so với vé cũ."
+                    : "Tìm kiếm hành trình, chọn chuyến chạy thực tế và giữ chỗ cho khách.")
+            </p>
         </div>
         <div>
             <button onclick="window.location.reload();"
@@ -30,6 +35,21 @@
     {
         <div class="flex items-center p-4 text-sm text-red-800 dark:text-red-400 rounded-lg bg-red-50 dark:bg-gray-800 border border-red-200 dark:border-red-800">
             <div><span class="font-medium">Thất bại!</span> @TempData["ErrorMessage"]</div>
+        </div>
+    }
+
+    @if (isExchangeMode)
+    {
+        <div id="exchangeOldTicketBanner" class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-5 shadow-lg">
+            <h2 class="text-sm font-bold uppercase tracking-wider text-blue-800 dark:text-blue-300 mb-3">Thông tin vé cần đổi</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
+                <div><span class="text-gray-500 dark:text-gray-400">Mã vé:</span> <span id="exOldBookingCode" class="font-bold text-gray-900 dark:text-white"></span></div>
+                <div><span class="text-gray-500 dark:text-gray-400">Ghế cũ:</span> <span id="exOldSeat" class="font-bold text-amber-600 dark:text-amber-400"></span></div>
+                <div><span class="text-gray-500 dark:text-gray-400">Tuyến cũ:</span> <span id="exOldRoute" class="font-bold text-gray-900 dark:text-white"></span></div>
+                <div><span class="text-gray-500 dark:text-gray-400">Giờ đi cũ:</span> <span id="exOldDeparture" class="font-bold text-gray-900 dark:text-white"></span></div>
+                <div><span class="text-gray-500 dark:text-gray-400">Giá vé cũ:</span> <span id="exOldAmount" class="font-bold text-emerald-600 dark:text-emerald-400"></span></div>
+                <div><span class="text-gray-500 dark:text-gray-400">Phí đổi vé:</span> <span id="exPenaltyLabel" class="font-bold text-rose-600 dark:text-rose-400"></span></div>
+            </div>
         </div>
     }
 
@@ -109,11 +129,16 @@
 
     <!-- PHÂN PHẦN THÔNG TIN CHI TIẾT ĐẶT VÉ -->
     <div id="bookingDetailSection" class="hidden w-full">
-        <form asp-action="BookTicket" asp-controller="Booking" method="post" id="formBooking"
+        <form asp-action="@(isExchangeMode ? "ExchangeTicket" : "BookTicket")" asp-controller="Booking" method="post" id="formBooking"
               class="flex flex-wrap lg:flex-nowrap gap-6 w-full items-start">
             @Html.AntiForgeryToken()
             <input type="hidden" name="tripId" id="hidTripId"/>
             <input type="hidden" name="seatHoldCode" id="seatHoldCode"/>
+            @if (isExchangeMode)
+            {
+                <input type="hidden" name="originalBookingCode" id="hidOriginalBookingCode"/>
+                <input type="hidden" name="originalSeatNumber" id="hidOriginalSeatNumber"/>
+            }
             <div id="hidden-seats-container"></div>
 
             <div class="flex-1 min-w-[320px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 shadow-xl">
@@ -169,8 +194,47 @@
                         <span id="finalTotal" class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">0 đ</span>
                     </div>
 
+                    @if (isExchangeMode)
+                    {
+                        <div id="exchangeSettlementPanel" class="hidden mt-4 p-4 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/10 space-y-2 text-sm">
+                            <div class="flex justify-between"><span class="text-gray-600 dark:text-gray-400">Giá vé mới:</span><span id="exNewAmount" class="font-bold text-gray-900 dark:text-white">0 đ</span></div>
+                            <div class="flex justify-between"><span class="text-gray-600 dark:text-gray-400">Phí phạt đổi vé (<span id="exPenaltyPct"></span>):</span><span id="exPenaltyAmount" class="font-bold text-rose-600 dark:text-rose-400">0 đ</span></div>
+                            <div class="flex justify-between"><span class="text-gray-600 dark:text-gray-400">Khấu trừ giá vé cũ:</span><span id="exOldCredit" class="font-bold text-emerald-600 dark:text-emerald-400">0 đ</span></div>
+                            <div class="flex justify-between border-t border-blue-200 dark:border-blue-700 pt-2 mt-2">
+                                <span id="exSettlementLabel" class="font-bold text-gray-900 dark:text-white">Số tiền cần xử lý:</span>
+                                <span id="exAmountDue" class="text-lg font-black text-amber-600 dark:text-amber-400">0 đ</span>
+                            </div>
+                        </div>
+
+                        <div id="exchangeRefundSection" class="hidden mt-4 space-y-3">
+                            <h4 class="text-sm font-bold text-gray-900 dark:text-white">Hoàn tiền chênh lệch</h4>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 dark:text-gray-400 uppercase mb-1">Phương thức hoàn tiền</label>
+                                <select name="refundMethod" id="selectExchangeRefundMethod"
+                                        class="w-full px-4 py-2 text-gray-900 dark:text-white bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg">
+                                    <option value="Tiền mặt tại quầy">Tiền mặt tại quầy</option>
+                                    <option value="Online">Chuyển khoản ngân hàng</option>
+                                </select>
+                            </div>
+                            <div id="divExchangeBankInfo" class="hidden space-y-3">
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-400 uppercase mb-1">Tên ngân hàng</label>
+                                    <input type="text" name="bankName" class="w-full px-4 py-2 text-gray-900 dark:text-white bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg"/>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-400 uppercase mb-1">Số tài khoản</label>
+                                    <input type="text" name="accountNo" class="w-full px-4 py-2 text-gray-900 dark:text-white bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg"/>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-400 uppercase mb-1">Tên chủ tài khoản</label>
+                                    <input type="text" name="accountName" class="w-full px-4 py-2 uppercase text-gray-900 dark:text-white bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg"/>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
                     <h3 class="text-lg font-bold text-gray-900 dark:text-white mt-6 mb-4">Phương thức thanh toán</h3>
-                    <div class="space-y-3">
+                    <div id="paymentMethodSection" class="space-y-3">
                         <label
                             class="flex items-center p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:border-amber-400">
                             <input type="radio" name="paymentMethod" value="Cash" checked
@@ -192,9 +256,9 @@
                             <span class="ml-3 text-gray-800 dark:text-white">Thanh toán chuyển khoản QR (PayOS)</span>
                         </label>
                     </div>
-                    <button type="submit"
+                    <button type="submit" id="btnSubmitBooking"
                             class="w-full mt-6 bg-amber-400 hover:bg-amber-500 text-gray-900 font-bold py-3 rounded-lg transition-all">
-                        Xác nhận đặt vé
+                        @(isExchangeMode ? "Xác nhận đổi vé" : "Xác nhận đặt vé")
                     </button>
                 </div>
             </div>
@@ -219,6 +283,9 @@
     let cachedTrips = [];
     let currentTripBaseFare = 0;
     let ageDiscountRules = [];
+    const isExchangeMode = @(isExchangeMode ? "true" : "false");
+    const exchangeContext = @Html.Raw(exchangeContextJson);
+    let latestExchangeQuote = null;
 
     const container = document.getElementById('hidden-seats-container');
     const txtSeatNum = document.getElementById('txtSeatNum');
@@ -263,7 +330,120 @@
         initAutocomplete('txtDeparture', 'dropDeparture');
         initAutocomplete('txtDestination', 'dropDestination');
         loadDiscountRules();
+
+        if (isExchangeMode && exchangeContext) {
+            initExchangeMode();
+        }
+
+        const selectExchangeRefund = document.getElementById('selectExchangeRefundMethod');
+        const divExchangeBank = document.getElementById('divExchangeBankInfo');
+        if (selectExchangeRefund && divExchangeBank) {
+            selectExchangeRefund.addEventListener('change', function () {
+                if (this.value === 'Online') {
+                    divExchangeBank.classList.remove('hidden');
+                } else {
+                    divExchangeBank.classList.add('hidden');
+                }
+            });
+        }
     });
+
+    function initExchangeMode() {
+        const setText = (id, text) => {
+            const el = document.getElementById(id);
+            if (el) el.innerText = text;
+        };
+
+        setText('exOldBookingCode', exchangeContext.bookingCode || '');
+        setText('exOldSeat', exchangeContext.seatNumber || '');
+        setText('exOldRoute', exchangeContext.oldRouteName || '');
+        setText('exOldDeparture', exchangeContext.oldDepartureDisplay || '');
+        setText('exOldAmount', Number(exchangeContext.oldAmount || 0).toLocaleString('vi-VN') + ' đ');
+        setText('exPenaltyLabel', exchangeContext.penaltyPercentDisplay || '');
+
+        const hidBooking = document.getElementById('hidOriginalBookingCode');
+        const hidSeat = document.getElementById('hidOriginalSeatNumber');
+        if (hidBooking) hidBooking.value = exchangeContext.bookingCode || '';
+        if (hidSeat) hidSeat.value = exchangeContext.seatNumber || '';
+
+        const phoneInputEl = document.getElementById('txtPassengerPhone');
+        const nameInputEl = document.getElementById('txtPassengerName');
+        const emailInputEl = document.getElementById('txtPassengerEmail');
+        const dobInputEl = document.getElementById('inputDob');
+
+        if (phoneInputEl) phoneInputEl.value = exchangeContext.passengerPhone || '';
+        if (nameInputEl) nameInputEl.value = exchangeContext.passengerName || '';
+        if (emailInputEl) emailInputEl.value = exchangeContext.passengerEmail || '';
+        if (dobInputEl && exchangeContext.passengerDob) {
+            dobInputEl.value = exchangeContext.passengerDob.split('T')[0];
+            calculateAge();
+        }
+
+        [phoneInputEl, nameInputEl, emailInputEl, dobInputEl].forEach(el => {
+            if (el) el.readOnly = true;
+        });
+    }
+
+    async function refreshExchangeQuote() {
+        if (!isExchangeMode || !exchangeContext) return;
+
+        const tripId = document.getElementById('hidTripId')?.value;
+        const panel = document.getElementById('exchangeSettlementPanel');
+        const refundSection = document.getElementById('exchangeRefundSection');
+        const paymentSection = document.getElementById('paymentMethodSection');
+
+        if (!tripId || selectedSeats.length !== 1) {
+            if (panel) panel.classList.add('hidden');
+            if (refundSection) refundSection.classList.add('hidden');
+            if (paymentSection) paymentSection.classList.remove('hidden');
+            latestExchangeQuote = null;
+            return;
+        }
+
+        try {
+            const url = `/Booking/CalculateExchangeQuote?originalBookingCode=${encodeURIComponent(exchangeContext.bookingCode)}&originalSeatNumber=${encodeURIComponent(exchangeContext.seatNumber)}&newTripId=${encodeURIComponent(tripId)}&seatNumbers=${encodeURIComponent(selectedSeats[0])}`;
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (!data.success) {
+                latestExchangeQuote = null;
+                return;
+            }
+
+            latestExchangeQuote = data;
+            if (panel) panel.classList.remove('hidden');
+
+            const setText = (id, text) => {
+                const el = document.getElementById(id);
+                if (el) el.innerText = text;
+            };
+
+            setText('exNewAmount', Number(data.newAmount).toLocaleString('vi-VN') + ' đ');
+            setText('exPenaltyPct', data.penaltyPercentDisplay || '');
+            setText('exPenaltyAmount', Number(data.penaltyAmount).toLocaleString('vi-VN') + ' đ');
+            setText('exOldCredit', '-' + Number(data.oldAmount).toLocaleString('vi-VN') + ' đ');
+
+            const amountDue = Number(data.amountDue) || 0;
+            if (amountDue > 0) {
+                setText('exSettlementLabel', 'Khách cần thanh toán thêm:');
+                setText('exAmountDue', amountDue.toLocaleString('vi-VN') + ' đ');
+                if (refundSection) refundSection.classList.add('hidden');
+                if (paymentSection) paymentSection.classList.remove('hidden');
+            } else if (amountDue < 0) {
+                setText('exSettlementLabel', 'Hoàn tiền chênh lệch:');
+                setText('exAmountDue', Math.abs(amountDue).toLocaleString('vi-VN') + ' đ');
+                if (refundSection) refundSection.classList.remove('hidden');
+                if (paymentSection) paymentSection.classList.add('hidden');
+            } else {
+                setText('exSettlementLabel', 'Không cần thanh toán thêm');
+                setText('exAmountDue', '0 đ');
+                if (refundSection) refundSection.classList.add('hidden');
+                if (paymentSection) paymentSection.classList.add('hidden');
+            }
+        } catch (err) {
+            console.error('Lỗi tính chênh lệch đổi vé:', err);
+        }
+    }
 
     const phoneInput = document.getElementById('txtPassengerPhone');
     const nameInput = document.querySelector('input[name="passengerName"]');
@@ -308,6 +488,9 @@
         container.innerHTML = selectedSeats.map(s => `<input type="hidden" name="seatNumbers" value="${s}">`).join('');
         if (seatHoldCodeInput) seatHoldCodeInput.value = currentSeatHoldCode || '';
         updatePriceTable();
+        if (isExchangeMode) {
+            refreshExchangeQuote();
+        }
     }
 
     function formatTimeLeft(totalSeconds) {
@@ -486,6 +669,11 @@
             btn.classList.add('admin-seat-btn');
             btn.innerText = seatNumber;
             updateSelectedSeatsDisplay();
+            return;
+        }
+
+        if (isExchangeMode && selectedSeats.length >= 1) {
+            alert('Đổi vé chỉ cho phép chọn một ghế mới.');
             return;
         }
 
@@ -787,6 +975,9 @@
                 currentTripBaseFare = trip.baseFare;
                 updatePriceTable();
                 loadSeatMatrix(trip.id);
+                if (isExchangeMode) {
+                    refreshExchangeQuote();
+                }
             });
 
             area.appendChild(card);
@@ -951,6 +1142,21 @@
             if (selectedSeats.length === 0) {
                 alert('Vui lòng chọn ít nhất một chỗ ngồi!');
                 return;
+            }
+
+            if (isExchangeMode) {
+                if (selectedSeats.length !== 1) {
+                    alert('Đổi vé chỉ cho phép chọn một ghế mới.');
+                    return;
+                }
+
+                if (latestExchangeQuote && latestExchangeQuote.amountDue < 0) {
+                    const refundMethod = document.getElementById('selectExchangeRefundMethod')?.value;
+                    if (!refundMethod) {
+                        alert('Vui lòng chọn phương thức hoàn tiền chênh lệch.');
+                        return;
+                    }
+                }
             }
 
             // 3. Kiểm tra ghế còn trống trước khi gửi — tránh báo lỗi kết nối chung chung

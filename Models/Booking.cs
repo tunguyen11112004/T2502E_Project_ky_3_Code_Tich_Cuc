@@ -104,6 +104,18 @@ public class Booking
 
     [BsonElement("cancellation")] public CancellationInfo Cancellation { get; set; }
 
+    [BsonElement("exchanges")]
+    [BsonIgnoreIfNull]
+    public List<ExchangeInfo> Exchanges { get; set; }
+
+    [BsonElement("exchangedFromBookingCode")]
+    [BsonIgnoreIfNull]
+    public string ExchangedFromBookingCode { get; set; }
+
+    [BsonElement("exchangedFromSeatNumber")]
+    [BsonIgnoreIfNull]
+    public string ExchangedFromSeatNumber { get; set; }
+
     // Đã thêm cờ đánh dấu vé đang chờ hoàn tiền (Dùng cho Task 14 - Cancel Trip)
     [BsonElement("isRefundPending")] public bool IsRefundPending { get; set; } = false;
 

@@ -13,6 +13,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Bus_ticket.Interfaces;
+using Bus_ticket.ViewModels;
 using MongoDB.Bson;
 using PayOS;
 using PayOS.Models;
@@ -44,7 +45,8 @@ namespace Bus_ticket.Controllers
 
         // GET: /Booking
         [HttpGet]
-        public async Task<IActionResult> Index(int page = 1, string searchDate = "")
+        public async Task<IActionResult> Index(int page = 1, string searchDate = "", string searchBus = "",
+            string searchRouteId = "")
         {
             // Nếu chưa chọn ngày (lần đầu load trang), tự động lấy ngày hiện tại (giờ Việt Nam GMT+7)
             if (string.IsNullOrEmpty(searchDate))
@@ -54,11 +56,17 @@ namespace Bus_ticket.Controllers
                 searchDate = localTime.ToString("yyyy-MM-dd");
             }
 
-            // Gửi lại searchDate ra View để điền vào thẻ <input type="date">
             ViewBag.SearchDate = searchDate;
+            ViewBag.SearchBus = searchBus ?? string.Empty;
+            ViewBag.SearchRouteId = searchRouteId ?? string.Empty;
 
             int pageSize = 5;
             if (page < 1) page = 1;
+
+            var busList = await _dbContext.Buses.Find(_ => true).ToListAsync();
+            var routes = await _dbContext.BusRoutes.Find(_ => true).ToListAsync();
+            var operatorList = await _dbContext.BusOperators.Find(o => o.Status == "Active").ToListAsync();
+            var busClassList = await _dbContext.BusClasses.Find(c => c.Status == "Active").ToListAsync();
 
             var filterBuilder = Builders<Trip>.Filter;
             var filter = TripFilters.NotDeleted;
@@ -74,8 +82,45 @@ namespace Bus_ticket.Controllers
                     filterBuilder.Lte(t => t.DepartureTime, endOfDay));
             }
 
+            if (!string.IsNullOrWhiteSpace(searchRouteId))
+            {
+                filter = filterBuilder.And(filter, filterBuilder.Eq(t => t.RouteId, searchRouteId.Trim()));
+            }
+
+            if (!string.IsNullOrWhiteSpace(searchBus))
+            {
+                var searchKey = searchBus.Trim().ToLowerInvariant();
+                var matchingBusIds = busList.Where(b =>
+                {
+                    var op = operatorList.FirstOrDefault(o => o.Id == b.OperatorId);
+                    var cls = busClassList.FirstOrDefault(c => c.Id == b.BusClassId);
+                    return (b.BusCode?.ToLowerInvariant().Contains(searchKey) ?? false)
+                           || (b.LicensePlate?.ToLowerInvariant().Contains(searchKey) ?? false)
+                           || (cls?.ClassName?.ToLowerInvariant().Contains(searchKey) ?? false)
+                           || (b.LegacyBusType?.ToLowerInvariant().Contains(searchKey) ?? false)
+                           || (op?.OperatorName?.ToLowerInvariant().Contains(searchKey) ?? false);
+                }).Select(b => b.Id).ToList();
+
+                if (matchingBusIds.Any())
+                {
+                    filter = filterBuilder.And(filter, filterBuilder.In(t => t.BusId, matchingBusIds));
+                }
+                else
+                {
+                    ViewBag.BusList = busList;
+                    ViewBag.RouteList = routes;
+                    ViewBag.OperatorList = operatorList;
+                    ViewBag.BusClassList = busClassList;
+                    ViewBag.CurrentPage = 1;
+                    ViewBag.TotalPages = 1;
+                    return View(new List<Trip>());
+                }
+            }
+
             long totalTrips = await _dbContext.Trips.CountDocumentsAsync(filter);
             int totalPages = (int)Math.Ceiling((double)totalTrips / pageSize);
+            if (totalPages < 1) totalPages = 1;
+            if (page > totalPages) page = totalPages;
 
             var trips = await _dbContext.Trips.Find(filter)
                 .Sort(Builders<Trip>.Sort.Ascending(t => t.DepartureTime))
@@ -83,22 +128,12 @@ namespace Bus_ticket.Controllers
                 .Limit(pageSize)
                 .ToListAsync();
 
-            var buses = await _dbContext.Buses.Find(_ => true).ToListAsync();
-
-            var routes = await _dbContext.BusRoutes.Find(_ => true).ToListAsync();
-
-            var busList = await _dbContext.Buses.Find(_ => true).ToListAsync();
-
-            var operatorList = await _dbContext.BusOperators.Find(o => o.Status == "Active").ToListAsync();
-
-            var busClassList = await _dbContext.BusClasses.Find(c => c.Status == "Active").ToListAsync();
             ViewBag.BusList = busList;
-            ViewBag.RouteList = routes;
-            ViewBag.operatorList = operatorList;
-            ViewBag.busClassList = busClassList;
+            ViewBag.RouteList = routes.OrderBy(r => r.DeparturePoint).ThenBy(r => r.DestinationPoint).ToList();
+            ViewBag.OperatorList = operatorList;
+            ViewBag.BusClassList = busClassList;
             ViewBag.CurrentPage = page;
             ViewBag.TotalPages = totalPages;
-            ViewBag.SearchDate = searchDate;
 
             return View(trips);
         }
@@ -140,6 +175,369 @@ namespace Bus_ticket.Controllers
             ViewBag.BusList = buses;
 
             return View(trips);
+        }
+
+        // GET: /Booking/Exchange
+        [HttpGet]
+        public async Task<IActionResult> Exchange(string bookingCode, string seatNumber)
+        {
+            var (valid, message, context) = await ValidateExchangeEligibilityAsync(bookingCode, seatNumber);
+            if (!valid || context == null)
+            {
+                TempData["ErrorMessage"] = message;
+                return RedirectToAction(nameof(Index));
+            }
+
+            var trips = await _dbContext.Trips.Find(TripFilters.NotDeleted).ToListAsync();
+            var buses = await _dbContext.Buses.Find(_ => true).ToListAsync();
+
+            ViewBag.BusList = buses;
+            ViewBag.IsExchangeMode = true;
+            ViewBag.ExchangeContextJson = JsonConvert.SerializeObject(context, new JsonSerializerSettings
+            {
+                ContractResolver = new Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver()
+            });
+
+            return View("Create", trips);
+        }
+
+        // GET: /Booking/CalculateExchangeQuote
+        [HttpGet]
+        public async Task<IActionResult> CalculateExchangeQuote(
+            string originalBookingCode,
+            string originalSeatNumber,
+            string newTripId,
+            string seatNumbers)
+        {
+            var (valid, message, context) = await ValidateExchangeEligibilityAsync(originalBookingCode, originalSeatNumber);
+            if (!valid || context == null)
+            {
+                return Json(new { success = false, message });
+            }
+
+            if (string.IsNullOrWhiteSpace(newTripId))
+            {
+                return Json(new { success = false, message = "Vui lòng chọn chuyến xe mới." });
+            }
+
+            var normalizedSeats = NormalizeSeatNumbers(
+                (seatNumbers ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries).ToList());
+
+            if (normalizedSeats.Count != 1)
+            {
+                return Json(new { success = false, message = "Đổi vé chỉ áp dụng cho một ghế." });
+            }
+
+            var newTrip = await _dbContext.Trips.Find(t => t.Id == newTripId && t.DeletedAt == null)
+                .FirstOrDefaultAsync();
+            if (newTrip == null)
+            {
+                return Json(new { success = false, message = "Chuyến xe mới không tồn tại." });
+            }
+
+            if (CancellationFeeHelper.IsPastDeparture(newTrip.DepartureTime))
+            {
+                return Json(new { success = false, message = "Chuyến xe mới đã khởi hành." });
+            }
+
+            var newPrice = await CalculateSeatPriceAsync(newTrip, context.PassengerDob, 1);
+            var penaltyAmount = CancellationFeeHelper.CalculatePenaltyAmount(context.OldAmount, context.OldDepartureUtc);
+            var amountDue = newPrice + penaltyAmount - context.OldAmount;
+
+            return Json(new
+            {
+                success = true,
+                oldAmount = context.OldAmount,
+                penaltyPercent = context.PenaltyPercent,
+                penaltyPercentDisplay = context.PenaltyPercentDisplay,
+                penaltyAmount,
+                newAmount = newPrice,
+                amountDue,
+                settlementType = amountDue > 0 ? "pay_extra" : amountDue < 0 ? "refund" : "even"
+            });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ExchangeTicket(
+            string originalBookingCode,
+            string originalSeatNumber,
+            string tripId,
+            List<string> seatNumbers,
+            string passengerName,
+            DateTime dob,
+            string passengerPhone,
+            string passengerEmail,
+            string paymentMethod,
+            string seatHoldCode,
+            string refundMethod = null,
+            string bankName = null,
+            string accountNo = null,
+            string accountName = null)
+        {
+            if (string.IsNullOrWhiteSpace(originalBookingCode) || string.IsNullOrWhiteSpace(originalSeatNumber))
+            {
+                return Json(new { success = false, message = "Thiếu thông tin vé cần đổi." });
+            }
+
+            if (seatNumbers == null || !seatNumbers.Any() || string.IsNullOrEmpty(tripId))
+            {
+                return Json(new { success = false, message = "Dữ liệu chuyến mới không hợp lệ!" });
+            }
+
+            seatNumbers = NormalizeSeatNumbers(seatNumbers);
+            if (seatNumbers.Count != 1)
+            {
+                return Json(new { success = false, message = "Đổi vé chỉ áp dụng cho một ghế." });
+            }
+
+            var (valid, eligibilityMessage, context) =
+                await ValidateExchangeEligibilityAsync(originalBookingCode, originalSeatNumber);
+            if (!valid || context == null)
+            {
+                return Json(new { success = false, message = eligibilityMessage });
+            }
+
+            var oldBooking = await _dbContext.Bookings
+                .Find(b => b.BookingCode == originalBookingCode)
+                .FirstOrDefaultAsync();
+            if (oldBooking == null)
+            {
+                return Json(new { success = false, message = "Không tìm thấy đơn đặt vé gốc." });
+            }
+
+            var oldPassenger = oldBooking.Passengers?.FirstOrDefault(p =>
+                string.Equals(p.SeatNumber?.Trim(), originalSeatNumber.Trim(), StringComparison.OrdinalIgnoreCase));
+            if (oldPassenger == null)
+            {
+                return Json(new { success = false, message = "Không tìm thấy ghế trong đơn đặt vé gốc." });
+            }
+
+            if (string.Equals(oldBooking.TripId, tripId, StringComparison.OrdinalIgnoreCase)
+                && seatNumbers.Any(s => string.Equals(s, originalSeatNumber, StringComparison.OrdinalIgnoreCase)))
+            {
+                return Json(new { success = false, message = "Không thể đổi sang cùng ghế trên cùng chuyến." });
+            }
+
+            try
+            {
+                var newTrip = await _dbContext.Trips.Find(t => t.Id == tripId && t.DeletedAt == null)
+                    .FirstOrDefaultAsync();
+                if (newTrip == null)
+                {
+                    return Json(new { success = false, message = "Chuyến xe mới không tồn tại hoặc đã bị xóa." });
+                }
+
+                if (CancellationFeeHelper.IsPastDeparture(newTrip.DepartureTime))
+                {
+                    return Json(new { success = false, message = "Chuyến xe mới đã khởi hành." });
+                }
+
+                var config = await _dbContext.SystemConfigs
+                    .Find(s => s.Id == "global_system_configuration")
+                    .FirstOrDefaultAsync();
+
+                int age = DateTime.UtcNow.Year - dob.Year;
+                if (dob.Date > DateTime.UtcNow.AddYears(-age))
+                {
+                    age--;
+                }
+
+                decimal discountPercentage = config?.AgeDiscountRules
+                    .FirstOrDefault(r => age >= r.MinAge && age <= r.MaxAge)?.DiscountPercentage ?? 0;
+
+                decimal basePrice = newTrip.BaseFare;
+                decimal discountPerSeat = basePrice * (discountPercentage / 100m);
+                decimal finalPerSeat = basePrice - discountPerSeat;
+                decimal newPrice = finalPerSeat;
+
+                var oldAmount = oldPassenger.FinalSeatPrice;
+                var penaltyAmount =
+                    CancellationFeeHelper.CalculatePenaltyAmount(oldAmount, context.OldDepartureUtc);
+                var amountDue = newPrice + penaltyAmount - oldAmount;
+
+                if (amountDue < 0 && string.IsNullOrWhiteSpace(refundMethod))
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = "Vui lòng chọn phương thức hoàn tiền chênh lệch."
+                    });
+                }
+
+                var bookingCode = "BK-" + Guid.NewGuid().ToString("N")[..8].ToUpper();
+                seatHoldCode = string.IsNullOrWhiteSpace(seatHoldCode) ? string.Empty : seatHoldCode.Trim();
+
+                var hasSelectionHold = !string.IsNullOrWhiteSpace(seatHoldCode)
+                                       && await HasValidHoldAsync(tripId, seatNumbers, seatHoldCode);
+
+                var finalHoldCode = bookingCode;
+                if (hasSelectionHold)
+                {
+                    finalHoldCode = seatHoldCode;
+                }
+                else
+                {
+                    var holdResult = await TryHoldSeatsAsync(tripId, seatNumbers, bookingCode);
+                    if (!holdResult.Success)
+                    {
+                        return Json(new { success = false, message = holdResult.Message });
+                    }
+                }
+
+                await ReleaseSeatsOnTripAsync(oldBooking.TripId, new[] { originalSeatNumber });
+
+                var exchangeRecord = new ExchangeInfo
+                {
+                    ExchangedAt = DateTime.UtcNow,
+                    ExchangedSeatNumber = originalSeatNumber,
+                    NewBookingCode = bookingCode,
+                    OldSeatPrice = oldAmount,
+                    PenaltyAmount = penaltyAmount,
+                    NewSeatPrice = newPrice,
+                    AmountDue = amountDue
+                };
+
+                oldBooking.Passengers.Remove(oldPassenger);
+                var remainingPassengers = oldBooking.Passengers ?? new List<PassengerDetail>();
+                var remainingFinal = remainingPassengers.Sum(p => p.FinalSeatPrice);
+                var previousPassengerCount = remainingPassengers.Count + 1;
+                var perSeatTotal = oldBooking.TotalPrice / previousPassengerCount;
+                var perSeatDiscount = oldBooking.DiscountAmount / previousPassengerCount;
+                var remainingTotal = perSeatTotal * remainingPassengers.Count;
+                var remainingDiscount = perSeatDiscount * remainingPassengers.Count;
+
+                var oldUpdates = new List<UpdateDefinition<Booking>>
+                {
+                    Builders<Booking>.Update.Set(b => b.Passengers, remainingPassengers),
+                    Builders<Booking>.Update.Set(b => b.UpdatedAt, DateTime.UtcNow),
+                    Builders<Booking>.Update.Set(b => b.UpdatedBy, User.Identity?.Name ?? "Exchange-Counter")
+                };
+
+                if (oldBooking.Exchanges == null || !oldBooking.Exchanges.Any())
+                {
+                    oldUpdates.Add(Builders<Booking>.Update.Set(b => b.Exchanges, new List<ExchangeInfo> { exchangeRecord }));
+                }
+                else
+                {
+                    oldUpdates.Add(Builders<Booking>.Update.Push(b => b.Exchanges, exchangeRecord));
+                }
+
+                if (!remainingPassengers.Any())
+                {
+                    oldUpdates.Add(Builders<Booking>.Update.Set(b => b.BookingStatus, "Exchanged"));
+                    oldUpdates.Add(Builders<Booking>.Update.Set(b => b.FinalAmount, 0));
+                    oldUpdates.Add(Builders<Booking>.Update.Set(b => b.TotalPrice, 0));
+                    oldUpdates.Add(Builders<Booking>.Update.Set(b => b.DiscountAmount, 0));
+                }
+                else
+                {
+                    oldUpdates.Add(Builders<Booking>.Update.Set(b => b.FinalAmount, remainingFinal));
+                    oldUpdates.Add(Builders<Booking>.Update.Set(b => b.TotalPrice, remainingTotal));
+                    oldUpdates.Add(Builders<Booking>.Update.Set(b => b.DiscountAmount, remainingDiscount));
+                }
+
+                await _dbContext.Bookings.UpdateOneAsync(
+                    b => b.Id == oldBooking.Id,
+                    Builders<Booking>.Update.Combine(oldUpdates));
+
+                var cashPaid = amountDue > 0 ? amountDue : 0m;
+                var newBooking = new Booking
+                {
+                    BookingCode = bookingCode,
+                    TripId = newTrip.Id,
+                    CustomerId = await ResolveCustomerIdAsync(passengerName, dob, passengerPhone, passengerEmail),
+                    CustomerPhone = passengerPhone,
+                    CustomerEmail = passengerEmail,
+                    UserId = User.Identity?.IsAuthenticated == true
+                        ? User.FindFirstValue(ClaimTypes.NameIdentifier)
+                        : "GUEST",
+                    BranchId = (await _dbContext.Users
+                            .Find(u => u.Username == User.Identity.Name)
+                            .FirstOrDefaultAsync())
+                        ?.BranchId,
+                    BookingTime = DateTime.UtcNow,
+                    TotalPrice = basePrice,
+                    DiscountAmount = discountPerSeat,
+                    FinalAmount = newPrice,
+                    BookingStatus = "Completed",
+                    PaymentStatus = "Paid",
+                    ExchangedFromBookingCode = originalBookingCode,
+                    ExchangedFromSeatNumber = originalSeatNumber,
+                    Passengers = new List<PassengerDetail>
+                    {
+                        new()
+                        {
+                            SeatNumber = seatNumbers[0],
+                            Name = passengerName,
+                            PhoneNumber = passengerPhone,
+                            Email = passengerEmail,
+                            Dob = dob,
+                            FinalSeatPrice = finalPerSeat
+                        }
+                    },
+                    Payment = new PaymentInfo
+                    {
+                        PaymentMethod = amountDue > 0 ? paymentMethod ?? "Cash" : "Exchange",
+                        AmountPaid = cashPaid,
+                        TransactionCode = "EXCH-" + Guid.NewGuid().ToString("N")[..6].ToUpper()
+                    },
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = User.Identity?.Name ?? "Exchange-Counter"
+                };
+
+                await _dbContext.Bookings.InsertOneAsync(newBooking);
+                await MarkHeldSeatsAsBookedAsync(tripId, seatNumbers, finalHoldCode);
+                await _rabbitMqService.PublishOrderAsync(newBooking.BookingCode);
+
+                if (amountDue < 0)
+                {
+                    var refundAmount = Math.Abs(amountDue);
+                    var isCashAtCounter = refundMethod == "Tiền mặt tại quầy" || refundMethod == "Cash";
+                    var refundStatus = isCashAtCounter ? "Completed" : "Pending";
+                    var paymentStatus = isCashAtCounter ? "Refunded" : "RefundPending";
+
+                    var refundLog = new RefundRequest
+                    {
+                        BookingCode = originalBookingCode,
+                        CustomerName = passengerName,
+                        CustomerPhone = passengerPhone,
+                        OriginalAmount = oldAmount,
+                        RefundAmount = refundAmount,
+                        Reason = $"Hoàn tiền chênh lệch đổi vé sang {bookingCode}",
+                        RefundMethod = refundMethod,
+                        BankName = bankName,
+                        AccountNumber = accountNo,
+                        AccountName = accountName,
+                        RequestDate = DateTime.UtcNow,
+                        Status = refundStatus,
+                        ProcessedAt = isCashAtCounter ? DateTime.UtcNow : null,
+                        ProcessedBy = isCashAtCounter ? "Hệ thống (Đổi vé tại quầy)" : null
+                    };
+
+                    await _dbContext.RefundRequests.InsertOneAsync(refundLog);
+
+                    if (!remainingPassengers.Any())
+                    {
+                        await _dbContext.Bookings.UpdateOneAsync(
+                            b => b.BookingCode == originalBookingCode,
+                            Builders<Booking>.Update.Set(b => b.PaymentStatus, paymentStatus));
+                    }
+                }
+
+                TempData["SuccessMessage"] =
+                    amountDue > 0
+                        ? $"Đổi vé thành công! Khách thanh toán thêm {cashPaid:N0} đ. Mã vé mới: {bookingCode}"
+                        : amountDue < 0
+                            ? $"Đổi vé thành công! Hoàn tiền chênh lệch {Math.Abs(amountDue):N0} đ. Mã vé mới: {bookingCode}"
+                            : $"Đổi vé thành công! Mã vé mới: {bookingCode}";
+
+                return Json(new { success = true, redirectUrl = Url.Action("Index", "Booking") });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Lỗi đổi vé: " + ex.Message });
+            }
         }
 
         // GET: /Booking/GetLocationSuggestions?keyword=xxx
@@ -1971,14 +2369,12 @@ namespace Bus_ticket.Controllers
 
             // --- ĐOẠN SỬA ĐỔI: Lấy thông tin Trip để tính giờ chạy chính xác ---
             var trip = await _dbContext.Trips.Find(t => t.Id == booking.TripId).FirstOrDefaultAsync();
-            decimal feePercent = 0.30m; // Mặc định dưới 24h phạt 30%
-
-            if (trip != null)
+            if (trip != null && CancellationFeeHelper.IsPastDeparture(trip.DepartureTime))
             {
-                var hoursDifference = (trip.DepartureTime - DateTime.UtcNow).TotalHours;
-                if (hoursDifference >= 48) { feePercent = 0m; }
-                else if (hoursDifference >= 24) { feePercent = 0.15m; }
+                return Json(new { success = false, message = "Không thể hủy vé sau giờ khởi hành." });
             }
+
+            decimal feePercent = CancellationFeeHelper.GetPenaltyPercent(trip?.DepartureTime ?? DateTime.UtcNow);
 
             decimal originalAmount = booking.FinalAmount;
             decimal refundFee = originalAmount * feePercent; // Tính theo tỷ lệ thực tế
@@ -2113,6 +2509,112 @@ namespace Bus_ticket.Controllers
             }
 
             return BadRequest("Không thể cập nhật trạng thái đơn hoàn.");
+        }
+
+        private async Task<(bool Valid, string Message, ExchangeTicketContext? Context)> ValidateExchangeEligibilityAsync(
+            string bookingCode,
+            string seatNumber)
+        {
+            if (string.IsNullOrWhiteSpace(bookingCode) || string.IsNullOrWhiteSpace(seatNumber))
+            {
+                return (false, "Thiếu thông tin vé cần đổi.", null);
+            }
+
+            var booking = await _dbContext.Bookings.Find(b => b.BookingCode == bookingCode).FirstOrDefaultAsync();
+            if (booking == null)
+            {
+                return (false, "Không tìm thấy đơn đặt vé.", null);
+            }
+
+            if (booking.BookingStatus != "Completed")
+            {
+                return (false, "Vé này không thể đổi.", null);
+            }
+
+            var passenger = booking.Passengers?.FirstOrDefault(p =>
+                string.Equals(p.SeatNumber?.Trim(), seatNumber.Trim(), StringComparison.OrdinalIgnoreCase));
+            if (passenger == null)
+            {
+                return (false, "Không tìm thấy ghế trong đơn đặt vé.", null);
+            }
+
+            var trip = await _dbContext.Trips.Find(t => t.Id == booking.TripId).FirstOrDefaultAsync();
+            if (trip == null || trip.DeletedAt.HasValue)
+            {
+                return (false, "Chuyến xe gốc không còn tồn tại.", null);
+            }
+
+            if (CancellationFeeHelper.IsPastDeparture(trip.DepartureTime))
+            {
+                return (false, "Không thể đổi vé sau giờ khởi hành.", null);
+            }
+
+            var route = await _dbContext.BusRoutes.Find(r => r.Id == trip.RouteId).FirstOrDefaultAsync();
+            var routeName = route != null
+                ? $"{route.DeparturePoint} — {route.DestinationPoint}"
+                : "N/A";
+
+            var context = new ExchangeTicketContext
+            {
+                BookingCode = booking.BookingCode,
+                SeatNumber = passenger.SeatNumber,
+                OldAmount = passenger.FinalSeatPrice,
+                PassengerName = passenger.Name,
+                PassengerPhone = passenger.PhoneNumber ?? booking.CustomerPhone,
+                PassengerEmail = passenger.Email ?? booking.CustomerEmail,
+                PassengerDob = passenger.Dob,
+                OldRouteName = routeName,
+                OldTripId = trip.Id,
+                OldDepartureUtc = trip.DepartureTime,
+                OldDepartureDisplay = trip.DepartureTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm"),
+                PenaltyPercent = CancellationFeeHelper.GetPenaltyPercent(trip.DepartureTime),
+                PenaltyPercentDisplay = CancellationFeeHelper.GetPenaltyPercentDisplay(trip.DepartureTime)
+            };
+
+            return (true, string.Empty, context);
+        }
+
+        private async Task<decimal> CalculateSeatPriceAsync(Trip trip, DateTime dob, int seatCount)
+        {
+            var config = await _dbContext.SystemConfigs
+                .Find(s => s.Id == "global_system_configuration")
+                .FirstOrDefaultAsync();
+
+            int age = DateTime.UtcNow.Year - dob.Year;
+            if (dob.Date > DateTime.UtcNow.AddYears(-age))
+            {
+                age--;
+            }
+
+            decimal discountPercentage = config?.AgeDiscountRules
+                .FirstOrDefault(r => age >= r.MinAge && age <= r.MaxAge)?.DiscountPercentage ?? 0;
+
+            decimal basePrice = trip.BaseFare;
+            decimal discountPerSeat = basePrice * (discountPercentage / 100m);
+            decimal finalPerSeat = basePrice - discountPerSeat;
+            return finalPerSeat * seatCount;
+        }
+
+        private async Task ReleaseSeatsOnTripAsync(string tripId, IEnumerable<string> seatNumbers)
+        {
+            var trip = await _dbContext.Trips.Find(t => t.Id == tripId).FirstOrDefaultAsync();
+            if (trip?.RealtimeSeats == null)
+            {
+                return;
+            }
+
+            var toRelease = seatNumbers
+                .Select(s => s.Trim())
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var updatedSeats = trip.RealtimeSeats
+                .Where(s => !toRelease.Contains(s.SeatNumber))
+                .ToList();
+
+            await _dbContext.Trips.UpdateOneAsync(
+                t => t.Id == tripId,
+                Builders<Trip>.Update.Set(t => t.RealtimeSeats, updatedSeats));
         }
     }
 }
