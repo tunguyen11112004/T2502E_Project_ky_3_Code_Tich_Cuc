@@ -2,111 +2,36 @@
 @inject SidebarPermissionService SidebarPermissionService
 
 @{
-    Layout = "_AdminLayout";
-    ViewData["Title"] = "Admin Dashboard";
+Layout = "_AdminLayout";
+ViewData["Title"] = "Admin Dashboard";
 
-    var permissionNames = await SidebarPermissionService.GetCurrentUserPermissionNamesAsync(User);
-    var isAdmin = User.IsInRole("Admin");
+var permissionNames = await SidebarPermissionService.GetCurrentUserPermissionNamesAsync(User);
+var isAdmin = User.IsInRole("Admin");
 
-    var canViewOperatorRevenue = isAdmin || SidebarPermissionService.HasPermission(
-        permissionNames,
-        "OperatorRevenue",
-        "Operator Revenue",
-        "DoanhThuNhaXe",
-        "/Dashboard/OperatorRevenuePartial"
-    );
+var canViewOperatorRevenue = isAdmin || SidebarPermissionService.HasPermission(
+permissionNames, "OperatorRevenue", "Operator Revenue", "DoanhThuNhaXe", "/Dashboard/OperatorRevenuePartial"
+);
 
-    var canViewBranchCancellation = isAdmin || SidebarPermissionService.HasPermission(
-        permissionNames,
-        "BranchCancellation",
-        "Cancellation",
-        "Cancel",
-        "HuyChuyen",
-        "/Dashboard/BranchCancellationPartial"
-    );
+var canViewBranchCancellation = isAdmin || SidebarPermissionService.HasPermission(
+permissionNames, "BranchCancellation", "Cancellation", "Cancel", "HuyChuyen", "/Dashboard/BranchCancellationPartial"
+);
 
-    var canViewSeatAnalytics = isAdmin || SidebarPermissionService.HasPermission(
-        permissionNames,
-        "SeatAnalytics",
-        "Seat Analytics",
-        "Occupancy",
-        "LapDay",
-        "/Dashboard/SeatAnalyticsPartial"
-    );
+var canViewSeatAnalytics = isAdmin || SidebarPermissionService.HasPermission(
+permissionNames, "SeatAnalytics", "Seat Analytics", "Occupancy", "LapDay", "/Dashboard/SeatAnalyticsPartial"
+);
 
-    var canViewRouteRevenue = isAdmin || SidebarPermissionService.HasPermission(
-        permissionNames,
-        "Dashboard",
-        "Report",
-        "Revenue",
-        "Route",
-        "RouteRevenue",
-        "RouteRevenuePartial",
-        "/Dashboard/RouteRevenue",
-        "/Dashboard/RouteRevenuePartial"
-    );
+var canViewRouteRevenue = isAdmin || SidebarPermissionService.HasPermission(
+permissionNames, "Dashboard", "Report", "Revenue", "Route", "RouteRevenue", "RouteRevenuePartial", "/Dashboard/RouteRevenue", "/Dashboard/RouteRevenuePartial"
+);
 
-    var canViewTicketStatusStatistics = isAdmin || SidebarPermissionService.HasPermission(
-        permissionNames,
-        "Dashboard",
-        "Report",
-        "Ticket",
-        "TicketStatus",
-        "TicketStatusStatistics",
-        "TicketStatusStatisticsPartial",
-        "/Dashboard/TicketStatusStatistics",
-        "/Dashboard/TicketStatusStatisticsPartial"
-    );
-
-    var canViewVehicleRevenueStatistics = isAdmin || SidebarPermissionService.HasPermission(
-        permissionNames,
-        "Dashboard",
-        "Report",
-        "Vehicle",
-        "VehicleRevenue",
-        "Vehicle Revenue",
-        "VehicleRevenueStatistics",
-        "VehicleRevenueStatisticsPartial",
-        "/Dashboard/VehicleRevenueStatistics",
-        "/Dashboard/VehicleRevenueStatisticsPartial"
-    );
-
-    var canViewLowOccupancyTrips = isAdmin || SidebarPermissionService.HasPermission(
-        permissionNames,
-        "Dashboard",
-        "Report",
-        "LowOccupancy",
-        "LowOccupancyTrips",
-        "Low Occupancy Trips",
-        "LowOccupancyTripsPartial",
-        "/Dashboard/LowOccupancyTripsPartial",
-        "/Dashboard/ExportLowOccupancyTrips"
-    );
-
-    var canViewTotalRevenue = isAdmin || SidebarPermissionService.HasPermission(
-        permissionNames,
-        "Dashboard",
-        "Report",
-        "TotalRevenue",
-        "Total Revenue",
-        "TotalRevenuePartial",
-        "/Dashboard/TotalRevenuePartial",
-        "/Dashboard/ExportTotalRevenue"
-    );
-
-    var canViewSoldOutStats = isAdmin || SidebarPermissionService.HasPermission(
-        permissionNames,
-        "Dashboard",
-        "Report",
-        "SoldOutStats",
-        "Sold Out",
-        "SoldOutStatsPartial",
-        "/Dashboard/SoldOutStatsPartial",
-        "/Dashboard/ExportSoldOutStats"
-    );
+var canViewTotalRevenue = isAdmin;
+var canViewSoldOutStats = isAdmin;
+var canViewLowOccupancy = isAdmin;
+var canViewTicketStatus = isAdmin;
+var canViewVehicleRevenue = isAdmin;
 }
 
-<div class="p-5 space-y-4">
+<div class="p-6 space-y-6">
     <div>
         <h1 class="text-2xl font-bold text-gray-950 dark:text-white mb-1">Xin chào Admin!</h1>
         <p class="text-sm text-gray-600 dark:text-gray-400">
@@ -114,147 +39,114 @@
         </p>
     </div>
 
-    <div class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 shadow-xl">
-        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+    <!-- KHUNG CHỨA CÁC THẺ ĐIỀU HƯỚNG CHUẨN GIAO DIỆN GỐC -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+
+            <!-- 1. Tổng doanh thu -->
             @if (canViewTotalRevenue)
             {
-                <button type="button"
-                        onclick="loadStatistic('TotalRevenue')"
-                        class="dashboard-stat-button dashboard-stat-accent-teal min-h-[72px] rounded-xl px-4 py-3 text-left transition hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-400"
-                        data-stat-type="TotalRevenue">
-                    <p class="text-sm font-bold text-gray-900 dark:text-white">
-                        Tổng doanh thu
-                    </p>
-                    <p class="mt-1 text-xs text-gray-600 dark:text-gray-400">
-                        Toàn hệ thống
-                    </p>
-                </button>
+            <button type="button" onclick="loadStatistic('TotalRevenue')"
+                    class="dashboard-stat-button text-left p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-blue-500 hover:shadow-md transition-all duration-200 focus:outline-none"
+                    data-stat-type="TotalRevenue">
+                <h3 class="font-semibold text-gray-900 dark:text-white text-base">Tổng doanh thu</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Toàn hệ thống</p>
+            </button>
             }
 
+            <!-- 2. Doanh thu nhà xe -->
             @if (canViewOperatorRevenue)
             {
-                <button type="button"
-                        onclick="loadStatistic('OperatorRevenue')"
-                        class="dashboard-stat-button dashboard-stat-accent-blue min-h-[72px] rounded-xl px-4 py-3 text-left transition hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                        data-stat-type="OperatorRevenue">
-                    <p class="text-sm font-bold text-gray-900 dark:text-white">
-                        Doanh thu nhà xe
-                    </p>
-                    <p class="mt-1 text-xs text-gray-600 dark:text-gray-400">
-                        Xếp hạng nhà xe bán chạy
-                    </p>
-                </button>
+            <button type="button" onclick="loadStatistic('OperatorRevenue')"
+                    class="dashboard-stat-button text-left p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-blue-500 hover:shadow-md transition-all duration-200 focus:outline-none"
+                    data-stat-type="OperatorRevenue">
+                <h3 class="font-semibold text-gray-900 dark:text-white text-base">Doanh thu nhà xe</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Xếp hạng nhà xe bán chạy</p>
+            </button>
             }
 
+            <!-- 3. Tỷ lệ hủy chuyến -->
             @if (canViewBranchCancellation)
             {
-                <button type="button"
-                        onclick="loadStatistic('BranchCancellation')"
-                        class="dashboard-stat-button dashboard-stat-accent-emerald min-h-[72px] rounded-xl px-4 py-3 text-left transition hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                        data-stat-type="BranchCancellation">
-                    <p class="text-sm font-bold text-gray-900 dark:text-white">
-                        Tỷ lệ hủy chuyến
-                    </p>
-                    <p class="mt-1 text-xs text-gray-600 dark:text-gray-400">
-                        Độ uy tín vận hành
-                    </p>
-                </button>
+            <button type="button" onclick="loadStatistic('BranchCancellation')"
+                    class="dashboard-stat-button text-left p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-blue-500 hover:shadow-md transition-all duration-200 focus:outline-none"
+                    data-stat-type="BranchCancellation">
+                <h3 class="font-semibold text-gray-900 dark:text-white text-base">Tỷ lệ hủy chuyến</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Độ uy tín vận hành</p>
+            </button>
             }
 
+            <!-- 4. Hiệu suất lấp đầy -->
             @if (canViewSeatAnalytics)
             {
-                <button type="button"
-                        onclick="loadStatistic('SeatAnalytics')"
-                        class="dashboard-stat-button dashboard-stat-accent-purple min-h-[72px] rounded-xl px-4 py-3 text-left transition hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-400"
-                        data-stat-type="SeatAnalytics">
-                    <p class="text-sm font-bold text-gray-900 dark:text-white">
-                        Hiệu suất lấp đầy
-                    </p>
-                    <p class="mt-1 text-xs text-gray-600 dark:text-gray-400">
-                        Chuyến xe và ghế trống
-                    </p>
-                </button>
+            <button type="button" onclick="loadStatistic('SeatAnalytics')"
+                    class="dashboard-stat-button text-left p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-blue-500 hover:shadow-md transition-all duration-200 focus:outline-none"
+                    data-stat-type="SeatAnalytics">
+                <h3 class="font-semibold text-gray-900 dark:text-white text-base">Hiệu suất lấp đầy</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Chuyến xe và ghế trống</p>
+            </button>
             }
 
+            <!-- 5. Doanh thu tuyến đường -->
             @if (canViewRouteRevenue)
             {
-                <button type="button"
-                        onclick="loadStatistic('RouteRevenue')"
-                        class="dashboard-stat-button dashboard-stat-accent-amber min-h-[72px] rounded-xl px-4 py-3 text-left transition hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-400"
-                        data-stat-type="RouteRevenue">
-                    <p class="text-sm font-bold text-gray-900 dark:text-white">
-                        Doanh thu tuyến đường
-                    </p>
-                    <p class="mt-1 text-xs text-gray-600 dark:text-gray-400">
-                        Xếp hạng tuyến bán chạy
-                    </p>
-                </button>
+            <button type="button" onclick="loadStatistic('RouteRevenue')"
+                    class="dashboard-stat-button text-left p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-blue-500 hover:shadow-md transition-all duration-200 focus:outline-none"
+                    data-stat-type="RouteRevenue">
+                <h3 class="font-semibold text-gray-900 dark:text-white text-base">Doanh thu tuyến đường</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Xếp hạng tuyến bán chạy</p>
+            </button>
             }
 
-            @if (canViewVehicleRevenueStatistics)
+            <!-- 6. Doanh thu phương tiện -->
+            @if (canViewVehicleRevenue)
             {
-                <button type="button"
-                        onclick="loadStatistic('VehicleRevenueStatistics')"
-                        class="dashboard-stat-button dashboard-stat-accent-cyan min-h-[72px] rounded-xl px-4 py-3 text-left transition hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-400"
-                        data-stat-type="VehicleRevenueStatistics">
-                    <p class="text-sm font-bold text-gray-900 dark:text-white">
-                        Doanh thu phương tiện
-                    </p>
-                    <p class="mt-1 text-xs text-gray-600 dark:text-gray-400">
-                        Theo loại xe và từng xe
-                    </p>
-                </button>
+            <button type="button" onclick="loadStatistic('VehicleRevenueStatistics')"
+                    class="dashboard-stat-button text-left p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-blue-500 hover:shadow-md transition-all duration-200 focus:outline-none"
+                    data-stat-type="VehicleRevenueStatistics">
+                <h3 class="font-semibold text-gray-900 dark:text-white text-base">Doanh thu phương tiện</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Theo loại xe và từng xe</p>
+            </button>
             }
 
-            @if (canViewLowOccupancyTrips)
+            <!-- 7. Chuyến ít khách -->
+            @if (canViewLowOccupancy)
             {
-                <button type="button"
-                        onclick="loadStatistic('LowOccupancyTrips')"
-                        class="dashboard-stat-button dashboard-stat-accent-orange min-h-[72px] rounded-xl px-4 py-3 text-left transition hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-400"
-                        data-stat-type="LowOccupancyTrips">
-                    <p class="text-sm font-bold text-gray-900 dark:text-white">
-                        Chuyến ít khách
-                    </p>
-                    <p class="mt-1 text-xs text-gray-600 dark:text-gray-400">
-                        Tỷ lệ lấp đầy thấp
-                    </p>
-                </button>
+            <button type="button" onclick="loadStatistic('LowOccupancyTrips')"
+                    class="dashboard-stat-button text-left p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-blue-500 hover:shadow-md transition-all duration-200 focus:outline-none"
+                    data-stat-type="LowOccupancyTrips">
+                <h3 class="font-semibold text-gray-900 dark:text-white text-base">Chuyến ít khách</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Tỷ lệ lấp đầy thấp</p>
+            </button>
             }
 
+            <!-- 8. Chuyến cháy ghế -->
             @if (canViewSoldOutStats)
             {
-                <button type="button"
-                        onclick="loadStatistic('SoldOutStats')"
-                        class="dashboard-stat-button dashboard-stat-accent-lime min-h-[72px] rounded-xl px-4 py-3 text-left transition hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-lime-400"
-                        data-stat-type="SoldOutStats">
-                    <p class="text-sm font-bold text-gray-900 dark:text-white">
-                        Chuyến cháy ghế
-                    </p>
-                    <p class="mt-1 text-xs text-gray-600 dark:text-gray-400">
-                        Danh sách xe hết chỗ
-                    </p>
-                </button>
+            <button type="button" onclick="loadStatistic('SoldOutStats')"
+                    class="dashboard-stat-button text-left p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-blue-500 hover:shadow-md transition-all duration-200 focus:outline-none"
+                    data-stat-type="SoldOutStats">
+                <h3 class="font-semibold text-gray-900 dark:text-white text-base">Chuyến cháy ghế</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Danh sách xe hết chỗ</p>
+            </button>
             }
 
-            @if (canViewTicketStatusStatistics)
+            <!-- 9. Tỷ lệ vé hủy -->
+            @if (canViewTicketStatus)
             {
-                <button type="button"
-                        onclick="loadStatistic('TicketStatusStatistics')"
-                        class="dashboard-stat-button dashboard-stat-accent-rose min-h-[72px] rounded-xl px-4 py-3 text-left transition hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-400"
-                        data-stat-type="TicketStatusStatistics">
-                    <p class="text-sm font-bold text-gray-900 dark:text-white">
-                        Tỷ lệ vé hủy
-                    </p>
-                    <p class="mt-1 text-xs text-gray-600 dark:text-gray-400">
-                        Vé thành công và vé hủy
-                    </p>
-                </button>
+            <button type="button" onclick="loadStatistic('TicketStatusStatistics')"
+                    class="dashboard-stat-button text-left p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-blue-500 hover:shadow-md transition-all duration-200 focus:outline-none"
+                    data-stat-type="TicketStatusStatistics">
+                <h3 class="font-semibold text-gray-900 dark:text-white text-base">Tỷ lệ vé hủy</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Vé thành công và vé hủy</p>
+            </button>
             }
         </div>
     </div>
 
-    <div id="statisticContainer" class="dashboard-panel min-h-[250px] p-4 relative shadow-xl">
-        <div id="placeholderText" class="text-center py-16 text-gray-600 dark:text-gray-400">
+    <!-- KHU VỰC HIỂN THỊ DỮ LIỆU ĐỘNG -->
+    <div id="statisticContainer" class="bg-gray-50 dark:bg-gray-900/40 rounded-xl min-h-[250px] p-4 relative border border-dashed border-gray-300 dark:border-gray-700">
+        <div id="placeholderText" class="text-center py-16 text-gray-400" style="display: none;">
             <p>Vui lòng click chọn 1 thẻ thống kê phía trên để hiển thị biểu đồ tròn và bảng dữ liệu chi tiết.</p>
         </div>
 
@@ -282,45 +174,15 @@
     window.dashboardCharts = window.dashboardCharts || {};
     window.dashboardRangePickers = window.dashboardRangePickers || {};
 
-    const dashboardAccentMap = {
-        TotalRevenue: 'teal',
-        OperatorRevenue: 'blue',
-        BranchCancellation: 'emerald',
-        SeatAnalytics: 'purple',
-        RouteRevenue: 'amber',
-        VehicleRevenueStatistics: 'cyan',
-        LowOccupancyTrips: 'orange',
-        SoldOutStats: 'lime',
-        TicketStatusStatistics: 'rose'
-    };
-
     function setActiveStatisticButton(type) {
         document.querySelectorAll('.dashboard-stat-button').forEach(button => {
             const isActive = button.dataset.statType === type;
-            button.classList.toggle('dashboard-stat-active', isActive);
+            button.classList.toggle('border-blue-500', isActive);
             button.classList.toggle('ring-2', isActive);
-            button.classList.toggle('ring-amber-400/40', isActive);
+            button.classList.toggle('ring-blue-500/20', isActive);
+            button.classList.toggle('bg-blue-50/50', isActive);
+            button.classList.toggle('dark:bg-blue-900/20', isActive);
         });
-
-        const panel = document.getElementById('statisticContainer');
-        if (!panel) return;
-
-        panel.classList.remove(
-            'dashboard-panel-accent-teal',
-            'dashboard-panel-accent-blue',
-            'dashboard-panel-accent-emerald',
-            'dashboard-panel-accent-purple',
-            'dashboard-panel-accent-amber',
-            'dashboard-panel-accent-cyan',
-            'dashboard-panel-accent-orange',
-            'dashboard-panel-accent-lime',
-            'dashboard-panel-accent-rose'
-        );
-
-        const accent = dashboardAccentMap[type];
-        if (accent) {
-            panel.classList.add(`dashboard-panel-accent-${accent}`);
-        }
     }
 
     function destroyDashboardCharts() {
@@ -336,19 +198,12 @@
         const state = window.dashboardRangePickers[type];
         if (!state) return;
 
-        if (state.popup) {
-            state.popup.remove();
-        }
-
-        if (state.closeHandler) {
-            document.removeEventListener('mousedown', state.closeHandler);
-        }
-
+        if (state.popup) state.popup.remove();
+        if (state.closeHandler) document.removeEventListener('mousedown', state.closeHandler);
         if (state.resizeHandler) {
             window.removeEventListener('resize', state.resizeHandler);
             window.removeEventListener('scroll', state.resizeHandler, true);
         }
-
         delete window.dashboardRangePickers[type];
     }
 
@@ -379,17 +234,9 @@
             destroyDashboardCharts();
 
             contentDiv.innerHTML = await response.text();
-
-            if (window.tailwind && typeof window.tailwind.refresh === 'function') {
-                window.tailwind.refresh();
-            }
-
             executeDynamicScripts(contentDiv);
-            initializeDashboardTablePagination(contentDiv);
         } catch (error) {
             console.error(error);
-            if (placeholder) placeholder.style.display = '';
-            contentDiv.innerHTML = '';
             alert('Không thể lấy được dữ liệu thống kê, vui lòng kiểm tra lại!');
         } finally {
             if (spinner) spinner.classList.add('hidden');
@@ -399,15 +246,11 @@
     function executeDynamicScripts(container) {
         const scripts = Array.from(container.querySelectorAll('script'));
         scripts.forEach(oldScript => {
-            try {
-                const newScript = document.createElement('script');
-                Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
-                newScript.text = oldScript.textContent;
-                document.body.appendChild(newScript);
-                document.body.removeChild(newScript);
-            } catch (scriptError) {
-                console.error('Dashboard partial script error:', scriptError);
-            }
+            const newScript = document.createElement('script');
+            Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+            newScript.text = oldScript.textContent;
+            document.body.appendChild(newScript);
+            document.body.removeChild(newScript);
         });
     }
 
@@ -420,7 +263,6 @@
 
     function parseDateInputValue(value) {
         if (!value) return new Date();
-
         const parts = value.split('-').map(Number);
         return new Date(parts[0], parts[1] - 1, parts[2]);
     }
@@ -436,41 +278,30 @@
         const current = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
         switch (presetKey) {
-            case 'today':
-                return { from: current, to: current };
-            case 'yesterday':
-                return { from: addDays(current, -1), to: addDays(current, -1) };
-            case 'last7':
-                return { from: addDays(current, -6), to: current };
-            case 'last30':
-                return { from: addDays(current, -29), to: current };
-            case 'last90':
-                return { from: addDays(current, -89), to: current };
+            case 'today': return { from: current, to: current };
+            case 'yesterday': return { from: addDays(current, -1), to: addDays(current, -1) };
+            case 'last7': return { from: addDays(current, -6), to: current };
+            case 'last30': return { from: addDays(current, -29), to: current };
+            case 'last90': return { from: addDays(current, -89), to: current };
             case 'weekToDate': {
                 const firstDay = addDays(current, -current.getDay());
                 return { from: firstDay, to: current };
             }
-            case 'monthToDate':
-                return { from: new Date(current.getFullYear(), current.getMonth(), 1), to: current };
-            default:
-                return null;
+            case 'monthToDate': return { from: new Date(current.getFullYear(), current.getMonth(), 1), to: current };
+            default: return null;
         }
     }
 
     function positionDashboardRangePopup(input, popup) {
         const rect = input.getBoundingClientRect();
-        const margin = 8;
         const popupWidth = Math.min(720, window.innerWidth - 32);
-
         let left = rect.left;
-        if (left + popupWidth > window.innerWidth - 16) {
-            left = window.innerWidth - popupWidth - 16;
-        }
+        if (left + popupWidth > window.innerWidth - 16) left = window.innerWidth - popupWidth - 16;
         if (left < 16) left = 16;
 
         popup.style.width = `${popupWidth}px`;
         popup.style.left = `${left}px`;
-        popup.style.top = `${rect.bottom + margin}px`;
+        popup.style.top = `${rect.bottom + 8}px`;
     }
 
     function initializeDashboardDateRangePicker(type, fromDate, toDate) {
@@ -494,7 +325,7 @@
 
             const popup = document.createElement('div');
             popup.id = `dashboard_range_popup_${type}`;
-            popup.className = 'dashboard-range-popup fixed z-[9999] rounded-xl border border-gray-700 bg-white text-gray-900 dark:bg-gray-900 dark:text-white overflow-hidden';
+            popup.className = 'dashboard-range-popup fixed z-[9999] rounded-xl border border-gray-700 bg-white text-gray-900 dark:bg-[#111827] dark:text-white overflow-hidden';
             popup.innerHTML = `
                 <div class="grid grid-cols-1 md:grid-cols-[220px_1fr]">
                     <div class="border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-3 space-y-1">
@@ -513,12 +344,9 @@
                             <span class="text-gray-400">→</span>
                             <input type="date" data-range-end class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-white" value="${defaultToDate}" />
                         </div>
-                        <div class="rounded-lg border border-dashed border-gray-300 dark:border-gray-700 p-4 text-sm text-gray-500 dark:text-gray-400">
-                            Chọn nhanh bằng preset bên trái hoặc nhập ngày tùy chỉnh rồi bấm Apply.
-                        </div>
                         <div class="flex justify-end gap-3 border-t border-gray-200 dark:border-gray-700 pt-4">
                             <button type="button" data-range-cancel class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-800">Cancel</button>
-                            <button type="button" data-range-apply class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-gray-900 dark:text-white hover:bg-emerald-600">Apply</button>
+                            <button type="button" data-range-apply class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600">Apply</button>
                         </div>
                     </div>
                 </div>
@@ -535,12 +363,9 @@
                     popup.querySelectorAll('[data-preset]').forEach(item => {
                         item.classList.remove('bg-blue-100', 'text-blue-700', 'dark:bg-blue-900/50', 'dark:text-blue-200');
                     });
-
                     this.classList.add('bg-blue-100', 'text-blue-700', 'dark:bg-blue-900/50', 'dark:text-blue-200');
-
                     const range = getDashboardPresetRange(this.dataset.preset);
                     if (!range) return;
-
                     startInput.value = toDateInputValue(range.from);
                     endInput.value = toDateInputValue(range.to);
                 });
@@ -549,15 +374,10 @@
             function applySelectedRange() {
                 let start = startInput.value;
                 let end = endInput.value;
-
                 if (!start || !end) return;
-
                 if (parseDateInputValue(start) > parseDateInputValue(end)) {
-                    const temp = start;
-                    start = end;
-                    end = temp;
+                    const temp = start; start = end; end = temp;
                 }
-
                 input.value = `${start} - ${end}`;
                 closeDashboardRangePicker(type);
                 loadStatistic(type, 1, start, end);
@@ -566,47 +386,17 @@
             popup.querySelector('[data-range-apply]').addEventListener('click', applySelectedRange);
             popup.querySelector('[data-range-cancel]').addEventListener('click', () => closeDashboardRangePicker(type));
 
-            const closeHandler = function (documentEvent) {
-                if (popup.contains(documentEvent.target) || input.contains(documentEvent.target)) {
-                    return;
-                }
-
-                closeDashboardRangePicker(type);
+            const closeHandler = (e) => {
+                if (!popup.contains(e.target) && !input.contains(e.target)) closeDashboardRangePicker(type);
             };
-
-            const resizeHandler = function () {
-                if (document.body.contains(popup)) {
-                    positionDashboardRangePopup(input, popup);
-                }
-            };
+            const resizeHandler = () => { if (document.body.contains(popup)) positionDashboardRangePopup(input, popup); };
 
             document.addEventListener('mousedown', closeHandler);
             window.addEventListener('resize', resizeHandler);
             window.addEventListener('scroll', resizeHandler, true);
 
-            window.dashboardRangePickers[type] = {
-                popup: popup,
-                closeHandler: closeHandler,
-                resizeHandler: resizeHandler
-            };
+            window.dashboardRangePickers[type] = { popup, closeHandler, resizeHandler };
         });
-    }
-
-    function highlightLinkedTableRow(rowId) {
-        document.querySelectorAll('[data-linked-row="true"]').forEach(row => {
-            row.classList.remove('bg-amber-500/20', 'ring-1', 'ring-amber-400');
-        });
-
-        const row = document.getElementById(rowId);
-        if (!row) return;
-
-        showDashboardTablePageForRow(row);
-
-        row.classList.add('bg-amber-500/20', 'ring-1', 'ring-amber-400');
-
-        setTimeout(() => {
-            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 80);
     }
 
     function renderDashboardPieChart(chartId, labels, data, rowIds, labelText) {
@@ -618,260 +408,29 @@
             delete window.dashboardCharts[chartId];
         }
 
-        const numericData = (data || []).map(value => Number(value || 0));
-        const hasData = numericData.some(value => value > 0);
-        if (!hasData) return;
+        const numericData = (data || []).map(v => Number(v || 0));
+        if (!numericData.some(v => v > 0)) return;
 
-        const ctx = canvas.getContext('2d');
-
-        window.dashboardCharts[chartId] = new Chart(ctx, {
+        window.dashboardCharts[chartId] = new Chart(canvas.getContext('2d'), {
             type: 'pie',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: labelText,
-                    data: numericData,
-                    borderWidth: 1
-                }]
-            },
+            data: { labels, datasets: [{ label: labelText, data: numericData, borderWidth: 1 }] },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                animation: {
-                    duration: 350
-                },
-                resizeDelay: 200,
                 plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: {
-                            color: '#d1d5db'
-                        }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function (context) {
-                                const total = context.dataset.data.reduce((sum, value) => sum + Number(value || 0), 0);
-                                const value = Number(context.raw || 0);
-                                const percent = total > 0 ? (value / total * 100).toFixed(2) : '0.00';
-
-                                return `${context.label}: ${value.toLocaleString()} (${percent}%)`;
-                            }
-                        }
-                    }
-                },
-                onClick: function (event, elements) {
-                    if (!elements.length) return;
-
-                    const index = elements[0].index;
-                    if (rowIds[index]) {
-                        highlightLinkedTableRow(rowIds[index]);
-                    }
+                    legend: { position: 'bottom', labels: { color: '#d1d5db' } }
                 }
             }
         });
     }
 
-    const DASHBOARD_TABLE_ROWS_PER_PAGE = 10;
-
-    function getDashboardTableRows(table) {
-        const tbody = table.tBodies && table.tBodies.length > 0
-            ? table.tBodies[0]
-            : null;
-
-        if (!tbody) return [];
-
-        return Array.from(tbody.rows).filter(row => {
-            return !row.hasAttribute('data-dashboard-pagination-ignore');
-        });
-    }
-
-    function buildDashboardPaginationNumbers(currentPage, totalPages) {
-        const pages = new Set();
-
-        pages.add(1);
-        pages.add(totalPages);
-        pages.add(currentPage);
-        pages.add(currentPage - 1);
-        pages.add(currentPage + 1);
-
-        const validPages = Array.from(pages)
-            .filter(page => page >= 1 && page <= totalPages)
-            .sort((a, b) => a - b);
-
-        const result = [];
-
-        for (let i = 0; i < validPages.length; i++) {
-            const page = validPages[i];
-
-            if (i > 0 && page - validPages[i - 1] > 1) {
-                result.push('...');
-            }
-
-            result.push(page);
+    // TỰ ĐỘNG LOAD TỔNG DOANH THU KHI VÀO TRANG (7 NGÀY GẦN NHẤT)
+    document.addEventListener('DOMContentLoaded', function() {
+        const totalRevenueBtn = document.querySelector('[data-stat-type="TotalRevenue"]');
+        if (totalRevenueBtn && typeof loadStatistic === 'function') {
+            const today = new Date();
+            const last7Days = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 6);
+            loadStatistic('TotalRevenue', 1, toDateInputValue(last7Days), toDateInputValue(today));
         }
-
-        return result;
-    }
-
-    function renderDashboardTablePage(table, page) {
-        const rows = getDashboardTableRows(table);
-        const totalRows = rows.length;
-        const totalPages = Math.ceil(totalRows / DASHBOARD_TABLE_ROWS_PER_PAGE);
-
-        if (totalRows <= DASHBOARD_TABLE_ROWS_PER_PAGE) {
-            rows.forEach(row => {
-                row.style.display = '';
-            });
-
-            const oldPagination = document.querySelector(
-                `[data-dashboard-pagination-for="${table.dataset.dashboardTableId}"]`
-            );
-
-            if (oldPagination) {
-                oldPagination.remove();
-            }
-
-            return;
-        }
-
-        const currentPage = Math.min(Math.max(page, 1), totalPages);
-        table.dataset.dashboardCurrentPage = currentPage.toString();
-
-        const startIndex = (currentPage - 1) * DASHBOARD_TABLE_ROWS_PER_PAGE;
-        const endIndex = startIndex + DASHBOARD_TABLE_ROWS_PER_PAGE;
-
-        rows.forEach((row, index) => {
-            row.style.display = index >= startIndex && index < endIndex
-                ? ''
-                : 'none';
-        });
-
-        const pagination = document.querySelector(
-            `[data-dashboard-pagination-for="${table.dataset.dashboardTableId}"]`
-        );
-
-        if (!pagination) return;
-
-        const fromRow = startIndex + 1;
-        const toRow = Math.min(endIndex, totalRows);
-        const pageItems = buildDashboardPaginationNumbers(currentPage, totalPages);
-
-        const pageButtons = pageItems.map(item => {
-            if (item === '...') {
-                return `
-                    <span class="px-2 py-1 text-sm text-gray-500">
-                        ...
-                    </span>
-                `;
-            }
-
-            const isActive = item === currentPage;
-
-            return `
-                <button type="button"
-                        data-dashboard-page="${item}"
-                        class="min-w-[34px] rounded-lg px-3 py-1.5 text-sm font-semibold transition
-                               ${isActive
-                                   ? 'bg-amber-400 text-gray-950'
-                                   : 'border border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}">
-                    ${item}
-                </button>
-            `;
-        }).join('');
-
-        pagination.innerHTML = `
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <p class="text-sm text-gray-500 dark:text-gray-400">
-                    Hiển thị <span class="font-semibold text-gray-700 dark:text-gray-300">${fromRow}</span>
-                    -
-                    <span class="font-semibold text-gray-700 dark:text-gray-300">${toRow}</span>
-                    /
-                    <span class="font-semibold text-gray-700 dark:text-gray-300">${totalRows}</span>
-                    dòng
-                </p>
-
-                <div class="flex flex-wrap items-center gap-2">
-                    <button type="button"
-                            data-dashboard-page="${currentPage - 1}"
-                            ${currentPage <= 1 ? 'disabled' : ''}
-                            class="rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-sm font-semibold text-gray-600 dark:text-gray-300 transition hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed">
-                        Trước
-                    </button>
-
-                    ${pageButtons}
-
-                    <button type="button"
-                            data-dashboard-page="${currentPage + 1}"
-                            ${currentPage >= totalPages ? 'disabled' : ''}
-                            class="rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-sm font-semibold text-gray-600 dark:text-gray-300 transition hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed">
-                        Sau
-                    </button>
-                </div>
-            </div>
-        `;
-
-        pagination.querySelectorAll('[data-dashboard-page]').forEach(button => {
-            button.addEventListener('click', function () {
-                const nextPage = Number(this.dataset.dashboardPage);
-                if (!nextPage || nextPage < 1 || nextPage > totalPages) return;
-
-                renderDashboardTablePage(table, nextPage);
-            });
-        });
-    }
-
-    function initializeDashboardTablePagination(container) {
-        const tables = Array.from(container.querySelectorAll('table'));
-
-        tables.forEach((table, index) => {
-            const rows = getDashboardTableRows(table);
-
-            if (rows.length <= DASHBOARD_TABLE_ROWS_PER_PAGE) {
-                rows.forEach(row => {
-                    row.style.display = '';
-                });
-
-                return;
-            }
-
-            const tableId = `dashboardTable_${Date.now()}_${index}`;
-            table.dataset.dashboardTableId = tableId;
-
-            const oldPagination = document.querySelector(
-                `[data-dashboard-pagination-for="${tableId}"]`
-            );
-
-            if (oldPagination) {
-                oldPagination.remove();
-            }
-
-            const pagination = document.createElement('div');
-            pagination.dataset.dashboardPaginationFor = tableId;
-            pagination.className = 'dashboard-table-pagination mt-4 border-t border-gray-200 dark:border-gray-700 pt-4 px-1';
-
-            const tableWrapper = table.closest('.overflow-x-auto');
-
-            if (tableWrapper) {
-                tableWrapper.insertAdjacentElement('afterend', pagination);
-            } else {
-                table.insertAdjacentElement('afterend', pagination);
-            }
-
-            renderDashboardTablePage(table, 1);
-        });
-    }
-
-    function showDashboardTablePageForRow(row) {
-        const table = row.closest('table');
-        if (!table || !table.dataset.dashboardTableId) return;
-
-        const rows = getDashboardTableRows(table);
-        const rowIndex = rows.indexOf(row);
-
-        if (rowIndex < 0) return;
-
-        const targetPage = Math.floor(rowIndex / DASHBOARD_TABLE_ROWS_PER_PAGE) + 1;
-        renderDashboardTablePage(table, targetPage);
-    }
+    });
 </script>

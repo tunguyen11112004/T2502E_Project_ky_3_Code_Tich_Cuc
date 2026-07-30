@@ -285,7 +285,6 @@ namespace Bus_ticket.Services
                 .ToList();
         }
 
-
         public async Task<DashboardRevenueViewModel> GetSystemTotalRevenueAsync(DateTime fromDate, DateTime toDate)
         {
             var (fromUtc, toUtc) = ToUtcDateRange(fromDate, toDate);
@@ -293,6 +292,8 @@ namespace Bus_ticket.Services
             var bookings = await _dbContext.Bookings
                 .Find(b => b.BookingTime >= fromUtc && b.BookingTime <= toUtc)
                 .ToListAsync();
+
+            var canceledCount = bookings.Count(b => IsCancelled(b.BookingStatus));
 
             var validBookings = bookings
                 .Where(b => IsCompletedBooking(b.BookingStatus) && IsPaidBooking(b.PaymentStatus))
@@ -307,8 +308,6 @@ namespace Bus_ticket.Services
             var tableData = validBookings.Select(b => 
             {
                 var trip = trips.FirstOrDefault(t => t.Id == b.TripId);
-                
-                // Sử dụng số ghế thực tế từ Trip để tránh lỗi thiếu thuộc tính TotalSeats trong Model Bus
                 var totalSeats = trip?.RealtimeSeats?.Count ?? 0;
                 
                 var busClass = "Tiêu chuẩn"; 
@@ -317,13 +316,16 @@ namespace Bus_ticket.Services
                     busClass = totalSeats > 30 ? "Giường Nằm" : "Limousine"; 
                 }
 
+                var paymentMethodStr = b.Payment?.PaymentMethod;
+
                 return new TransactionDetailDto
                 {
                     BookingCode = b.Id, 
-                    CustomerName = "Khách Hàng", // Tuỳ chỉnh lấy tên nếu có trong model booking
+                    CustomerName = "Khách Hàng", 
                     BusClass = busClass,
                     PaymentDate = b.BookingTime.ToLocalTime(),
-                    Amount = b.FinalAmount
+                    Amount = b.FinalAmount,
+                    PaymentMethod = string.IsNullOrEmpty(paymentMethodStr) ? "Tiền mặt" : paymentMethodStr
                 };
             })
             .OrderByDescending(x => x.PaymentDate)
@@ -340,10 +342,10 @@ namespace Bus_ticket.Services
             return new DashboardRevenueViewModel
             {
                 TableData = tableData,
-                ChartData = chartData
+                ChartData = chartData,
+                TotalCanceled = canceledCount
             };
         }
-
 
         public async Task<List<SeatAnalyticsViewModel>> GetSoldOutTripsAsync(DateTime fromDate, DateTime toDate)
         {
@@ -438,26 +440,18 @@ namespace Bus_ticket.Services
             return soldOutTrips;
         }
 
-        // ========================================================
-        // TASK 14: HỦY CHUYẾN XE VÀ CẬP NHẬT VÉ (CASCADE UPDATE)
-        // ========================================================
         public async Task<bool> CancelTripAsync(string tripId)
         {
-            // 1. Tìm và cập nhật trạng thái chuyến xe (Trips) sử dụng toán tử $set
             var tripFilter = Builders<Trip>.Filter.Eq(t => t.Id, tripId);
             var tripUpdate = Builders<Trip>.Update.Set(t => t.Status, "Cancelled");
             
             var tripResult = await _dbContext.Trips.UpdateOneAsync(tripFilter, tripUpdate);
-            
-            // Nếu không tìm thấy chuyến để update -> Hủy thất bại
             if (tripResult.MatchedCount == 0) return false;
 
-            // 2. Cập nhật liên đới (Cascade Update) hàng loạt vé (Booking) sang Cancelled 
-            // và lưu vết chờ hoàn tiền (RefundPending)
             var bookingFilter = Builders<Booking>.Filter.Eq(b => b.TripId, tripId);
             var bookingUpdate = Builders<Booking>.Update
                 .Set(b => b.BookingStatus, "Cancelled") 
-                .Set(b => b.IsRefundPending, true); // Đẩy dữ liệu vào danh sách chờ đối soát
+                .Set(b => b.IsRefundPending, true); 
 
             await _dbContext.Bookings.UpdateManyAsync(bookingFilter, bookingUpdate);
 
