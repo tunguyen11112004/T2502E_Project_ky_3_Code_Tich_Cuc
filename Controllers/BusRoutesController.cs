@@ -19,13 +19,71 @@ public class BusRoutesController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(
+        string? searchTerm,
+        string? departurePoint,
+        string? destinationPoint,
+        int page = 1,
+        int pageSize = 10)
     {
+        var filter = Builders<BusRoute>.Filter.Empty;
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var keyword = searchTerm.Trim();
+            var regex = new BsonRegularExpression(keyword, "i");
+            filter &= Builders<BusRoute>.Filter.Or(
+                Builders<BusRoute>.Filter.Regex(r => r.DeparturePoint, regex),
+                Builders<BusRoute>.Filter.Regex(r => r.DestinationPoint, regex));
+        }
+
+        if (!string.IsNullOrWhiteSpace(departurePoint))
+        {
+            filter &= Builders<BusRoute>.Filter.Eq(r => r.DeparturePoint, departurePoint);
+        }
+
+        if (!string.IsNullOrWhiteSpace(destinationPoint))
+        {
+            filter &= Builders<BusRoute>.Filter.Eq(r => r.DestinationPoint, destinationPoint);
+        }
+
+        long totalItems = await _context.BusRoutes.CountDocumentsAsync(filter);
+        int totalPages = (int)Math.Ceiling((double)totalItems / pageSize);
+        if (page < 1) page = 1;
+        if (page > totalPages && totalPages > 0) page = totalPages;
+
         var routes = await _context.BusRoutes
-            .Find(_ => true)
+            .Find(filter)
             .SortBy(r => r.DeparturePoint)
             .ThenBy(r => r.DestinationPoint)
+            .Skip((page - 1) * pageSize)
+            .Limit(pageSize)
             .ToListAsync();
+
+        var optionSnapshot = await _context.BusRoutes
+            .Find(FilterDefinition<BusRoute>.Empty)
+            .Project(r => new { r.DeparturePoint, r.DestinationPoint })
+            .ToListAsync();
+
+        ViewBag.SearchTerm = searchTerm ?? string.Empty;
+        ViewBag.DeparturePoint = departurePoint ?? string.Empty;
+        ViewBag.DestinationPoint = destinationPoint ?? string.Empty;
+        ViewBag.DepartureOptions = optionSnapshot
+            .Select(x => x.DeparturePoint)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct()
+            .OrderBy(x => x)
+            .ToList();
+        ViewBag.DestinationOptions = optionSnapshot
+            .Select(x => x.DestinationPoint)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct()
+            .OrderBy(x => x)
+            .ToList();
+        ViewBag.CurrentPage = page;
+        ViewBag.PageSize = pageSize;
+        ViewBag.TotalPages = totalPages;
+        ViewBag.TotalItems = totalItems;
 
         return View(routes);
     }
