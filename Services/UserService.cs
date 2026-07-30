@@ -182,5 +182,36 @@ public class UserService
             update
         );
     }
+
+    public async Task SetActiveSessionAsync(string userId, string sessionToken)
+    {
+        var update = Builders<User>.Update
+            .Set(user => user.ActiveSessionId, sessionToken)
+            .Set(user => user.UpdatedAt, DateTime.UtcNow);
+
+        await _users.UpdateOneAsync(user => user.Id == userId, update);
+    }
+
+    public async Task<bool> IsSessionValidAsync(string userId, string sessionToken)
+    {
+        if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(sessionToken))
+        {
+            return false;
+        }
+
+        var user = await GetByIdAsync(userId);
+        return user != null
+               && user.Status == "Active"
+               && string.Equals(user.ActiveSessionId, sessionToken, StringComparison.Ordinal);
+    }
+
+    public async Task ClearActiveSessionAsync(string userId)
+    {
+        var update = Builders<User>.Update
+            .Set(user => user.ActiveSessionId, null)
+            .Set(user => user.UpdatedAt, DateTime.UtcNow);
+
+        await _users.UpdateOneAsync(user => user.Id == userId, update);
+    }
 }
 

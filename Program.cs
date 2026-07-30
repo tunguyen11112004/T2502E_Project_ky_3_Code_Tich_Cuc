@@ -6,7 +6,9 @@ using Bus_ticket.Models;
 using Bus_ticket.Services;
 using Bus_ticket.Settings;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication;
 using PayOS;
+using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -56,6 +58,48 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     {
         options.LoginPath = "/Account/Login";
         options.AccessDeniedPath = "/Account/AccessDenied";
+        options.SlidingExpiration = true;
+        options.ExpireTimeSpan = TimeSpan.FromHours(8);
+        options.Events = new CookieAuthenticationEvents
+        {
+            OnValidatePrincipal = async context =>
+            {
+                var path = context.HttpContext.Request.Path.Value ?? string.Empty;
+                if (path.Equals("/Account/CheckSession", StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+
+                var userId = context.Principal?.FindFirstValue(ClaimTypes.NameIdentifier);
+                var sessionToken = context.Principal?.FindFirstValue(AuthSessionHelper.SessionTokenClaim);
+
+                if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(sessionToken))
+                {
+                    context.RejectPrincipal();
+                    await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                    return;
+                }
+
+                var userService = context.HttpContext.RequestServices.GetRequiredService<UserService>();
+                var isValid = await userService.IsSessionValidAsync(userId, sessionToken);
+
+                if (!isValid)
+                {
+                    context.HttpContext.Response.Cookies.Append(
+                        AuthSessionHelper.AuthNoticeCookie,
+                        AuthSessionHelper.SessionReplacedNotice,
+                        new CookieOptions
+                        {
+                            MaxAge = TimeSpan.FromMinutes(2),
+                            HttpOnly = false,
+                            IsEssential = true
+                        });
+
+                    context.RejectPrincipal();
+                    await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                }
+            }
+        };
     });
 
 builder.Services.AddAuthorization();

@@ -38,6 +38,13 @@
                     <form asp-action="Login" asp-controller="Account" method="post" class="form-control gap-4">
                         <div asp-validation-summary="All" class="text-red-500 text-sm"></div>
 
+                        @if (ViewBag.LoginMessage != null)
+                        {
+                            <div class="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                                @ViewBag.LoginMessage
+                            </div>
+                        }
+
                         <div>
                             <label asp-for="Email" class="font-semibold text-slate-700"></label>
                             <input asp-for="Email"
