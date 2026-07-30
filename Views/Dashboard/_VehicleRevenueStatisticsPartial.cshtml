@@ -1,263 +1,92 @@
 @model Bus_ticket.ViewModels.VehicleRevenueStatisticsViewModel
-@using System.Text.Json
 
 @{
-    var fromDateValue = ViewBag.FromDateValue != null
-        ? ((DateTime)ViewBag.FromDateValue).ToString("yyyy-MM-dd")
-        : Model.FromDate.ToString("yyyy-MM-dd");
-
-    var toDateValue = ViewBag.ToDateValue != null
-        ? ((DateTime)ViewBag.ToDateValue).ToString("yyyy-MM-dd")
-        : Model.ToDate.ToString("yyyy-MM-dd");
-
+    var fromDateValue = ViewBag.FromDateValue is DateTime fromDt ? fromDt.ToString("yyyy-MM-dd") : ViewBag.FromDateValue as string ?? Model.FromDate.ToString("yyyy-MM-dd");
+    var toDateValue = ViewBag.ToDateValue is DateTime toDt ? toDt.ToString("yyyy-MM-dd") : ViewBag.ToDateValue as string ?? Model.ToDate.ToString("yyyy-MM-dd");
     var typeItems = Model.BusTypeRevenueItems
         .OrderByDescending(x => x.TotalRevenue)
         .ThenByDescending(x => x.TotalTickets)
         .ThenBy(x => x.BusType)
         .ToList();
-
-    var busItems = Model.BusRevenueItems
-        .OrderByDescending(x => x.TotalRevenue)
-        .ThenByDescending(x => x.TotalTickets)
-        .ThenBy(x => x.BusCode)
-        .ToList();
-
-    var chartLabels = JsonSerializer.Serialize(typeItems.Select(x => $"{x.BusType} - {x.BusClassName}"));
-    var chartData = JsonSerializer.Serialize(typeItems.Select(x => x.TotalRevenue));
-    var chartRows = JsonSerializer.Serialize(typeItems.Select((x, i) => $"vehicle-type-row-{i}"));
+    var palette = new[] { "#8b5cf6", "#10b981", "#0ea5e9", "#f59e0b", "#ef4444", "#6b7280" };
+    var labels = typeItems.Select(x => $"{x.BusType} - {x.BusClassName}").ToList();
+    var values = typeItems.Select(x => x.TotalRevenue).ToList();
+    var colors = labels.Select((_, i) => palette[i % palette.Length]).ToList();
 }
 
-<div class="p-4 sm:p-6 lg:p-8 space-y-6 max-w-full overflow-x-hidden animate-fade-in">
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+<div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div>
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white">Doanh thu phương tiện</h2>
+        <p class="text-sm text-gray-500 dark:text-gray-400">So sánh doanh thu theo loại xe và từng xe</p>
+    </div>
+    <div class="flex items-center gap-3">
+        <input type="text" id="date_range_VehicleRevenueStatistics" readonly
+               class="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-[260px] p-2.5 cursor-pointer shadow-sm"
+               placeholder="Chọn khoảng ngày...">
+        <button type="button" onclick="exportVehicleRevenueStatisticsExcel()"
+                class="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-lg text-sm px-4 py-2.5 shadow-sm transition-colors flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            Xuất Excel
+        </button>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
+        <p class="text-sm text-gray-500 mb-1">Tổng doanh thu</p>
+        <h4 class="text-xl font-bold text-emerald-600 dark:text-emerald-400">@Model.GrandTotalRevenue.ToString("N0") đ</h4>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
+        <p class="text-sm text-gray-500 mb-1">Booking thành công</p>
+        <h4 class="text-xl font-bold text-blue-600 dark:text-blue-400">@Model.GrandTotalBookings.ToString("N0")</h4>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
+        <p class="text-sm text-gray-500 mb-1">Vé đã bán</p>
+        <h4 class="text-xl font-bold text-purple-600 dark:text-purple-400">@Model.GrandTotalTickets.ToString("N0")</h4>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
+        <p class="text-sm text-gray-500 mb-1">Xe có doanh thu</p>
+        <h4 class="text-xl font-bold text-amber-600 dark:text-amber-400">@Model.TotalBusesWithRevenue.ToString("N0")</h4>
+        <p class="text-xs text-gray-500 mt-1">@Model.TotalBusTypesWithRevenue.ToString("N0") nhóm loại xe</p>
+    </div>
+</div>
+
+<div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm mb-6">
+    <div class="flex justify-between items-center mb-4">
         <div>
-            <h1 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
-                Thống kê doanh thu phương tiện
-            </h1>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                So sánh doanh thu theo loại xe và từng xe. Click lát biểu đồ để highlight dòng tương ứng.
-            </p>
+            <h3 class="text-md font-semibold text-gray-900 dark:text-white">Tỷ trọng doanh thu theo loại xe</h3>
+            <p class="text-xs text-gray-500 mt-1">Click biểu đồ để xem chi tiết theo loại xe</p>
         </div>
-
-        <div class="flex flex-wrap items-center gap-3 self-end sm:self-center">
-            <input id="date_range_VehicleRevenueStatistics"
-                   type="text"
-                   readonly
-                   class="min-w-[260px] rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2.5 text-sm text-gray-900 dark:text-white cursor-pointer focus:border-amber-400 focus:ring-2 focus:ring-amber-400"
-                   placeholder="Chọn khoảng ngày" />
-
-            <a asp-controller="Dashboard"
-               asp-action="ExportVehicleRevenueStatistics"
-               asp-route-fromDate="@fromDateValue"
-               asp-route-toDate="@toDateValue"
-               class="inline-flex items-center justify-center px-4 py-2.5 text-sm font-semibold text-gray-900 bg-emerald-400 hover:bg-emerald-500 rounded-lg transition-colors duration-200 shadow-sm whitespace-nowrap">
-                Xuất Excel
-            </a>
-        </div>
+        <a asp-controller="Dashboard" asp-action="VehicleRevenueStatisticsDetail"
+           asp-route-fromDate="@fromDateValue" asp-route-toDate="@toDateValue"
+           class="text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1">
+            Mở trang chi tiết
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+        </a>
     </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-xl">
-            <p class="text-sm text-gray-400">Tổng doanh thu</p>
-            <p class="text-2xl font-bold text-emerald-400 mt-2">
-                @Model.GrandTotalRevenue.ToString("N0") đ
-            </p>
-            <p class="text-xs text-gray-500 mt-2">
-                Booking hoàn tất và đã thanh toán
-            </p>
+    @if (!typeItems.Any() || Model.GrandTotalRevenue <= 0)
+    {
+        <div class="py-16 text-center text-gray-500">Không có dữ liệu doanh thu phương tiện trong khoảng thời gian này.</div>
+    }
+    else
+    {
+        <div class="relative h-[320px] w-full flex justify-center">
+            <canvas id="vehicleRevenuePieChart"></canvas>
         </div>
-
-        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-xl">
-            <p class="text-sm text-gray-400">Booking thành công</p>
-            <p class="text-2xl font-bold text-gray-900 dark:text-white mt-2">
-                @Model.GrandTotalBookings.ToString("N0")
-            </p>
-            <p class="text-xs text-gray-500 mt-2">
-                BookingStatus = Completed
-            </p>
-        </div>
-
-        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-xl">
-            <p class="text-sm text-gray-400">Vé đã bán</p>
-            <p class="text-2xl font-bold text-amber-400 mt-2">
-                @Model.GrandTotalTickets.ToString("N0")
-            </p>
-            <p class="text-xs text-gray-500 mt-2">
-                Tính theo danh sách hành khách
-            </p>
-        </div>
-
-        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-xl">
-            <p class="text-sm text-gray-400">Xe có doanh thu</p>
-            <p class="text-2xl font-bold text-cyan-400 mt-2">
-                @Model.TotalBusesWithRevenue.ToString("N0")
-            </p>
-            <p class="text-xs text-gray-500 mt-2">
-                @Model.TotalBusTypesWithRevenue.ToString("N0") nhóm loại xe
-            </p>
-        </div>
-    </div>
-
-    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <div class="xl:col-span-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-xl">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                Biểu đồ doanh thu theo loại xe
-            </h2>
-            <p class="text-sm text-gray-400 mb-4">
-                Click vào lát biểu đồ để highlight dòng tương ứng trong bảng.
-            </p>
-
-            @if (!typeItems.Any() || Model.GrandTotalRevenue <= 0)
-            {
-                <div class="py-16 text-center text-gray-500">
-                    Không có dữ liệu doanh thu phương tiện trong khoảng thời gian này.
-                </div>
-            }
-            else
-            {
-                <div class="h-[360px] max-w-[390px] mx-auto">
-                    <canvas id="vehicleRevenuePieChart"></canvas>
-                </div>
-            }
-        </div>
-
-        <div class="xl:col-span-2 w-full max-w-full overflow-hidden bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl">
-            <div class="p-5 border-b border-gray-200 dark:border-gray-700">
-                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-                    Doanh thu theo loại xe
-                </h2>
-                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    Dữ liệu được gom từ bookings, trips, buses và busclasses.
-                </p>
-            </div>
-
-            <div class="w-full overflow-x-auto">
-                <table class="w-full min-w-[960px] text-sm text-left text-gray-600 dark:text-gray-300">
-                    <thead class="text-xs uppercase bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
-                        <tr>
-                            <th class="w-[80px] px-4 py-4 whitespace-nowrap">STT</th>
-                            <th class="w-[180px] px-4 py-4 whitespace-nowrap">Loại xe</th>
-                            <th class="w-[220px] px-4 py-4 whitespace-nowrap">Hạng xe</th>
-                            <th class="w-[150px] px-4 py-4 text-right whitespace-nowrap">Booking</th>
-                            <th class="w-[150px] px-4 py-4 text-right whitespace-nowrap">Vé</th>
-                            <th class="w-[190px] px-4 py-4 text-right whitespace-nowrap">Doanh thu</th>
-                            <th class="w-[140px] px-4 py-4 text-right whitespace-nowrap">Tỷ lệ</th>
-                        </tr>
-                    </thead>
-
-                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                        @if (!typeItems.Any())
-                        {
-                            <tr>
-                                <td colspan="7" class="px-4 py-8 text-center text-gray-500">
-                                    Không có dữ liệu hiển thị.
-                                </td>
-                            </tr>
-                        }
-                        else
-                        {
-                            for (var i = 0; i < typeItems.Count; i++)
-                            {
-                                var item = typeItems[i];
-
-                                <tr id="vehicle-type-row-@i"
-                                    data-linked-row="true"
-                                    class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-150 scroll-mt-24">
-                                    <td class="px-4 py-4 text-gray-400 whitespace-nowrap">@(i + 1)</td>
-                                    <td class="px-4 py-4 font-semibold text-gray-900 dark:text-white whitespace-nowrap">@item.BusType</td>
-                                    <td class="px-4 py-4 whitespace-nowrap">@item.BusClassName</td>
-                                    <td class="px-4 py-4 text-right whitespace-nowrap">@item.TotalBookings.ToString("N0")</td>
-                                    <td class="px-4 py-4 text-right whitespace-nowrap">@item.TotalTickets.ToString("N0")</td>
-                                    <td class="px-4 py-4 text-right font-bold text-emerald-400 whitespace-nowrap">@item.TotalRevenue.ToString("N0") đ</td>
-                                    <td class="px-4 py-4 text-right font-semibold whitespace-nowrap">@item.Percentage.ToString("N2")%</td>
-                                </tr>
-                            }
-                        }
-                    </tbody>
-
-                    <tfoot class="bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
-                        <tr>
-                            <td colspan="3" class="px-4 py-4 font-bold text-gray-900 dark:text-white">Tổng cộng</td>
-                            <td class="px-4 py-4 text-right font-bold text-gray-900 dark:text-white">@Model.GrandTotalBookings.ToString("N0")</td>
-                            <td class="px-4 py-4 text-right font-bold text-gray-900 dark:text-white">@Model.GrandTotalTickets.ToString("N0")</td>
-                            <td class="px-4 py-4 text-right font-bold text-amber-400">@Model.GrandTotalRevenue.ToString("N0") đ</td>
-                            <td class="px-4 py-4 text-right font-bold text-gray-900 dark:text-white">@(Model.GrandTotalRevenue > 0 ? "100.00%" : "0.00%")</td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <div class="w-full max-w-full overflow-hidden bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl">
-        <div class="p-5 border-b border-gray-200 dark:border-gray-700">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-                Xếp hạng doanh thu từng xe
-            </h2>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                Sắp xếp theo doanh thu giảm dần.
-            </p>
-        </div>
-
-        <div class="w-full overflow-x-auto">
-            <table class="w-full min-w-[1120px] text-sm text-left text-gray-600 dark:text-gray-300">
-                <thead class="text-xs uppercase bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
-                    <tr>
-                        <th class="w-[80px] px-4 py-4 whitespace-nowrap">STT</th>
-                        <th class="w-[150px] px-4 py-4 whitespace-nowrap">Mã xe</th>
-                        <th class="w-[180px] px-4 py-4 whitespace-nowrap">Biển số</th>
-                        <th class="w-[180px] px-4 py-4 whitespace-nowrap">Loại xe</th>
-                        <th class="w-[220px] px-4 py-4 whitespace-nowrap">Hạng xe</th>
-                        <th class="w-[150px] px-4 py-4 text-right whitespace-nowrap">Booking</th>
-                        <th class="w-[150px] px-4 py-4 text-right whitespace-nowrap">Vé</th>
-                        <th class="w-[180px] px-4 py-4 text-right whitespace-nowrap">Doanh thu</th>
-                        <th class="w-[140px] px-4 py-4 text-right whitespace-nowrap">Tỷ lệ</th>
-                    </tr>
-                </thead>
-
-                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                    @if (!busItems.Any())
-                    {
-                        <tr>
-                            <td colspan="9" class="px-4 py-8 text-center text-gray-500">
-                                Không có dữ liệu doanh thu theo xe.
-                            </td>
-                        </tr>
-                    }
-                    else
-                    {
-                        for (var i = 0; i < busItems.Count; i++)
-                        {
-                            var item = busItems[i];
-
-                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-150">
-                                <td class="px-4 py-4 text-gray-400 whitespace-nowrap">@(i + 1)</td>
-                                <td class="px-4 py-4 font-semibold text-gray-900 dark:text-white whitespace-nowrap">@item.BusCode</td>
-                                <td class="px-4 py-4 whitespace-nowrap">@item.LicensePlate</td>
-                                <td class="px-4 py-4 whitespace-nowrap">@item.BusType</td>
-                                <td class="px-4 py-4 whitespace-nowrap">@item.BusClassName</td>
-                                <td class="px-4 py-4 text-right whitespace-nowrap">@item.TotalBookings.ToString("N0")</td>
-                                <td class="px-4 py-4 text-right whitespace-nowrap">@item.TotalTickets.ToString("N0")</td>
-                                <td class="px-4 py-4 text-right font-bold text-emerald-400 whitespace-nowrap">@item.TotalRevenue.ToString("N0") đ</td>
-                                <td class="px-4 py-4 text-right font-semibold whitespace-nowrap">@item.Percentage.ToString("N2")%</td>
-                            </tr>
-                        }
-                    }
-                </tbody>
-            </table>
-        </div>
-    </div>
+    }
 </div>
 
 <script>
     initializeDashboardDateRangePicker('VehicleRevenueStatistics', '@fromDateValue', '@toDateValue');
+    renderDashboardPieChart('vehicleRevenuePieChart', @Html.Raw(Json.Serialize(labels)), @Html.Raw(Json.Serialize(values)), @Html.Raw(Json.Serialize(colors)), 'Doanh thu', function (index, chartLabels) {
+        const vehicleClass = chartLabels[index];
+        if (!vehicleClass) return null;
+        return buildDashboardDetailUrl('VehicleRevenueStatisticsDetail', currentFromDate || '@fromDateValue', currentToDate || '@toDateValue', 'vehicleClass', vehicleClass);
+    });
 
-    if (document.getElementById('vehicleRevenuePieChart')) {
-        renderDashboardPieChart(
-            'vehicleRevenuePieChart',
-            @Html.Raw(chartLabels),
-            @Html.Raw(chartData),
-            @Html.Raw(chartRows),
-            'Doanh thu'
-        );
+    function exportVehicleRevenueStatisticsExcel() {
+        var start = currentFromDate || '@fromDateValue';
+        var end = currentToDate || '@toDateValue';
+        window.location.href = `/Dashboard/ExportVehicleRevenueStatistics?fromDate=${start}&endDate=${end}`;
     }
 </script>

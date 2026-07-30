@@ -1,0 +1,43 @@
+@model IEnumerable<Bus_ticket.ViewModels.OperatorRevenueViewModel>
+
+@{
+    var items = Model?.ToList() ?? new List<Bus_ticket.ViewModels.OperatorRevenueViewModel>();
+}
+
+<div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+    <div class="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
+        <h3 class="text-md font-semibold text-gray-900 dark:text-white">Bảng xếp hạng doanh thu nhà xe</h3>
+        <p class="text-xs text-gray-500 mt-1">Sắp xếp giảm dần theo doanh thu booking đã thanh toán</p>
+    </div>
+    <div class="overflow-x-auto max-h-[520px]">
+        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+            <thead class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-300 sticky top-0 z-10">
+            <tr>
+                <th class="px-6 py-4">Hạng</th>
+                <th class="px-6 py-4">Nhà xe</th>
+                <th class="px-6 py-4 text-center">Tổng đơn</th>
+                <th class="px-6 py-4 text-right">Doanh thu</th>
+            </tr>
+            </thead>
+            <tbody>
+            @if (!items.Any())
+            {
+                <tr><td colspan="4" class="px-6 py-10 text-center text-gray-500">Không có dữ liệu hiển thị.</td></tr>
+            }
+            else
+            {
+                for (var i = 0; i < items.Count; i++)
+                {
+                    var item = items[i];
+                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td class="px-6 py-4 font-bold text-amber-500">#@(i + 1)</td>
+                        <td class="px-6 py-4 font-semibold text-gray-900 dark:text-white">@item.OperatorName</td>
+                        <td class="px-6 py-4 text-center">@item.TotalBookings.ToString("N0")</td>
+                        <td class="px-6 py-4 text-right font-bold text-emerald-600 dark:text-emerald-400">@item.TotalRevenue.ToString("N0") đ</td>
+                    </tr>
+                }
+            }
+            </tbody>
+        </table>
+    </div>
+</div>

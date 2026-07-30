@@ -1,0 +1,52 @@
+@model IEnumerable<Bus_ticket.ViewModels.OperatorRevenueViewModel>
+@{
+    var items = Model?.ToList() ?? new List<Bus_ticket.ViewModels.OperatorRevenueViewModel>();
+    var fromDateValue = ViewBag.FromDateValue as string ?? string.Empty;
+    var toDateValue = ViewBag.ToDateValue as string ?? string.Empty;
+    var palette = new[] { "#8b5cf6", "#10b981", "#0ea5e9", "#f59e0b", "#ef4444", "#6b7280" };
+    var labels = items.Select(x => x.OperatorName).ToList();
+    var values = items.Select(x => x.TotalRevenue).ToList();
+    var colors = labels.Select((_, i) => palette[i % palette.Length]).ToList();
+}
+
+<div id="operatorRevenueDetailCharts" class="hidden space-y-6">
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
+        <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-1">Tỷ trọng doanh thu theo nhà xe</h3>
+        <p class="text-xs text-gray-500 mb-4">Click biểu đồ để lọc theo nhà xe</p>
+        @if (!items.Any() || values.Sum() <= 0)
+        {
+            <div class="py-16 text-center text-gray-500">Không có dữ liệu biểu đồ.</div>
+        }
+        else
+        {
+            <div class="relative h-[320px] w-full flex justify-center">
+                <canvas id="detailOperatorRevenuePieChart"></canvas>
+            </div>
+        }
+    </div>
+</div>
+
+<script>
+    window.operatorRevenueDetailChartsInitialized = false;
+    function initializeOperatorRevenueDetailCharts() {
+        if (window.operatorRevenueDetailChartsInitialized) return;
+        const detailFromDate = @Html.Raw(Json.Serialize(fromDateValue));
+        const detailToDate = @Html.Raw(Json.Serialize(toDateValue));
+        renderDetailPieChart(
+            'detailOperatorRevenuePieChart',
+            @Html.Raw(Json.Serialize(labels)),
+            @Html.Raw(Json.Serialize(values)),
+            @Html.Raw(Json.Serialize(colors)),
+            'Doanh thu',
+            {
+                valueSuffix: ' đ',
+                onSliceClick: function (index, chartLabels) {
+                    const operatorName = chartLabels[index];
+                    if (!operatorName) return null;
+                    return buildDashboardDetailUrl('OperatorRevenueDetail', detailFromDate, detailToDate, 'operatorName', operatorName);
+                }
+            }
+        );
+        window.operatorRevenueDetailChartsInitialized = true;
+    }
+</script>

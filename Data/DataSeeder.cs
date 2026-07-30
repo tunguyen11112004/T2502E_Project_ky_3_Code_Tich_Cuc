@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Bus_ticket.Interfaces;
+using Bus_ticket.Helpers;
 using Bus_ticket.Models;
 using MongoDB.Driver;
 using MongoDB.Bson;
@@ -80,6 +81,7 @@ namespace Bus_ticket.Data
             if (isDataAlreadySeeded)
             {
                 Console.WriteLine("--> [BỎ QUA] Dữ liệu nghiệp vụ đã tồn tại. Chỉ cập nhật role/permission/user.");
+                await BackfillPaymentMethodsAsync();
                 return;
             }
             
@@ -993,7 +995,13 @@ namespace Bus_ticket.Data
                             },
                             Payment = new PaymentInfo
                             {
-                                PaymentMethod = "Banking",
+                                PaymentMethod = random.Next(0, 4) switch
+                                {
+                                    0 => "Cash",
+                                    1 => "PAYOS",
+                                    2 => "VnPay",
+                                    _ => "MOMO"
+                                },
                                 AmountPaid = finalAmount,
                                 TransactionCode = $"VNPAY{random.Next(10000000, 99999999)}"
                             },
@@ -1552,7 +1560,13 @@ namespace Bus_ticket.Data
                             CancellationInfo cancellationInfo = null;
                             PaymentInfo paymentInfo = new PaymentInfo
                             {
-                                PaymentMethod = random.Next(0, 2) == 0 ? "Banking" : "Cash",
+                                PaymentMethod = random.Next(0, 4) switch
+                                {
+                                    0 => "Cash",
+                                    1 => "PAYOS",
+                                    2 => "VnPay",
+                                    _ => "MOMO"
+                                },
                                 AmountPaid = finalAmount,
                                 TransactionCode = $"TXN-{departureTime:yyyyMMdd}-{bookingCounter:D6}"
                             };
@@ -1628,6 +1642,54 @@ namespace Bus_ticket.Data
             Console.WriteLine($"* Booking sinh ra: {generatedBookings.Count} Bookings");
             Console.WriteLine($"* Chuyến bị hủy vận hành: {generatedTrips.Count(t => t.Status == "Cancelled")} Trips");
             Console.WriteLine($"* Chuyến sold-out: {generatedTrips.Count(t => t.RealtimeSeats.Any() && t.RealtimeSeats.All(s => s.Status == "Booked"))} Trips");
+        }
+
+        private static readonly string[] DashboardPaymentMethods = { "Cash", "PAYOS", "VnPay", "MOMO" };
+
+        private async Task BackfillPaymentMethodsAsync()
+        {
+            var bookings = await _context.Bookings
+                .Find(b => b.Payment != null
+                           && b.PaymentStatus == "Paid"
+                           && (b.BookingStatus == "Completed"
+                               || b.BookingStatus == "Complete"
+                               || b.BookingStatus == "Confirmed"))
+                .ToListAsync();
+
+            if (!bookings.Any())
+            {
+                Console.WriteLine("--> [BỎ QUA] Backfill payment methods: không có booking hợp lệ.");
+                return;
+            }
+
+            var updates = new List<WriteModel<Booking>>();
+
+            foreach (var booking in bookings)
+            {
+                var resolved = PaymentMethodDisplayHelper.ResolveRawMethod(booking.Payment);
+                var displayName = PaymentMethodDisplayHelper.GetDisplayName(resolved);
+
+                if (displayName == PaymentMethodDisplayHelper.VnpayPayment
+                    || displayName == PaymentMethodDisplayHelper.MomoPayment)
+                    continue;
+
+                var index = Math.Abs(StringComparer.Ordinal.GetHashCode(booking.Id ?? string.Empty))
+                    % DashboardPaymentMethods.Length;
+                var targetMethod = DashboardPaymentMethods[index];
+
+                if (string.Equals(booking.Payment!.PaymentMethod, targetMethod, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                updates.Add(new UpdateOneModel<Booking>(
+                    Builders<Booking>.Filter.Eq(b => b.Id, booking.Id),
+                    Builders<Booking>.Update.Set(b => b.Payment!.PaymentMethod, targetMethod)));
+            }
+
+            if (updates.Any())
+            {
+                await _context.Bookings.BulkWriteAsync(updates);
+                Console.WriteLine($"--> [THÀNH CÔNG] Backfill payment methods cho {updates.Count} booking.");
+            }
         }
 
 // Hàm Helper đóng gói tạo dữ liệu thực thể Booking

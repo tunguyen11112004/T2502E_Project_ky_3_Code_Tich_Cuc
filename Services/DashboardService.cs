@@ -1,4 +1,5 @@
 using Bus_ticket.Data;
+using Bus_ticket.Helpers;
 using Bus_ticket.Models;
 using Bus_ticket.ViewModels;
 using MongoDB.Driver;
@@ -26,7 +27,7 @@ namespace Bus_ticket.Services
 
         public async Task<RouteRevenueReportViewModel> GetRouteRevenueReportAsync(DateTime fromDate, DateTime toDate)
         {
-            var (fromUtc, toUtc) = ToUtcDateRange(fromDate, toDate);
+            var (fromUtc, toUtc) = VietnamTimeHelper.ToUtcDateRange(fromDate, toDate);
 
             var bookings = await _dbContext.Bookings
                 .Find(b => b.BookingTime >= fromUtc && b.BookingTime <= toUtc)
@@ -128,7 +129,7 @@ namespace Bus_ticket.Services
             int pageNumber,
             int pageSize)
         {
-            var (fromUtc, toUtc) = ToUtcDateRange(fromDate, toDate);
+            var (fromUtc, toUtc) = VietnamTimeHelper.ToUtcDateRange(fromDate, toDate);
             pageNumber = Math.Max(1, pageNumber);
             pageSize = Math.Max(1, pageSize);
 
@@ -156,7 +157,7 @@ namespace Bus_ticket.Services
                         TripCode = t.TripCode ?? "N/A",
                         RouteName = route != null ? $"{route.DeparturePoint} - {route.DestinationPoint}" : "Không xác định",
                         LicensePlate = bus?.LicensePlate ?? "Chưa gán xe",
-                        DepartureTime = t.DepartureTime.ToLocalTime(),
+                        DepartureTime = VietnamTimeHelper.ToVietnamLocal(t.DepartureTime),
                         TotalSeats = totalSeats,
                         BookedSeats = bookedSeats,
                         OccupancyRate = occupancyRate,
@@ -183,7 +184,7 @@ namespace Bus_ticket.Services
 
         public async Task<List<BranchCancellationViewModel>> GetBranchCancellationReportAsync(DateTime fromDate, DateTime toDate)
         {
-            var (fromUtc, toUtc) = ToUtcDateRange(fromDate, toDate);
+            var (fromUtc, toUtc) = VietnamTimeHelper.ToUtcDateRange(fromDate, toDate);
 
             var operators = await _dbContext.BusOperators.Find(_ => true).ToListAsync();
             var buses = await _dbContext.Buses.Find(_ => true).ToListAsync();
@@ -223,7 +224,7 @@ namespace Bus_ticket.Services
             DateTime toDate,
             string? currentOperatorId = null)
         {
-            var (fromUtc, toUtc) = ToUtcDateRange(fromDate, toDate);
+            var (fromUtc, toUtc) = VietnamTimeHelper.ToUtcDateRange(fromDate, toDate);
 
             var operators = await _dbContext.BusOperators.Find(_ => true).ToListAsync();
             if (!string.IsNullOrWhiteSpace(currentOperatorId))
@@ -287,7 +288,7 @@ namespace Bus_ticket.Services
 
         public async Task<DashboardRevenueViewModel> GetSystemTotalRevenueAsync(DateTime fromDate, DateTime toDate)
         {
-            var (fromUtc, toUtc) = ToUtcDateRange(fromDate, toDate);
+            var (fromUtc, toUtc) = VietnamTimeHelper.ToUtcDateRange(fromDate, toDate);
 
             var bookings = await _dbContext.Bookings
                 .Find(b => b.BookingTime >= fromUtc && b.BookingTime <= toUtc)
@@ -305,27 +306,81 @@ namespace Bus_ticket.Services
             var busIds = trips.Select(t => t.BusId).Distinct().ToList();
             var buses = await _dbContext.Buses.Find(b => busIds.Contains(b.Id)).ToListAsync();
 
+            var routeIds = trips.Select(t => t.RouteId).Where(id => !string.IsNullOrWhiteSpace(id)).Distinct().ToList();
+            var routes = routeIds.Count > 0
+                ? await _dbContext.BusRoutes.Find(r => routeIds.Contains(r.Id)).ToListAsync()
+                : new List<BusRoute>();
+
+            var busClassIds = buses
+                .Select(b => b.BusClassId)
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .Distinct()
+                .ToList();
+            var busClasses = busClassIds.Count > 0
+                ? await _dbContext.BusClasses.Find(bc => busClassIds.Contains(bc.Id)).ToListAsync()
+                : new List<BusClass>();
+
+            var tripDictionary = trips
+                .Where(t => !string.IsNullOrWhiteSpace(t.Id))
+                .GroupBy(t => t.Id)
+                .ToDictionary(g => g.Key, g => g.First());
+
+            var busDictionary = buses
+                .Where(b => !string.IsNullOrWhiteSpace(b.Id))
+                .GroupBy(b => b.Id)
+                .ToDictionary(g => g.Key, g => g.First());
+
+            var routeDictionary = routes
+                .Where(r => !string.IsNullOrWhiteSpace(r.Id))
+                .GroupBy(r => r.Id)
+                .ToDictionary(g => g.Key, g => g.First());
+
+            var busClassDictionary = busClasses
+                .Where(bc => !string.IsNullOrWhiteSpace(bc.Id))
+                .GroupBy(bc => bc.Id)
+                .ToDictionary(g => g.Key, g => g.First());
+
             var tableData = validBookings.Select(b => 
             {
-                var trip = trips.FirstOrDefault(t => t.Id == b.TripId);
-                var totalSeats = trip?.RealtimeSeats?.Count ?? 0;
-                
-                var busClass = "Tiêu chuẩn"; 
-                if (totalSeats > 0) 
+                tripDictionary.TryGetValue(b.TripId, out var trip);
+
+                Bus? bus = null;
+                if (trip != null && !string.IsNullOrWhiteSpace(trip.BusId))
                 {
-                    busClass = totalSeats > 30 ? "Giường Nằm" : "Limousine"; 
+                    busDictionary.TryGetValue(trip.BusId, out bus);
                 }
 
-                var paymentMethodStr = b.Payment?.PaymentMethod;
+                BusClass? busClassEntity = null;
+                if (!string.IsNullOrWhiteSpace(bus?.BusClassId))
+                {
+                    busClassDictionary.TryGetValue(bus.BusClassId, out busClassEntity);
+                }
+
+                var busClass = busClassEntity?.ClassName;
+                if (string.IsNullOrWhiteSpace(busClass))
+                {
+                    var totalSeats = trip?.RealtimeSeats?.Count ?? 0;
+                    busClass = totalSeats > 0
+                        ? (totalSeats > 30 ? "Giường Nằm" : "Limousine")
+                        : "Tiêu chuẩn";
+                }
+
+                routeDictionary.TryGetValue(trip?.RouteId ?? string.Empty, out var route);
+                var routeName = route == null
+                    ? "Không xác định"
+                    : $"{route.DeparturePoint} - {route.DestinationPoint}";
+
+                var resolvedPaymentMethod = PaymentMethodDisplayHelper.ResolveRawMethod(b.Payment);
 
                 return new TransactionDetailDto
                 {
                     BookingCode = b.Id, 
                     CustomerName = "Khách Hàng", 
+                    RouteName = routeName,
                     BusClass = busClass,
-                    PaymentDate = b.BookingTime.ToLocalTime(),
+                    PaymentDate = VietnamTimeHelper.ToVietnamLocal(b.BookingTime),
                     Amount = b.FinalAmount,
-                    PaymentMethod = string.IsNullOrEmpty(paymentMethodStr) ? "Tiền mặt" : paymentMethodStr
+                    PaymentMethod = resolvedPaymentMethod
                 };
             })
             .OrderByDescending(x => x.PaymentDate)
@@ -349,7 +404,7 @@ namespace Bus_ticket.Services
 
         public async Task<List<SeatAnalyticsViewModel>> GetSoldOutTripsAsync(DateTime fromDate, DateTime toDate)
         {
-            var (fromUtc, toUtc) = ToUtcDateRange(fromDate, toDate);
+            var (fromUtc, toUtc) = VietnamTimeHelper.ToUtcDateRange(fromDate, toDate);
 
             var trips = await _dbContext.Trips
                 .Find(t => t.DepartureTime >= fromUtc && t.DepartureTime <= toUtc)
@@ -425,7 +480,7 @@ namespace Bus_ticket.Services
                         BusType = busClass?.BusType ?? "Không xác định",
                         OperatorName = busOperator?.OperatorName ?? "Không xác định",
                         LicensePlate = bus?.LicensePlate ?? "Chưa gán xe",
-                        DepartureTime = t.DepartureTime.ToLocalTime(),
+                        DepartureTime = VietnamTimeHelper.ToVietnamLocal(t.DepartureTime),
                         TotalSeats = totalSeats,
                         BookedSeats = bookedSeats,
                         OccupancyRate = occupancyRate,
@@ -458,13 +513,6 @@ namespace Bus_ticket.Services
             return true;
         }
         
-        private static (DateTime FromUtc, DateTime ToUtc) ToUtcDateRange(DateTime fromDate, DateTime toDate)
-        {
-            var from = DateTime.SpecifyKind(fromDate.Date, DateTimeKind.Utc);
-            var to = DateTime.SpecifyKind(toDate.Date.AddDays(1).AddTicks(-1), DateTimeKind.Utc);
-            return (from, to);
-        }
-
         private static int GetTicketCount(Booking booking)
         {
             return booking.Passengers?.Count > 0 ? booking.Passengers.Count : 1;

@@ -1,0 +1,58 @@
+@model List<Bus_ticket.ViewModels.SeatAnalyticsViewModel>
+@{
+    var items = Model ?? new List<Bus_ticket.ViewModels.SeatAnalyticsViewModel>();
+    var fromDateValue = ViewBag.FromDateValue as string ?? string.Empty;
+    var toDateValue = ViewBag.ToDateValue as string ?? string.Empty;
+    var routeGroups = items
+        .GroupBy(x => string.IsNullOrWhiteSpace(x.RouteName) ? "Khác" : x.RouteName)
+        .Select(g => new { Route = g.Key, Count = g.Count() })
+        .OrderByDescending(x => x.Count)
+        .Take(10)
+        .ToList();
+    var palette = new[] { "#8b5cf6", "#10b981", "#0ea5e9", "#f59e0b", "#ef4444", "#6b7280" };
+    var labels = routeGroups.Select(x => x.Route).ToList();
+    var values = routeGroups.Select(x => x.Count).ToList();
+    var colors = labels.Select((_, i) => palette[i % palette.Length]).ToList();
+}
+
+<div id="soldOutStatsDetailCharts" class="hidden space-y-6">
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
+        <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-1">Chuyến cháy ghế theo tuyến</h3>
+        <p class="text-xs text-gray-500 mb-4">Click biểu đồ để lọc theo tuyến đường</p>
+        @if (!routeGroups.Any())
+        {
+            <div class="py-16 text-center text-gray-500">Không có dữ liệu biểu đồ.</div>
+        }
+        else
+        {
+            <div class="relative h-[320px] w-full flex justify-center">
+                <canvas id="detailSoldOutStatsPieChart"></canvas>
+            </div>
+        }
+    </div>
+</div>
+
+<script>
+    window.soldOutStatsDetailChartsInitialized = false;
+    function initializeSoldOutStatsDetailCharts() {
+        if (window.soldOutStatsDetailChartsInitialized) return;
+        const detailFromDate = @Html.Raw(Json.Serialize(fromDateValue));
+        const detailToDate = @Html.Raw(Json.Serialize(toDateValue));
+        renderDetailPieChart(
+            'detailSoldOutStatsPieChart',
+            @Html.Raw(Json.Serialize(labels)),
+            @Html.Raw(Json.Serialize(values)),
+            @Html.Raw(Json.Serialize(colors)),
+            'Số chuyến',
+            {
+                valueSuffix: ' chuyến',
+                onSliceClick: function (index, chartLabels) {
+                    const routeName = chartLabels[index];
+                    if (!routeName) return null;
+                    return buildDashboardDetailUrl('SoldOutStatsDetail', detailFromDate, detailToDate, 'routeName', routeName);
+                }
+            }
+        );
+        window.soldOutStatsDetailChartsInitialized = true;
+    }
+</script>

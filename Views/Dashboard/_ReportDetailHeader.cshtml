@@ -1,0 +1,54 @@
+@{
+    var title = ViewData["ReportTitle"] as string ?? "Chi tiết báo cáo";
+    var subtitle = ViewData["ReportSubtitle"] as string ?? string.Empty;
+    var pickerType = ViewData["PickerType"] as string ?? ViewData["StatType"] as string ?? string.Empty;
+    var exportHandler = ViewData["ExportHandler"] as string ?? string.Empty;
+    var showChartToggle = ViewData["ShowChartToggle"] as bool? == true;
+    var chartSectionId = ViewData["ChartSectionId"] as string ?? string.Empty;
+    var chartInitFunction = ViewData["ChartInitFunction"] as string ?? string.Empty;
+}
+
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+        <a asp-controller="Dashboard"
+           asp-action="Index"
+           class="inline-flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+            Quay lại Dashboard
+        </a>
+        <h1 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">@title</h1>
+        @if (!string.IsNullOrWhiteSpace(subtitle))
+        {
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">@subtitle</p>
+        }
+        @await Html.PartialAsync("_ReportDetailFilterBadge")
+    </div>
+
+    <div class="flex flex-wrap items-center gap-3">
+        @if (showChartToggle && !string.IsNullOrWhiteSpace(chartSectionId))
+        {
+            <button type="button"
+                    onclick="toggleDashboardDetailCharts(this, '@chartSectionId', '@chartInitFunction')"
+                    class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 border border-blue-200 dark:border-blue-800 rounded-lg transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                <span data-chart-toggle-label>Hiện biểu đồ chi tiết</span>
+            </button>
+        }
+
+        <input type="text"
+               id="date_range_@pickerType"
+               readonly
+               class="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-[260px] p-2.5 cursor-pointer shadow-sm"
+               placeholder="Chọn khoảng ngày..." />
+
+        @if (!string.IsNullOrWhiteSpace(exportHandler))
+        {
+            <button type="button"
+                    onclick="@(exportHandler)()"
+                    class="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-lg text-sm px-4 py-2.5 shadow-sm transition-colors inline-flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                Xuất Excel
+            </button>
+        }
+    </div>
+</div>

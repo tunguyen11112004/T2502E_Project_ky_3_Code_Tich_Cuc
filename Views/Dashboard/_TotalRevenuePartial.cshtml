@@ -1,5 +1,4 @@
 ﻿@model Bus_ticket.ViewModels.DashboardRevenueViewModel
-@using System.Globalization
 
 @{
     decimal kpiTotalRevenue = 0;
@@ -15,92 +14,25 @@
         kpiAvgTicket = kpiTotalTickets > 0 ? (kpiTotalRevenue / kpiTotalTickets) : 0;
     }
 
-    string GetPaymentDisplayName(string dbValue)
-    {
-        if (string.IsNullOrWhiteSpace(dbValue)) return "Khác";
-        string val = dbValue.ToLower();
-        
-        if (val.Contains("cash") || val.Contains("tiền mặt") || val.Contains("quầy"))
-            return "Thanh toán tại quầy";
-        if (val.Contains("vnpay"))
-            return "VNPAY (Quét mã QR)";
-        if (val.Contains("momo"))
-            return "MOMO (Quét mã QR)";
-        if (val.Contains("payos") || val.Contains("banking") || val.Contains("chuyển khoản"))
-            return "Thanh toán chuyển khoản QR (PayOS)";
-            
-        return "Khác";
-    }
+    var paymentSummaries = PaymentMethodDisplayHelper.BuildSummaries(Model?.TableData);
+    var paymentChartData = PaymentMethodDisplayHelper.BuildChartData(paymentSummaries);
 
-    var expectedMethods = new List<string> { 
-        "Thanh toán tại quầy", 
-        "VNPAY (Quét mã QR)", 
-        "MOMO (Quét mã QR)", 
-        "Thanh toán chuyển khoản QR (PayOS)" 
-    };
+    var fromDate = DateTime.TryParse(ViewBag.FromDateValue as string, out var parsedFrom)
+        ? parsedFrom.Date
+        : DateTime.Today.AddDays(-30);
+    var toDate = DateTime.TryParse(ViewBag.ToDateValue as string, out var parsedTo)
+        ? parsedTo.Date
+        : DateTime.Today;
 
-    var finalPaymentMethods = expectedMethods.Select(m => 
-    {
-        var match = Model?.TableData?
-            .Where(x => GetPaymentDisplayName(x.PaymentMethod) == m)
-            .ToList();
-            
-        return new 
-        {
-            Method = m,
-            TransactionCount = match?.Count ?? 0,
-            TotalAmount = match?.Sum(x => x.Amount) ?? 0m
-        };
-    }).ToList();
+    var periodGrouping = RevenuePeriodGroupingHelper.Build(Model?.TableData, fromDate, toDate);
+    var lineLabels = periodGrouping.ChartGroups.Select(x => x.DisplayLabel).ToList();
+    var lineValues = periodGrouping.ChartGroups.Select(x => x.Revenue).ToList();
+    var lineQueryDates = periodGrouping.ChartGroups.Select(x => $"{x.QueryStartDate}|{x.QueryEndDate}").ToList();
 
-    var otherMatch = Model?.TableData?.Where(x => GetPaymentDisplayName(x.PaymentMethod) == "Khác").ToList();
-    if (otherMatch != null && otherMatch.Any()) 
-    {
-        finalPaymentMethods.Add(new 
-        {
-            Method = "Khác",
-            TransactionCount = otherMatch.Count,
-            TotalAmount = otherMatch.Sum(x => x.Amount)
-        });
-    }
-
-    var revenueByPaymentMethod = finalPaymentMethods
-        .OrderByDescending(x => x.TotalAmount)
-        .ToList();
-
-    var paymentColors = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) {
-        { "Thanh toán tại quầy", "bg-amber-500" },
-        { "VNPAY (Quét mã QR)", "bg-blue-500" },
-        { "MOMO (Quét mã QR)", "bg-pink-500" },
-        { "Thanh toán chuyển khoản QR (PayOS)", "bg-indigo-500" },
-        { "Khác", "bg-gray-500" }
-    };
-
-    var cal = CultureInfo.InvariantCulture.Calendar;
-    var revenueByWeek = Model?.TableData?
-        .GroupBy(x => new {
-            Year = x.PaymentDate.Year,
-            Week = cal.GetWeekOfYear(x.PaymentDate, CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday)
-        })
-        .Select(g => new {
-            Year = g.Key.Year,
-            Week = g.Key.Week,
-            DisplayDate = $"Tuần {g.Key.Week} ({g.Min(x => x.PaymentDate):dd/MM} - {g.Max(x => x.PaymentDate):dd/MM})",
-            QueryStartDate = g.Min(x => x.PaymentDate).ToString("yyyy-MM-dd"),
-            QueryEndDate = g.Max(x => x.PaymentDate).ToString("yyyy-MM-dd"),
-            TicketCount = g.Count(),
-            Revenue = g.Sum(x => x.Amount)
-        })
-        .OrderByDescending(x => x.Year).ThenByDescending(x => x.Week)
-        .ToList();
-
-    var revenueLineData = revenueByWeek?
-        .OrderBy(x => x.Year).ThenBy(x => x.Week)
-        .ToList();
-
-    var lineLabels = revenueLineData?.Select(x => x.DisplayDate).ToList() ?? new List<string>();
-    var lineValues = revenueLineData?.Select(x => x.Revenue).ToList() ?? new List<decimal>();
-    var lineQueryDates = revenueLineData?.Select(x => $"{x.QueryStartDate}|{x.QueryEndDate}").ToList() ?? new List<string>();
+    var busClassPalette = new[] { "#8b5cf6", "#10b981", "#0ea5e9", "#f59e0b", "#ef4444", "#6b7280" };
+    var labelsSeat = Model?.ChartData.Select(c => c.Category).ToList() ?? new List<string>();
+    var dataSeat = Model?.ChartData.Select(c => c.TotalRevenue).ToList() ?? new List<decimal>();
+    var colorsSeat = labelsSeat.Select((_, index) => busClassPalette[index % busClassPalette.Length]).ToList();
 }
 
 <div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -165,11 +97,16 @@
 <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm mb-6 w-full">
     <div class="flex justify-between items-center mb-4">
         <div>
-            <h3 class="text-md font-semibold text-gray-900 dark:text-white">Biến động doanh thu theo tuần</h3>
-            <p class="text-xs text-gray-500 mt-1">Click vào điểm bất kỳ trên biểu đồ để xem chi tiết thống kê của tuần đó</p>
+            <h3 class="text-md font-semibold text-gray-900 dark:text-white">@periodGrouping.ChartTitle</h3>
+            <p class="text-xs text-gray-500 mt-1">@periodGrouping.ChartSubtitle</p>
         </div>
-        <a href="/Dashboard/RouteRevenue" target="_blank" class="text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1">
-            Mở trang chi tiết <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+        <a asp-controller="Dashboard"
+           asp-action="TotalRevenueDetail"
+           asp-route-fromDate="@ViewBag.FromDateValue"
+           asp-route-toDate="@ViewBag.ToDateValue"
+           class="text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1">
+            Mở trang chi tiết
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
         </a>
     </div>
     
@@ -180,7 +117,8 @@
 
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
-        <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4">Tỷ trọng theo Hạng Xe</h3>
+        <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-1">Tỷ trọng theo Hạng Xe</h3>
+        <p class="text-xs text-gray-500 mb-4">Click vào phần biểu đồ để xem chi tiết theo hạng xe</p>
         <div class="relative h-[280px] w-full flex justify-center">
             <canvas id="totalRevenueChart"></canvas>
         </div>
@@ -194,110 +132,27 @@
     </div>
 </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
-        <div class="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
-            <h3 class="text-md font-semibold text-gray-900 dark:text-white">Thống kê theo tuần</h3>
-            <p class="text-xs text-gray-500 mt-1">Biến động lượng vé và dòng tiền từng tuần</p>
-        </div>
-        
-        <div class="overflow-x-auto h-[350px]">
-            <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                <thead class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-300 sticky top-0 z-10 shadow-sm">
-                    <tr>
-                        <th scope="col" class="px-5 py-4">TUẦN</th>
-                        <th scope="col" class="px-5 py-4 text-center">SỐ VÉ</th>
-                        <th scope="col" class="px-5 py-4 text-right">DOANH THU</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (revenueByWeek != null && revenueByWeek.Any())
-                    {
-                        foreach (var item in revenueByWeek)
-                        {
-                            <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                                <td class="px-5 py-3 font-semibold text-gray-900 dark:text-white">
-                                    <div class="flex items-center gap-2">
-                                        <i class="bx bx-calendar text-gray-400"></i>
-                                        @item.DisplayDate
-                                    </div>
-                                </td>
-                                <td class="px-5 py-3 text-center font-medium text-blue-600 dark:text-blue-400">
-                                    @item.TicketCount.ToString("N0")
-                                </td>
-                                <td class="px-5 py-3 font-bold text-emerald-600 dark:text-emerald-400 text-right">
-                                    @item.Revenue.ToString("N0") đ
-                                </td>
-                            </tr>
-                        }
-                    }
-                    else
-                    {
-                        <tr>
-                            <td colspan="3" class="px-6 py-10 text-center text-gray-500">Không có dữ liệu trong khoảng thời gian này.</td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
-        <div class="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
-            <h3 class="text-md font-semibold text-gray-900 dark:text-white">Đối soát nguồn thu</h3>
-            <p class="text-xs text-gray-500 mt-1">Phân bổ dòng tiền theo cổng thanh toán thực tế</p>
-        </div>
-        
-        <div class="overflow-x-auto h-[350px]">
-            <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                <thead class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-300 sticky top-0 z-10 shadow-sm">
-                    <tr>
-                        <th scope="col" class="px-5 py-4">PHƯƠNG THỨC</th>
-                        <th scope="col" class="px-5 py-4 text-center">GIAO DỊCH</th>
-                        <th scope="col" class="px-5 py-4 text-right">SỐ TIỀN THỰC THU</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (revenueByPaymentMethod != null && revenueByPaymentMethod.Any())
-                    {
-                        foreach (var method in revenueByPaymentMethod)
-                        {
-                            var dotColorClass = paymentColors.ContainsKey(method.Method) ? paymentColors[method.Method] : "bg-gray-500";
-                            
-                            <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                                <td class="px-5 py-3 font-semibold text-gray-900 dark:text-white">
-                                    <div class="flex items-center gap-2">
-                                        <span class="w-3 h-3 rounded-full @dotColorClass"></span>
-                                        @method.Method
-                                    </div>
-                                </td>
-                                <td class="px-5 py-3 text-center">@method.TransactionCount.ToString("N0")</td>
-                                <td class="px-5 py-3 font-bold text-teal-600 dark:text-teal-400 text-right">@method.TotalAmount.ToString("N0") đ</td>
-                            </tr>
-                        }
-                    }
-                    else
-                    {
-                        <tr>
-                            <td colspan="3" class="px-6 py-10 text-center text-gray-500">Chưa có giao dịch nào.</td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
 <script>
     initializeDashboardDateRangePicker('TotalRevenue', '@ViewBag.FromDateValue', '@ViewBag.ToDateValue');
 
-    var labelsSeat = @Html.Raw(Json.Serialize(Model?.ChartData.Select(c => c.Category) ?? new List<string>()));
-    var dataSeat = @Html.Raw(Json.Serialize(Model?.ChartData.Select(c => c.TotalRevenue) ?? new List<decimal>()));
-    renderDashboardPieChart('totalRevenueChart', labelsSeat, dataSeat, [], 'Tổng Doanh Thu');
+    var labelsSeat = @Html.Raw(Json.Serialize(labelsSeat));
+    var dataSeat = @Html.Raw(Json.Serialize(dataSeat));
+    var colorsSeat = @Html.Raw(Json.Serialize(colorsSeat));
+    renderDashboardPieChart('totalRevenueChart', labelsSeat, dataSeat, colorsSeat, 'Tổng Doanh Thu', function (index, chartLabels) {
+        const busClass = chartLabels[index];
+        if (!busClass) return null;
 
-    var labelsPayment = @Html.Raw(Json.Serialize(revenueByPaymentMethod?.Select(x => x.Method) ?? new List<string>()));
-    var dataPayment = @Html.Raw(Json.Serialize(revenueByPaymentMethod?.Select(x => x.TotalAmount) ?? new List<decimal>()));
-    renderDashboardPieChart('paymentMethodChart', labelsPayment, dataPayment, [], 'Thanh toán');
+        const params = new URLSearchParams();
+        params.set('fromDate', '@ViewBag.FromDateValue');
+        params.set('toDate', '@ViewBag.ToDateValue');
+        params.set('busClass', busClass);
+        return `/Dashboard/TotalRevenueDetail?${params.toString()}`;
+    });
+
+    var labelsPayment = @Html.Raw(Json.Serialize(paymentChartData.Labels));
+    var dataPayment = @Html.Raw(Json.Serialize(paymentChartData.Values));
+    var colorsPayment = @Html.Raw(Json.Serialize(paymentChartData.Colors));
+    renderDashboardPieChart('paymentMethodChart', labelsPayment, dataPayment, colorsPayment, 'Thanh toán');
 
     var lineLabels = @Html.Raw(Json.Serialize(lineLabels));
     var lineValues = @Html.Raw(Json.Serialize(lineValues));
@@ -361,10 +216,8 @@
                     if (elements.length > 0) {
                         var index = elements[0].index;
                         var dates = lineQueryDates[index].split('|');
-                        var startDate = dates[0];
-                        var endDate = dates[1];
-                        var url = `/Dashboard/RouteRevenue?fromDate=${startDate}&toDate=${endDate}`;
-                        window.open(url, '_blank');
+                        var url = `/Dashboard/TotalRevenueDetail?fromDate=${dates[0]}&toDate=${dates[1]}`;
+                        window.location.href = url;
                     }
                 },
                 onHover: function(event, elements) {

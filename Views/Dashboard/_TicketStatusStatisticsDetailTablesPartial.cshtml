@@ -1,0 +1,60 @@
+@model Bus_ticket.ViewModels.TicketStatusStatisticsViewModel
+
+@{
+    var items = Model.Items
+        .OrderByDescending(x => x.TicketCount)
+        .ThenByDescending(x => x.BookingCount)
+        .ThenBy(x => x.StatusLabel)
+        .ToList();
+}
+
+<div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+    <div class="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
+        <h3 class="text-md font-semibold text-gray-900 dark:text-white">Bảng thống kê trạng thái vé</h3>
+        <p class="text-xs text-gray-500 mt-1">Dữ liệu tính theo bookingStatus, cancellation info và paymentStatus refunded</p>
+    </div>
+    <div class="overflow-x-auto max-h-[520px]">
+        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+            <thead class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-300 sticky top-0 z-10">
+            <tr>
+                <th class="px-6 py-4">STT</th>
+                <th class="px-6 py-4">Trạng thái</th>
+                <th class="px-6 py-4 text-right">Số booking</th>
+                <th class="px-6 py-4 text-right">Số vé</th>
+                <th class="px-6 py-4 text-right">Tỷ lệ</th>
+            </tr>
+            </thead>
+            <tbody>
+            @if (!items.Any())
+            {
+                <tr><td colspan="5" class="px-6 py-10 text-center text-gray-500">Không có dữ liệu hiển thị.</td></tr>
+            }
+            else
+            {
+                for (var i = 0; i < items.Count; i++)
+                {
+                    var item = items[i];
+                    var rowColorClass = item.StatusKey == "successful"
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : "text-red-600 dark:text-red-400";
+                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td class="px-6 py-4 text-gray-400">@(i + 1)</td>
+                        <td class="px-6 py-4 font-semibold text-gray-900 dark:text-white">@item.StatusLabel</td>
+                        <td class="px-6 py-4 text-right">@item.BookingCount.ToString("N0")</td>
+                        <td class="px-6 py-4 text-right font-bold @rowColorClass">@item.TicketCount.ToString("N0")</td>
+                        <td class="px-6 py-4 text-right font-semibold">@item.Percentage.ToString("N2")%</td>
+                    </tr>
+                }
+            }
+            </tbody>
+            <tfoot class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-300 border-t border-gray-200 dark:border-gray-600">
+            <tr>
+                <td colspan="2" class="px-6 py-4 font-bold normal-case text-gray-900 dark:text-white">Tổng cộng</td>
+                <td class="px-6 py-4 text-right font-bold normal-case text-gray-900 dark:text-white">@Model.TotalBookings.ToString("N0")</td>
+                <td class="px-6 py-4 text-right font-bold normal-case text-amber-600 dark:text-amber-400">@Model.TotalTickets.ToString("N0")</td>
+                <td class="px-6 py-4 text-right font-bold normal-case text-gray-900 dark:text-white">@(Model.TotalTickets > 0 ? "100.00%" : "0.00%")</td>
+            </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>

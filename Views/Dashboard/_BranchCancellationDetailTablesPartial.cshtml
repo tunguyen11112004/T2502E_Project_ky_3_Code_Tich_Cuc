@@ -1,0 +1,54 @@
+@model IEnumerable<Bus_ticket.ViewModels.BranchCancellationViewModel>
+
+@{
+    var items = Model?.ToList() ?? new List<Bus_ticket.ViewModels.BranchCancellationViewModel>();
+}
+
+<div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+    <div class="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
+        <h3 class="text-md font-semibold text-gray-900 dark:text-white">Bảng xếp hạng tỷ lệ hủy chuyến</h3>
+        <p class="text-xs text-gray-500 mt-1">Sắp xếp giảm dần theo tỷ lệ hủy chuyến</p>
+    </div>
+    <div class="overflow-x-auto max-h-[520px]">
+        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+            <thead class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-300 sticky top-0 z-10">
+            <tr>
+                <th class="px-6 py-4">Hạng</th>
+                <th class="px-6 py-4">Nhà xe / đối tác</th>
+                <th class="px-6 py-4 text-right">Tổng chuyến</th>
+                <th class="px-6 py-4 text-right">Chuyến hủy</th>
+                <th class="px-6 py-4 text-right">Tỷ lệ hủy</th>
+            </tr>
+            </thead>
+            <tbody>
+            @if (!items.Any())
+            {
+                <tr><td colspan="5" class="px-6 py-10 text-center text-gray-500">Không có dữ liệu hiển thị.</td></tr>
+            }
+            else
+            {
+                for (var i = 0; i < items.Count; i++)
+                {
+                    var item = items[i];
+                    var badgeClass = item.CancellationRate >= 10
+                        ? "text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-900/30"
+                        : item.CancellationRate >= 5
+                            ? "text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-900/30"
+                            : "text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-900/30";
+                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td class="px-6 py-4 font-bold text-amber-500">#@(i + 1)</td>
+                        <td class="px-6 py-4 font-semibold text-gray-900 dark:text-white">@item.BranchName</td>
+                        <td class="px-6 py-4 text-right">@item.TotalTrips.ToString("N0")</td>
+                        <td class="px-6 py-4 text-right font-medium text-red-600 dark:text-red-400">@item.CanceledTrips.ToString("N0")</td>
+                        <td class="px-6 py-4 text-right">
+                            <span class="inline-flex rounded-full px-3 py-1 text-xs font-bold @badgeClass">
+                                @item.CancellationRate.ToString("N2")%
+                            </span>
+                        </td>
+                    </tr>
+                }
+            }
+            </tbody>
+        </table>
+    </div>
+</div>

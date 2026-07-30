@@ -1,4 +1,5 @@
 using Bus_ticket.Services;
+using Bus_ticket.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ClosedXML.Excel;
@@ -50,6 +51,66 @@ public class DashboardController : Controller
         ViewBag.ToDateValue = to.ToString("yyyy-MM-dd");
         
         return PartialView("_TotalRevenuePartial", model);
+    }
+
+
+    [HttpGet]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> TotalRevenueDetail(DateTime? fromDate, DateTime? toDate, string? busClass, string? routeName)
+    {
+        var (from, to) = NormalizeDateRange(fromDate, toDate, 30);
+        var model = await _dashboardService.GetSystemTotalRevenueAsync(from, to);
+
+        ViewBag.RouteFilterOptions = model.TableData
+            .Select(x => string.IsNullOrWhiteSpace(x.RouteName) ? "Không xác định" : x.RouteName)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x)
+            .ToList();
+
+        ViewBag.BusClassFilterOptions = model.TableData
+            .Select(x => string.IsNullOrWhiteSpace(x.BusClass) ? "Khác" : x.BusClass)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x)
+            .ToList();
+
+        var routeFilter = string.IsNullOrWhiteSpace(routeName) ? null : routeName.Trim();
+        var busClassFilter = string.IsNullOrWhiteSpace(busClass) ? null : busClass.Trim();
+
+        if (!string.IsNullOrWhiteSpace(routeFilter))
+        {
+            model.TableData = model.TableData
+                .Where(x => string.Equals(
+                    string.IsNullOrWhiteSpace(x.RouteName) ? "Không xác định" : x.RouteName,
+                    routeFilter,
+                    StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        if (!string.IsNullOrWhiteSpace(busClassFilter))
+        {
+            model.TableData = model.TableData
+                .Where(x => string.Equals(x.BusClass, busClassFilter, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        if (!string.IsNullOrWhiteSpace(routeFilter) || !string.IsNullOrWhiteSpace(busClassFilter))
+        {
+            model.ChartData = model.TableData
+                .GroupBy(x => x.BusClass)
+                .Select(g => new RevenueByCategoryDto
+                {
+                    Category = g.Key,
+                    TotalRevenue = g.Sum(x => x.Amount)
+                })
+                .ToList();
+        }
+
+        ViewBag.FromDateValue = from.ToString("yyyy-MM-dd");
+        ViewBag.ToDateValue = to.ToString("yyyy-MM-dd");
+        ViewBag.BusClassFilter = busClassFilter;
+        ViewBag.RouteNameFilter = routeFilter;
+
+        return View(model);
     }
 
 
@@ -286,17 +347,17 @@ public async Task<IActionResult> ExportSoldOutStats(DateTime? startDate, DateTim
 
         var result = await _dashboardService.GetSeatAnalyticsReportAsync(from, to, 1, int.MaxValue);
 
-        ViewBag.FromDateValue = from;
-        ViewBag.ToDateValue = to;
+        ViewBag.FromDateValue = from.ToString("yyyy-MM-dd");
+        ViewBag.ToDateValue = to.ToString("yyyy-MM-dd");
 
         return PartialView("_SeatAnalyticsPartial", result.Items);
     }
     
     [HttpGet]
     [Authorize(Roles = "Admin,Employee")]
-    public async Task<IActionResult> ExportSeatAnalytics(DateTime? fromDate, DateTime? toDate)
+    public async Task<IActionResult> ExportSeatAnalytics(DateTime? fromDate, DateTime? toDate, DateTime? endDate)
     {
-        var (from, to) = NormalizeDateRange(fromDate, toDate, 30);
+        var (from, to) = NormalizeDateRange(fromDate, toDate ?? endDate, 30);
         var result = await _dashboardService.GetSeatAnalyticsReportAsync(from, to, 1, int.MaxValue);
         var model = result.Items;
 
@@ -673,8 +734,8 @@ public async Task<IActionResult> LowOccupancyTripsPartial(
     var model = await _lowOccupancyTripsService
         .GetLowOccupancyTripsAsync(from, to, occupancyThreshold);
 
-    ViewBag.FromDateValue = from;
-    ViewBag.ToDateValue = to;
+    ViewBag.FromDateValue = from.ToString("yyyy-MM-dd");
+    ViewBag.ToDateValue = to.ToString("yyyy-MM-dd");
 
     return PartialView("_LowOccupancyTripsPartial", model);
 }
@@ -878,6 +939,455 @@ public async Task<IActionResult> ExportLowOccupancyTrips(
         var fileName = $"TicketStatusStatistics_{model.FromDate:yyyyMMdd}_{model.ToDate:yyyyMMdd}.xlsx";
         return File(stream.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
     }
+
+
+    private void ApplyDetailPageContext(
+        DateTime from,
+        DateTime to,
+        string detailAction,
+        string? filterParamName = null,
+        string? filterParamValue = null,
+        string? filterDisplayLabel = null)
+    {
+        ViewBag.FromDateValue = from.ToString("yyyy-MM-dd");
+        ViewBag.ToDateValue = to.ToString("yyyy-MM-dd");
+        ViewData["DetailAction"] = detailAction;
+        ViewBag.FilterParamName = filterParamName ?? string.Empty;
+        ViewBag.FilterParamValue = filterParamValue ?? string.Empty;
+        ViewBag.ActiveFilter = filterParamValue;
+        ViewBag.ActiveFilterLabel = filterDisplayLabel ?? string.Empty;
+    }
+
+    [HttpGet]
+    [Authorize(Roles = "Admin,Employee,Operator")]
+    public async Task<IActionResult> OperatorRevenueDetail(DateTime? fromDate, DateTime? toDate, string? operatorName)
+    {
+        var (from, to) = NormalizeDateRange(fromDate, toDate, 30);
+        string? operatorId = User.IsInRole("Operator") ? User.FindFirst("OperatorId")?.Value : null;
+        var model = await _dashboardService.GetOperatorRevenueReportAsync(from, to, operatorId);
+
+        var operatorFilter = string.IsNullOrWhiteSpace(operatorName) ? null : operatorName.Trim();
+        if (!string.IsNullOrWhiteSpace(operatorFilter))
+        {
+            model = model
+                .Where(x => string.Equals(x.OperatorName, operatorFilter, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        ApplyDetailPageContext(from, to, nameof(OperatorRevenueDetail), "operatorName", operatorFilter, "nhà xe");
+        return View(model);
+    }
+
+
+    [HttpGet]
+    [Authorize(Roles = "Admin,Employee")]
+    public async Task<IActionResult> RouteRevenueDetail(DateTime? fromDate, DateTime? toDate, string? routeName)
+    {
+        var (from, to) = NormalizeDateRange(fromDate, toDate, 30);
+        var model = await _dashboardService.GetRouteRevenueReportAsync(from, to);
+
+        ViewBag.RouteFilterOptions = model.Items
+            .Select(x => x.RouteName)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x)
+            .ToList();
+
+        var routeFilter = string.IsNullOrWhiteSpace(routeName) ? null : routeName.Trim();
+        if (!string.IsNullOrWhiteSpace(routeFilter))
+        {
+            model.Items = model.Items
+                .Where(x => string.Equals(x.RouteName, routeFilter, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            model.GrandTotalRevenue = model.Items.Sum(x => x.TotalRevenue);
+            model.GrandTotalBookings = model.Items.Sum(x => x.TotalBookings);
+            model.GrandTotalTickets = model.Items.Sum(x => x.TotalTickets);
+
+            foreach (var item in model.Items)
+            {
+                item.Percentage = model.GrandTotalRevenue > 0
+                    ? (double)(item.TotalRevenue / model.GrandTotalRevenue * 100)
+                    : 0;
+            }
+        }
+
+        ApplyDetailPageContext(from, to, nameof(RouteRevenueDetail), "routeName", routeFilter, "tuyến đường");
+        return View(model);
+    }
+
+
+    [HttpGet]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> VehicleRevenueStatisticsDetail(
+        DateTime? fromDate,
+        DateTime? toDate,
+        string? vehicleClass,
+        string? busCode,
+        string? licensePlate,
+        string? busClassName)
+    {
+        var (from, to) = NormalizeDateRange(fromDate, toDate, 30);
+        var model = await _vehicleRevenueStatisticsService.GetVehicleRevenueStatisticsAsync(from, to);
+
+        ViewBag.BusClassFilterOptions = model.BusRevenueItems
+            .Select(x => x.BusClassName)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x)
+            .ToList();
+
+        var vehicleClassFilter = string.IsNullOrWhiteSpace(vehicleClass) ? null : vehicleClass.Trim();
+        var busCodeFilter = string.IsNullOrWhiteSpace(busCode) ? null : busCode.Trim();
+        var licensePlateFilter = string.IsNullOrWhiteSpace(licensePlate) ? null : licensePlate.Trim();
+        var busClassNameFilter = string.IsNullOrWhiteSpace(busClassName) ? null : busClassName.Trim();
+
+        if (!string.IsNullOrWhiteSpace(vehicleClassFilter))
+        {
+            model.BusTypeRevenueItems = model.BusTypeRevenueItems
+                .Where(x => string.Equals($"{x.BusType} - {x.BusClassName}", vehicleClassFilter, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            model.BusRevenueItems = model.BusRevenueItems
+                .Where(x => string.Equals($"{x.BusType} - {x.BusClassName}", vehicleClassFilter, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            model.GrandTotalRevenue = model.BusRevenueItems.Sum(x => x.TotalRevenue);
+            model.GrandTotalBookings = model.BusRevenueItems.Sum(x => x.TotalBookings);
+            model.GrandTotalTickets = model.BusRevenueItems.Sum(x => x.TotalTickets);
+        }
+        else if (!string.IsNullOrWhiteSpace(busClassNameFilter))
+        {
+            model.BusTypeRevenueItems = model.BusTypeRevenueItems
+                .Where(x => string.Equals(x.BusClassName, busClassNameFilter, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            model.BusRevenueItems = model.BusRevenueItems
+                .Where(x => string.Equals(x.BusClassName, busClassNameFilter, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            model.GrandTotalRevenue = model.BusRevenueItems.Sum(x => x.TotalRevenue);
+            model.GrandTotalBookings = model.BusRevenueItems.Sum(x => x.TotalBookings);
+            model.GrandTotalTickets = model.BusRevenueItems.Sum(x => x.TotalTickets);
+        }
+
+        if (!string.IsNullOrWhiteSpace(busCodeFilter))
+        {
+            model.BusRevenueItems = model.BusRevenueItems
+                .Where(x => MatchesBusCodeOrLicensePlate(x.BusCode, x.LicensePlate, busCodeFilter))
+                .ToList();
+        }
+
+        if (!string.IsNullOrWhiteSpace(licensePlateFilter))
+        {
+            model.BusRevenueItems = model.BusRevenueItems
+                .Where(x => x.LicensePlate.Contains(licensePlateFilter, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        RecalculateBusRevenuePercentages(model.BusRevenueItems);
+
+        ViewBag.BusCodeFilter = busCodeFilter ?? string.Empty;
+        ViewBag.LicensePlateFilter = licensePlateFilter ?? string.Empty;
+        ViewBag.BusClassNameFilter = busClassNameFilter ?? string.Empty;
+
+        ApplyDetailPageContext(from, to, nameof(VehicleRevenueStatisticsDetail), "vehicleClass", vehicleClassFilter, "hạng xe");
+        if (string.IsNullOrWhiteSpace(vehicleClassFilter) && !string.IsNullOrWhiteSpace(busClassNameFilter))
+        {
+            ViewBag.FilterParamName = "busClassName";
+            ViewBag.FilterParamValue = busClassNameFilter;
+            ViewBag.ActiveFilter = busClassNameFilter;
+            ViewBag.ActiveFilterLabel = "hạng xe";
+        }
+
+        return View(model);
+    }
+
+    private static void RecalculateBusRevenuePercentages(List<VehicleRevenueByBusViewModel> items)
+    {
+        var totalRevenue = items.Sum(x => x.TotalRevenue);
+        foreach (var item in items)
+        {
+            item.Percentage = totalRevenue > 0
+                ? (double)(item.TotalRevenue / totalRevenue * 100)
+                : 0;
+        }
+    }
+
+    private static bool MatchesBusCodeOrLicensePlate(string busCode, string licensePlate, string searchTerm)
+    {
+        return (!string.IsNullOrEmpty(busCode) && busCode.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+            || (!string.IsNullOrEmpty(licensePlate) && licensePlate.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+    }
+
+
+    [HttpGet]
+    [Authorize(Roles = "Admin,Employee")]
+    public async Task<IActionResult> SeatAnalyticsDetail(
+        DateTime? fromDate,
+        DateTime? toDate,
+        string? tripCode,
+        string? routeName,
+        string? licensePlate)
+    {
+        var (from, to) = NormalizeDateRange(fromDate, toDate, 30);
+        var result = await _dashboardService.GetSeatAnalyticsReportAsync(from, to, 1, int.MaxValue);
+        var items = result.Items.ToList();
+
+        ViewBag.RouteFilterOptions = items
+            .Select(x => x.RouteName)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x)
+            .ToList();
+
+        var tripFilter = string.IsNullOrWhiteSpace(tripCode) ? null : tripCode.Trim();
+        var routeFilter = string.IsNullOrWhiteSpace(routeName) ? null : routeName.Trim();
+        var licensePlateFilter = string.IsNullOrWhiteSpace(licensePlate) ? null : licensePlate.Trim();
+
+        if (!string.IsNullOrWhiteSpace(tripFilter))
+        {
+            items = items
+                .Where(x => string.Equals(x.TripCode, tripFilter, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        if (!string.IsNullOrWhiteSpace(routeFilter))
+        {
+            items = items
+                .Where(x => string.Equals(x.RouteName, routeFilter, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        if (!string.IsNullOrWhiteSpace(licensePlateFilter))
+        {
+            items = items
+                .Where(x => x.LicensePlate.Contains(licensePlateFilter, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        ViewBag.RouteNameFilter = routeFilter ?? string.Empty;
+        ViewBag.LicensePlateFilter = licensePlateFilter ?? string.Empty;
+
+        ApplyDetailPageContext(from, to, nameof(SeatAnalyticsDetail), "tripCode", tripFilter, "mã chuyến");
+        if (string.IsNullOrWhiteSpace(tripFilter) && !string.IsNullOrWhiteSpace(routeFilter))
+        {
+            ViewBag.FilterParamName = "routeName";
+            ViewBag.FilterParamValue = routeFilter;
+            ViewBag.ActiveFilter = routeFilter;
+            ViewBag.ActiveFilterLabel = "tuyến đường";
+        }
+
+        return View(items);
+    }
+
+
+    [HttpGet]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> LowOccupancyTripsDetail(
+        DateTime? fromDate,
+        DateTime? toDate,
+        string? tripCode,
+        string? routeName,
+        string? busCode,
+        string? licensePlate)
+    {
+        var (from, to) = NormalizeDateRange(fromDate, toDate, 30);
+        var model = await _lowOccupancyTripsService.GetLowOccupancyTripsAsync(from, to);
+
+        ViewBag.RouteFilterOptions = model.LowOccupancyTrips
+            .Select(x => x.RouteName)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x)
+            .ToList();
+
+        var tripFilter = string.IsNullOrWhiteSpace(tripCode) ? null : tripCode.Trim();
+        var routeFilter = string.IsNullOrWhiteSpace(routeName) ? null : routeName.Trim();
+        var busCodeFilter = string.IsNullOrWhiteSpace(busCode) ? null : busCode.Trim();
+        var licensePlateFilter = string.IsNullOrWhiteSpace(licensePlate) ? null : licensePlate.Trim();
+
+        if (!string.IsNullOrWhiteSpace(tripFilter))
+        {
+            model.LowOccupancyTrips = model.LowOccupancyTrips
+                .Where(x => string.Equals(x.TripCode, tripFilter, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        if (!string.IsNullOrWhiteSpace(routeFilter))
+        {
+            model.LowOccupancyTrips = model.LowOccupancyTrips
+                .Where(x => string.Equals(x.RouteName, routeFilter, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        if (!string.IsNullOrWhiteSpace(busCodeFilter))
+        {
+            model.LowOccupancyTrips = model.LowOccupancyTrips
+                .Where(x => MatchesBusCodeOrLicensePlate(x.BusCode, x.LicensePlate, busCodeFilter))
+                .ToList();
+        }
+
+        if (!string.IsNullOrWhiteSpace(licensePlateFilter))
+        {
+            model.LowOccupancyTrips = model.LowOccupancyTrips
+                .Where(x => x.LicensePlate.Contains(licensePlateFilter, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        model.LowOccupancyTripCount = model.LowOccupancyTrips.Count;
+        model.TotalEmptySeats = model.LowOccupancyTrips.Sum(x => x.EmptySeats);
+        model.AverageOccupancyRate = model.LowOccupancyTrips.Count > 0
+            ? model.LowOccupancyTrips.Average(x => x.OccupancyRate)
+            : 0;
+
+        ViewBag.RouteNameFilter = routeFilter ?? string.Empty;
+        ViewBag.BusCodeFilter = busCodeFilter ?? string.Empty;
+        ViewBag.LicensePlateFilter = licensePlateFilter ?? string.Empty;
+
+        ApplyDetailPageContext(from, to, nameof(LowOccupancyTripsDetail), "tripCode", tripFilter, "mã chuyến");
+        if (string.IsNullOrWhiteSpace(tripFilter) && !string.IsNullOrWhiteSpace(routeFilter))
+        {
+            ViewBag.FilterParamName = "routeName";
+            ViewBag.FilterParamValue = routeFilter;
+            ViewBag.ActiveFilter = routeFilter;
+            ViewBag.ActiveFilterLabel = "tuyến đường";
+        }
+
+        return View(model);
+    }
+
+
+    [HttpGet]
+    [Authorize(Roles = "Admin,Employee")]
+    public async Task<IActionResult> SoldOutStatsDetail(
+        DateTime? fromDate,
+        DateTime? toDate,
+        string? routeName,
+        string? busType,
+        string? operatorName,
+        string? licensePlate)
+    {
+        var (from, to) = NormalizeDateRange(fromDate, toDate, 30);
+        var model = await _dashboardService.GetSoldOutTripsAsync(from, to);
+
+        ViewBag.RouteFilterOptions = model
+            .Select(x => x.RouteName)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x)
+            .ToList();
+
+        ViewBag.BusTypeFilterOptions = model
+            .Select(x => x.BusType)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x)
+            .ToList();
+
+        ViewBag.OperatorFilterOptions = model
+            .Select(x => x.OperatorName)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x)
+            .ToList();
+
+        var routeFilter = string.IsNullOrWhiteSpace(routeName) ? null : routeName.Trim();
+        var busTypeFilter = string.IsNullOrWhiteSpace(busType) ? null : busType.Trim();
+        var operatorFilter = string.IsNullOrWhiteSpace(operatorName) ? null : operatorName.Trim();
+        var licensePlateFilter = string.IsNullOrWhiteSpace(licensePlate) ? null : licensePlate.Trim();
+
+        if (!string.IsNullOrWhiteSpace(routeFilter))
+        {
+            model = model
+                .Where(x => string.Equals(x.RouteName, routeFilter, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        if (!string.IsNullOrWhiteSpace(busTypeFilter))
+        {
+            model = model
+                .Where(x => string.Equals(x.BusType, busTypeFilter, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        if (!string.IsNullOrWhiteSpace(operatorFilter))
+        {
+            model = model
+                .Where(x => string.Equals(x.OperatorName, operatorFilter, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        if (!string.IsNullOrWhiteSpace(licensePlateFilter))
+        {
+            model = model
+                .Where(x => x.LicensePlate.Contains(licensePlateFilter, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        ViewBag.RouteNameFilter = routeFilter ?? string.Empty;
+        ViewBag.BusTypeFilter = busTypeFilter ?? string.Empty;
+        ViewBag.OperatorNameFilter = operatorFilter ?? string.Empty;
+        ViewBag.LicensePlateFilter = licensePlateFilter ?? string.Empty;
+
+        ApplyDetailPageContext(from, to, nameof(SoldOutStatsDetail), "routeName", routeFilter, "tuyến đường");
+        if (string.IsNullOrWhiteSpace(routeFilter) && !string.IsNullOrWhiteSpace(busTypeFilter))
+        {
+            ViewBag.FilterParamName = "busType";
+            ViewBag.FilterParamValue = busTypeFilter;
+            ViewBag.ActiveFilter = busTypeFilter;
+            ViewBag.ActiveFilterLabel = "loại xe";
+        }
+        else if (string.IsNullOrWhiteSpace(routeFilter) && string.IsNullOrWhiteSpace(busTypeFilter) && !string.IsNullOrWhiteSpace(operatorFilter))
+        {
+            ViewBag.FilterParamName = "operatorName";
+            ViewBag.FilterParamValue = operatorFilter;
+            ViewBag.ActiveFilter = operatorFilter;
+            ViewBag.ActiveFilterLabel = "nhà xe";
+        }
+
+        return View(model);
+    }
+
+
+    [HttpGet]
+    [Authorize(Roles = "Admin,Employee")]
+    public async Task<IActionResult> BranchCancellationDetail(DateTime? fromDate, DateTime? toDate, string? branchName)
+    {
+        var (from, to) = NormalizeDateRange(fromDate, toDate, 30);
+        var model = await _dashboardService.GetBranchCancellationReportAsync(from, to);
+
+        var branchFilter = string.IsNullOrWhiteSpace(branchName) ? null : branchName.Trim();
+        if (!string.IsNullOrWhiteSpace(branchFilter))
+        {
+            model = model
+                .Where(x => string.Equals(x.BranchName, branchFilter, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        ApplyDetailPageContext(from, to, nameof(BranchCancellationDetail), "branchName", branchFilter, "nhà xe");
+        return View(model);
+    }
+
+
+    [HttpGet]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> TicketStatusStatisticsDetail(DateTime? fromDate, DateTime? toDate, string? statusKey)
+    {
+        var (from, to) = NormalizeDateRange(fromDate, toDate, 30);
+        var model = await _ticketStatisticsService.GetTicketStatusStatisticsAsync(from, to);
+
+        var statusFilter = string.IsNullOrWhiteSpace(statusKey) ? null : statusKey.Trim();
+        if (!string.IsNullOrWhiteSpace(statusFilter))
+        {
+            model.Items = model.Items
+                .Where(x => string.Equals(x.StatusKey, statusFilter, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        ApplyDetailPageContext(from, to, nameof(TicketStatusStatisticsDetail), "statusKey", statusFilter, "trạng thái vé");
+        if (!string.IsNullOrWhiteSpace(statusFilter))
+        {
+            ViewBag.ActiveFilter = model.Items.FirstOrDefault()?.StatusLabel ?? statusFilter;
+        }
+        return View(model);
+    }
+
 
     private static (DateTime From, DateTime To) NormalizeDateRange(DateTime? fromDate, DateTime? toDate, int defaultDaysBack)
     {

@@ -1,0 +1,104 @@
+@model List<Bus_ticket.ViewModels.SeatAnalyticsViewModel>
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Chi tiết Chuyến xe cháy ghế";
+    ViewData["ReportTitle"] = "Chi tiết Chuyến xe cháy ghế";
+    ViewData["ReportSubtitle"] = "Danh sách đầy đủ các chuyến đã bán hết 100% vé";
+    ViewData["PickerType"] = "SoldOutStatsDetail";
+    ViewData["StatType"] = "SoldOutStats";
+    ViewData["ExportHandler"] = "exportSoldOutStatsDetailExcel";
+    ViewData["ShowChartToggle"] = true;
+    ViewData["ChartSectionId"] = "soldOutStatsDetailCharts";
+    ViewData["ChartInitFunction"] = "initializeSoldOutStatsDetailCharts";
+    var fromDateValue = ViewBag.FromDateValue as string ?? string.Empty;
+    var toDateValue = ViewBag.ToDateValue as string ?? string.Empty;
+}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="/admin-assets/js/dashboard-date-range.js?v=1"></script>
+<script src="/admin-assets/js/dashboard-detail-charts.js?v=2"></script>
+
+<div class="p-4 sm:p-6 lg:p-8 space-y-6 max-w-full overflow-x-hidden">
+    @await Html.PartialAsync("_ReportDetailHeader")
+    @await Html.PartialAsync("_SoldOutStatsDetailChartsPartial", Model)
+    @await Html.PartialAsync("_SoldOutStatsDetailTablesPartial", Model)
+</div>
+
+@await Html.PartialAsync("_ReportDetailDateScript")
+
+<script>
+    const soldOutRouteName = @Html.Raw(Json.Serialize(ViewBag.RouteNameFilter as string ?? string.Empty));
+    const soldOutBusType = @Html.Raw(Json.Serialize(ViewBag.BusTypeFilter as string ?? string.Empty));
+    const soldOutOperatorName = @Html.Raw(Json.Serialize(ViewBag.OperatorNameFilter as string ?? string.Empty));
+    const soldOutLicensePlate = @Html.Raw(Json.Serialize(ViewBag.LicensePlateFilter as string ?? string.Empty));
+
+    function buildSoldOutStatsDetailUrl(options) {
+        options = options || {};
+        const params = new URLSearchParams();
+        params.set('fromDate', detailFromDate);
+        params.set('toDate', detailToDate);
+
+        const routeName = options.routeName !== undefined
+            ? options.routeName
+            : (document.getElementById('soldOutRouteFilter')?.value || '').trim();
+        const busType = options.busType !== undefined
+            ? options.busType
+            : (document.getElementById('soldOutBusTypeFilter')?.value || '').trim();
+        const operatorName = options.operatorName !== undefined
+            ? options.operatorName
+            : (document.getElementById('soldOutOperatorFilter')?.value || '').trim();
+        const licensePlate = options.licensePlate !== undefined
+            ? options.licensePlate
+            : (document.getElementById('soldOutLicensePlateFilter')?.value || '').trim();
+
+        if (routeName) params.set('routeName', routeName);
+        if (busType) params.set('busType', busType);
+        if (operatorName) params.set('operatorName', operatorName);
+        if (licensePlate) params.set('licensePlate', licensePlate);
+
+        return `/Dashboard/SoldOutStatsDetail?${params.toString()}`;
+    }
+
+    window.applySoldOutStatsTableFilters = function () {
+        window.location.href = buildSoldOutStatsDetailUrl();
+    };
+
+    window.clearSoldOutStatsTableFilters = function () {
+        window.location.href = buildSoldOutStatsDetailUrl({
+            routeName: '',
+            busType: '',
+            operatorName: '',
+            licensePlate: ''
+        });
+    };
+
+    window.dashboardDateRangeApplyHandlers[detailPickerType] = function (start, end) {
+        const params = new URLSearchParams();
+        params.set('fromDate', start);
+        params.set('toDate', end);
+
+        if (soldOutRouteName) params.set('routeName', soldOutRouteName);
+        if (soldOutBusType) params.set('busType', soldOutBusType);
+        if (soldOutOperatorName) params.set('operatorName', soldOutOperatorName);
+        if (soldOutLicensePlate) params.set('licensePlate', soldOutLicensePlate);
+
+        window.location.href = `/Dashboard/SoldOutStatsDetail?${params.toString()}`;
+    };
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const input = document.getElementById('soldOutLicensePlateFilter');
+        if (input) {
+            input.addEventListener('keydown', function (event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    applySoldOutStatsTableFilters();
+                }
+            });
+        }
+    });
+
+    function exportSoldOutStatsDetailExcel() {
+        const range = getDashboardDateRangeValues('SoldOutStatsDetail', detailFromDate, detailToDate);
+        window.location.href = `/Dashboard/ExportSoldOutStats?startDate=${range.start}&endDate=${range.end}`;
+    }
+</script>

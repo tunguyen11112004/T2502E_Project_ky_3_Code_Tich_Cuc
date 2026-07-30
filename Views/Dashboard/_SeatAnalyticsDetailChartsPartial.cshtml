@@ -1,0 +1,53 @@
+@model IEnumerable<Bus_ticket.ViewModels.SeatAnalyticsViewModel>
+@{
+    var items = Model?.ToList() ?? new List<Bus_ticket.ViewModels.SeatAnalyticsViewModel>();
+    var fromDateValue = ViewBag.FromDateValue as string ?? string.Empty;
+    var toDateValue = ViewBag.ToDateValue as string ?? string.Empty;
+    var palette = new[] { "#8b5cf6", "#10b981", "#0ea5e9", "#f59e0b", "#ef4444", "#6b7280" };
+    var topItems = items.Where(x => x.BookedSeats > 0).OrderByDescending(x => x.BookedSeats).Take(10).ToList();
+    var labels = topItems.Select(x => x.TripCode).ToList();
+    var values = topItems.Select(x => x.BookedSeats).ToList();
+    var colors = labels.Select((_, i) => palette[i % palette.Length]).ToList();
+}
+
+<div id="seatAnalyticsDetailCharts" class="hidden space-y-6">
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
+        <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-1">Top chuyến theo ghế đã đặt</h3>
+        <p class="text-xs text-gray-500 mb-4">Click biểu đồ để lọc theo mã chuyến</p>
+        @if (!topItems.Any())
+        {
+            <div class="py-16 text-center text-gray-500">Không có dữ liệu biểu đồ.</div>
+        }
+        else
+        {
+            <div class="relative h-[320px] w-full flex justify-center">
+                <canvas id="detailSeatAnalyticsPieChart"></canvas>
+            </div>
+        }
+    </div>
+</div>
+
+<script>
+    window.seatAnalyticsDetailChartsInitialized = false;
+    function initializeSeatAnalyticsDetailCharts() {
+        if (window.seatAnalyticsDetailChartsInitialized) return;
+        const detailFromDate = @Html.Raw(Json.Serialize(fromDateValue));
+        const detailToDate = @Html.Raw(Json.Serialize(toDateValue));
+        renderDetailPieChart(
+            'detailSeatAnalyticsPieChart',
+            @Html.Raw(Json.Serialize(labels)),
+            @Html.Raw(Json.Serialize(values)),
+            @Html.Raw(Json.Serialize(colors)),
+            'Ghế đã đặt',
+            {
+                valueSuffix: ' ghế',
+                onSliceClick: function (index, chartLabels) {
+                    const tripCode = chartLabels[index];
+                    if (!tripCode) return null;
+                    return buildDashboardDetailUrl('SeatAnalyticsDetail', detailFromDate, detailToDate, 'tripCode', tripCode);
+                }
+            }
+        );
+        window.seatAnalyticsDetailChartsInitialized = true;
+    }
+</script>

@@ -1,0 +1,56 @@
+@model Bus_ticket.ViewModels.LowOccupancyTripsViewModel
+@{
+    var chartItems = Model.LowOccupancyTrips
+        .OrderBy(x => x.OccupancyRate)
+        .ThenByDescending(x => x.EmptySeats)
+        .Take(10)
+        .ToList();
+    var fromDateValue = ViewBag.FromDateValue as string ?? string.Empty;
+    var toDateValue = ViewBag.ToDateValue as string ?? string.Empty;
+    var palette = new[] { "#8b5cf6", "#10b981", "#0ea5e9", "#f59e0b", "#ef4444", "#6b7280" };
+    var labels = chartItems.Select(x => x.TripCode).ToList();
+    var values = chartItems.Select(x => x.EmptySeats).ToList();
+    var colors = labels.Select((_, i) => palette[i % palette.Length]).ToList();
+}
+
+<div id="lowOccupancyTripsDetailCharts" class="hidden space-y-6">
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
+        <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-1">Top chuyến ít khách nhất</h3>
+        <p class="text-xs text-gray-500 mb-4">Click biểu đồ để lọc theo mã chuyến</p>
+        @if (!chartItems.Any())
+        {
+            <div class="py-16 text-center text-gray-500">Không có dữ liệu biểu đồ.</div>
+        }
+        else
+        {
+            <div class="relative h-[320px] w-full flex justify-center">
+                <canvas id="detailLowOccupancyPieChart"></canvas>
+            </div>
+        }
+    </div>
+</div>
+
+<script>
+    window.lowOccupancyTripsDetailChartsInitialized = false;
+    function initializeLowOccupancyTripsDetailCharts() {
+        if (window.lowOccupancyTripsDetailChartsInitialized) return;
+        const detailFromDate = @Html.Raw(Json.Serialize(fromDateValue));
+        const detailToDate = @Html.Raw(Json.Serialize(toDateValue));
+        renderDetailPieChart(
+            'detailLowOccupancyPieChart',
+            @Html.Raw(Json.Serialize(labels)),
+            @Html.Raw(Json.Serialize(values)),
+            @Html.Raw(Json.Serialize(colors)),
+            'Ghế trống',
+            {
+                valueSuffix: ' ghế',
+                onSliceClick: function (index, chartLabels) {
+                    const tripCode = chartLabels[index];
+                    if (!tripCode) return null;
+                    return buildDashboardDetailUrl('LowOccupancyTripsDetail', detailFromDate, detailToDate, 'tripCode', tripCode);
+                }
+            }
+        );
+        window.lowOccupancyTripsDetailChartsInitialized = true;
+    }
+</script>

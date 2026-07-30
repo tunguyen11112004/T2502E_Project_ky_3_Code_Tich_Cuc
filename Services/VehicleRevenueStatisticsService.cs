@@ -1,4 +1,5 @@
 using Bus_ticket.Data;
+using Bus_ticket.Helpers;
 using Bus_ticket.Models;
 using Bus_ticket.ViewModels;
 using MongoDB.Driver;
@@ -16,7 +17,7 @@ public class VehicleRevenueStatisticsService
 
     public async Task<VehicleRevenueStatisticsViewModel> GetVehicleRevenueStatisticsAsync(DateTime fromDate, DateTime toDate)
     {
-        var (fromUtc, toUtc) = ToUtcDateRange(fromDate, toDate);
+        var (fromUtc, toUtc) = VietnamTimeHelper.ToUtcDateRange(fromDate, toDate);
 
         var bookings = await _dbContext.Bookings
             .Find(booking => booking.BookingTime >= fromUtc && booking.BookingTime <= toUtc)
@@ -163,14 +164,6 @@ public class VehicleRevenueStatisticsService
             BusRevenueItems = busItems,
             BusTypeRevenueItems = typeItems
         };
-    }
-
-    private static (DateTime FromUtc, DateTime ToUtc) ToUtcDateRange(DateTime fromDate, DateTime toDate)
-    {
-        var from = DateTime.SpecifyKind(fromDate.Date, DateTimeKind.Utc);
-        var to = DateTime.SpecifyKind(toDate.Date.AddDays(1).AddTicks(-1), DateTimeKind.Utc);
-
-        return (from, to);
     }
 
     private static bool IsCompletedBooking(string? status)

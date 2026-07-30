@@ -1,4 +1,5 @@
 using Bus_ticket.Data;
+using Bus_ticket.Helpers;
 using Bus_ticket.ViewModels;
 using MongoDB.Driver;
 
@@ -18,7 +19,7 @@ public class LowOccupancyTripsService
         DateTime toDate,
         double occupancyThreshold = 40)
     {
-        var (fromUtc, toUtc) = ToUtcDateRange(fromDate, toDate);
+        var (fromUtc, toUtc) = VietnamTimeHelper.ToUtcDateRange(fromDate, toDate);
 
         var trips = await _dbContext.Trips
             .Find(trip => trip.DepartureTime >= fromUtc && trip.DepartureTime <= toUtc)
@@ -117,14 +118,6 @@ public class LowOccupancyTripsService
             LowOccupancyTrips = lowOccupancyTrips,
             SoldOutTimeFrames = soldOutTimeFrames
         };
-    }
-
-    private static (DateTime FromUtc, DateTime ToUtc) ToUtcDateRange(DateTime fromDate, DateTime toDate)
-    {
-        var from = DateTime.SpecifyKind(fromDate.Date, DateTimeKind.Utc);
-        var to = DateTime.SpecifyKind(toDate.Date.AddDays(1).AddTicks(-1), DateTimeKind.Utc);
-
-        return (from, to);
     }
 
     private static bool IsBookedSeat(string? status)
