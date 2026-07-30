@@ -1,4 +1,5 @@
 using Bus_ticket.Data;
+using Bus_ticket.Helpers;
 using Bus_ticket.Services;
 using Bus_ticket.ViewModels;
 using Microsoft.AspNetCore.Authentication;
@@ -21,6 +22,14 @@ public class AccountController : Controller
     [HttpGet]
     public IActionResult Login()
     {
+        if (Request.Cookies.TryGetValue(AuthSessionHelper.AuthNoticeCookie, out var notice)
+            && notice == AuthSessionHelper.SessionReplacedNotice)
+        {
+            ViewBag.LoginMessage =
+                "Phiên đăng nhập đã kết thúc vì tài khoản được sử dụng ở thiết bị hoặc trình duyệt khác.";
+            Response.Cookies.Delete(AuthSessionHelper.AuthNoticeCookie);
+        }
+
         return View();
     }
 
@@ -57,6 +66,9 @@ public class AccountController : Controller
             return View(model);
         }
 
+        var sessionToken = Guid.NewGuid().ToString("N");
+        await _userService.SetActiveSessionAsync(user.Id!, sessionToken);
+
         var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id ?? string.Empty),
@@ -64,7 +76,8 @@ public class AccountController : Controller
                 new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
                 new Claim(ClaimTypes.Role, user.Role ?? string.Empty),
                 new Claim("EmployeeCode", user.EmployeeCode ?? string.Empty),
-                new Claim("RoleId", user.RoleId ?? string.Empty)
+                new Claim("RoleId", user.RoleId ?? string.Empty),
+                new Claim(AuthSessionHelper.SessionTokenClaim, sessionToken)
             };
         var identity = new ClaimsIdentity(
             claims,
@@ -108,11 +121,49 @@ public class AccountController : Controller
     [HttpPost]
     public async Task<IActionResult> Logout()
     {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!string.IsNullOrWhiteSpace(userId))
+        {
+            await _userService.ClearActiveSessionAsync(userId);
+        }
+
         await HttpContext.SignOutAsync(
             CookieAuthenticationDefaults.AuthenticationScheme
         );
 
         return RedirectToAction("Login", "Account");
+    }
+
+    [Authorize]
+    [HttpGet]
+    public async Task<IActionResult> CheckSession()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var sessionToken = User.FindFirstValue(AuthSessionHelper.SessionTokenClaim);
+        var isValid = await _userService.IsSessionValidAsync(userId ?? string.Empty, sessionToken ?? string.Empty);
+
+        if (!isValid)
+        {
+            Response.Cookies.Append(
+                AuthSessionHelper.AuthNoticeCookie,
+                AuthSessionHelper.SessionReplacedNotice,
+                new CookieOptions
+                {
+                    MaxAge = TimeSpan.FromMinutes(2),
+                    HttpOnly = false,
+                    IsEssential = true
+                });
+
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+
+            return Json(new
+            {
+                valid = false,
+                redirectUrl = Url.Action("Login", "Account")
+            });
+        }
+
+        return Json(new { valid = true });
     }
 
     [Authorize]

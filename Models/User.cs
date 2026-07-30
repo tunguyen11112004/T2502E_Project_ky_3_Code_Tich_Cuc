@@ -70,4 +70,8 @@ public class User
 
     [BsonElement("updatedBy")]
     public string UpdatedBy { get; set; } = string.Empty;
+
+    [BsonElement("activeSessionId")]
+    [BsonIgnoreIfNull]
+    public string? ActiveSessionId { get; set; }
 }
