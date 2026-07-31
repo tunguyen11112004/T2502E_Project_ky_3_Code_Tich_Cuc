@@ -24,6 +24,7 @@
     var toDateValue = ViewBag.ToDateValue as string ?? string.Empty;
     var busClassFilter = ViewBag.BusClassFilter as string ?? string.Empty;
     var routeNameFilter = ViewBag.RouteNameFilter as string ?? string.Empty;
+    var paymentMethodFilter = ViewBag.PaymentMethodFilter as string ?? string.Empty;
 }
 
 <div id="totalRevenueDetailCharts" class="hidden space-y-6">
@@ -48,7 +49,7 @@
 
         <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
             <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-1">Theo phương thức thanh toán</h3>
-            <p class="text-xs text-gray-500 mb-4">Click legend để ẩn/hiện trên bảng bên dưới</p>
+            <p class="text-xs text-gray-500 mb-4">Click legend để ẩn/hiện trên bảng bên dưới · Click biểu đồ để lọc theo phương thức thanh toán</p>
             <div class="relative h-[280px] w-full flex justify-center">
                 <canvas id="detailPaymentMethodChart"></canvas>
             </div>
@@ -70,7 +71,8 @@
         fromDate: @Html.Raw(Json.Serialize(fromDateValue)),
         toDate: @Html.Raw(Json.Serialize(toDateValue)),
         busClass: @Html.Raw(Json.Serialize(busClassFilter)),
-        routeName: @Html.Raw(Json.Serialize(routeNameFilter))
+        routeName: @Html.Raw(Json.Serialize(routeNameFilter)),
+        paymentMethod: @Html.Raw(Json.Serialize(paymentMethodFilter))
     };
 
     window.totalRevenueDetailChartsInitialized = false;
@@ -104,8 +106,11 @@
             legendOptions.onClick = window.createRevenuePieLegendClickHandler();
         }
 
+        const piePlugins = window.pieChartExternalLabelPlugin ? [window.pieChartExternalLabelPlugin] : [];
+
         window.detailCharts[chartId] = new Chart(canvas.getContext('2d'), {
             type: 'pie',
+            plugins: piePlugins,
             data: {
                 labels,
                 datasets: [{
@@ -119,14 +124,19 @@
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                layout: typeof window.getPieChartLayoutPadding === 'function'
+                    ? { padding: window.getPieChartLayoutPadding() }
+                    : undefined,
                 plugins: {
                     legend: legendOptions,
                     tooltip: {
                         callbacks: {
-                            label: function (context) {
-                                const value = Number(context.raw || 0);
-                                return `${context.label}: ${value.toLocaleString('vi-VN')} đ`;
-                            }
+                            label: typeof window.createPieChartTooltipLabel === 'function'
+                                ? window.createPieChartTooltipLabel(' đ')
+                                : function (context) {
+                                    const value = Number(context.raw || 0);
+                                    return `${context.label}: ${value.toLocaleString('vi-VN')} đ`;
+                                }
                         }
                     }
                 },
@@ -151,7 +161,7 @@
         }
     }
 
-    function buildTotalRevenueDetailUrl(fromDate, toDate, busClass, routeName) {
+    function buildTotalRevenueDetailUrl(fromDate, toDate, busClass, routeName, paymentMethod) {
         const params = new URLSearchParams();
         params.set('fromDate', fromDate);
         params.set('toDate', toDate);
@@ -160,6 +170,9 @@
         }
         if (busClass) {
             params.set('busClass', busClass);
+        }
+        if (paymentMethod) {
+            params.set('paymentMethod', paymentMethod);
         }
         return `/Dashboard/TotalRevenueDetail?${params.toString()}`;
     }
@@ -173,9 +186,13 @@
         renderDetailPieChart('detailTotalRevenueChart', data.labelsSeat, data.dataSeat, data.colorsSeat, 'Tổng Doanh Thu', function (index, chartLabels) {
             const busClass = chartLabels[index];
             if (!busClass) return null;
-            return buildTotalRevenueDetailUrl(data.fromDate, data.toDate, busClass, data.routeName || '');
+            return buildTotalRevenueDetailUrl(data.fromDate, data.toDate, busClass, data.routeName || '', data.paymentMethod || '');
         }, true);
-        renderDetailPieChart('detailPaymentMethodChart', data.labelsPayment, data.dataPayment, data.colorsPayment, 'Thanh toán', null, true);
+        renderDetailPieChart('detailPaymentMethodChart', data.labelsPayment, data.dataPayment, data.colorsPayment, 'Thanh toán', function (index, chartLabels) {
+            const paymentMethod = chartLabels[index];
+            if (!paymentMethod) return null;
+            return buildTotalRevenueDetailUrl(data.fromDate, data.toDate, data.busClass || '', data.routeName || '', paymentMethod);
+        }, true);
 
         const lineCanvas = document.getElementById('detailRevenueLineChart');
         if (lineCanvas && typeof Chart !== 'undefined') {
@@ -234,7 +251,7 @@
                         if (elements.length > 0) {
                             const index = elements[0].index;
                             const dates = data.lineQueryDates[index].split('|');
-                            const url = buildTotalRevenueDetailUrl(dates[0], dates[1], data.busClass || '', data.routeName || '');
+                            const url = buildTotalRevenueDetailUrl(dates[0], dates[1], data.busClass || '', data.routeName || '', data.paymentMethod || '');
                             window.location.href = url;
                         }
                     },

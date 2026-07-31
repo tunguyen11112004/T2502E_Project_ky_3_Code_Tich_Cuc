@@ -8,9 +8,11 @@
     var toDateValue = ViewBag.ToDateValue as string ?? string.Empty;
     var busClassFilter = ViewBag.BusClassFilter as string ?? string.Empty;
     var routeNameFilter = ViewBag.RouteNameFilter as string ?? string.Empty;
+    var paymentMethodFilter = ViewBag.PaymentMethodFilter as string ?? string.Empty;
 }
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="/admin-assets/js/pie-chart-percent-labels.js?v=6"></script>
 <script src="/admin-assets/js/dashboard-date-range.js?v=1"></script>
 <script src="/admin-assets/js/revenue-chart-table-filters.js?v=3"></script>
 
@@ -32,6 +34,21 @@
             </a>
             <h1 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Chi tiết Tổng Doanh Thu</h1>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Thống kê theo tuần và đối soát nguồn thu theo phương thức thanh toán</p>
+            @if (!string.IsNullOrWhiteSpace(paymentMethodFilter))
+            {
+                <div class="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800 text-sm text-indigo-700 dark:text-indigo-300 mr-2">
+                    <span>Đang lọc thanh toán: <strong>@paymentMethodFilter</strong></span>
+                    <a asp-controller="Dashboard"
+                       asp-action="TotalRevenueDetail"
+                       asp-route-fromDate="@fromDateValue"
+                       asp-route-toDate="@toDateValue"
+                       asp-route-busClass="@busClassFilter"
+                       asp-route-routeName="@routeNameFilter"
+                       class="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">
+                        Bỏ lọc
+                    </a>
+                </div>
+            }
             @if (!string.IsNullOrWhiteSpace(routeNameFilter))
             {
                 <div class="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800 text-sm text-purple-700 dark:text-purple-300 mr-2">
@@ -41,6 +58,7 @@
                        asp-route-fromDate="@fromDateValue"
                        asp-route-toDate="@toDateValue"
                        asp-route-busClass="@busClassFilter"
+                       asp-route-paymentMethod="@paymentMethodFilter"
                        class="text-purple-600 dark:text-purple-400 hover:underline font-medium">
                         Bỏ lọc
                     </a>
@@ -55,6 +73,7 @@
                        asp-route-fromDate="@fromDateValue"
                        asp-route-toDate="@toDateValue"
                        asp-route-routeName="@routeNameFilter"
+                       asp-route-paymentMethod="@paymentMethodFilter"
                        class="text-purple-600 dark:text-purple-400 hover:underline font-medium">
                         Bỏ lọc
                     </a>
@@ -94,28 +113,30 @@
     const detailToDate = @Html.Raw(Json.Serialize(toDateValue));
     const detailBusClass = @Html.Raw(Json.Serialize(busClassFilter));
     const detailRouteName = @Html.Raw(Json.Serialize(routeNameFilter));
+    const detailPaymentMethod = @Html.Raw(Json.Serialize(paymentMethodFilter));
 
-    function buildTotalRevenueDetailPageUrl(fromDate, toDate, routeName, busClass) {
+    function buildTotalRevenueDetailPageUrl(fromDate, toDate, routeName, busClass, paymentMethod) {
         const params = new URLSearchParams();
         params.set('fromDate', fromDate);
         params.set('toDate', toDate);
         if (routeName) params.set('routeName', routeName);
         if (busClass) params.set('busClass', busClass);
+        if (paymentMethod) params.set('paymentMethod', paymentMethod);
         return `/Dashboard/TotalRevenueDetail?${params.toString()}`;
     }
 
     window.applyTotalRevenueTableFilters = function () {
         const route = document.getElementById('totalRevenueRouteFilter')?.value || '';
         const busClass = document.getElementById('totalRevenueBusClassFilter')?.value || '';
-        window.location.href = buildTotalRevenueDetailPageUrl(detailFromDate, detailToDate, route, busClass);
+        window.location.href = buildTotalRevenueDetailPageUrl(detailFromDate, detailToDate, route, busClass, detailPaymentMethod);
     };
 
     window.clearTotalRevenueTableFilters = function () {
-        window.location.href = buildTotalRevenueDetailPageUrl(detailFromDate, detailToDate, '', '');
+        window.location.href = buildTotalRevenueDetailPageUrl(detailFromDate, detailToDate, '', '', detailPaymentMethod);
     };
 
     window.dashboardDateRangeApplyHandlers['TotalRevenueDetail'] = function (start, end) {
-        window.location.href = buildTotalRevenueDetailPageUrl(start, end, detailRouteName, detailBusClass);
+        window.location.href = buildTotalRevenueDetailPageUrl(start, end, detailRouteName, detailBusClass, detailPaymentMethod);
     };
 
     function exportTotalRevenueDetailExcel() {

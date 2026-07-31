@@ -77,7 +77,7 @@
         const routeName = chartLabels[index];
         if (!routeName) return null;
         return buildDashboardDetailUrl('RouteRevenueDetail', currentFromDate || '@fromDateValue', currentToDate || '@toDateValue', 'routeName', routeName);
-    });
+    }, { valueSuffix: ' đ' });
 
     function exportRouteRevenueExcel() {
         var start = currentFromDate || '@fromDateValue';

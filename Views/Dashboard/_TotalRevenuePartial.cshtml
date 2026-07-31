@@ -119,14 +119,15 @@
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
         <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-1">Tỷ trọng theo Hạng Xe</h3>
         <p class="text-xs text-gray-500 mb-4">Click vào phần biểu đồ để xem chi tiết theo hạng xe</p>
-        <div class="relative h-[280px] w-full flex justify-center">
+        <div class="relative h-[320px] w-full flex justify-center overflow-visible">
             <canvas id="totalRevenueChart"></canvas>
         </div>
     </div>
 
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
-        <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4">Theo phương thức thanh toán</h3>
-        <div class="relative h-[280px] w-full flex justify-center">
+        <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-1">Theo phương thức thanh toán</h3>
+        <p class="text-xs text-gray-500 mb-4">Click vào phần biểu đồ để xem chi tiết theo phương thức thanh toán</p>
+        <div class="relative h-[320px] w-full flex justify-center overflow-visible">
             <canvas id="paymentMethodChart"></canvas>
         </div>
     </div>
@@ -147,12 +148,21 @@
         params.set('toDate', '@ViewBag.ToDateValue');
         params.set('busClass', busClass);
         return `/Dashboard/TotalRevenueDetail?${params.toString()}`;
-    });
+    }, { valueSuffix: ' đ' });
 
     var labelsPayment = @Html.Raw(Json.Serialize(paymentChartData.Labels));
     var dataPayment = @Html.Raw(Json.Serialize(paymentChartData.Values));
     var colorsPayment = @Html.Raw(Json.Serialize(paymentChartData.Colors));
-    renderDashboardPieChart('paymentMethodChart', labelsPayment, dataPayment, colorsPayment, 'Thanh toán');
+    renderDashboardPieChart('paymentMethodChart', labelsPayment, dataPayment, colorsPayment, 'Thanh toán', function (index, chartLabels) {
+        const paymentMethod = chartLabels[index];
+        if (!paymentMethod) return null;
+
+        const params = new URLSearchParams();
+        params.set('fromDate', '@ViewBag.FromDateValue');
+        params.set('toDate', '@ViewBag.ToDateValue');
+        params.set('paymentMethod', paymentMethod);
+        return `/Dashboard/TotalRevenueDetail?${params.toString()}`;
+    }, { valueSuffix: ' đ' });
 
     var lineLabels = @Html.Raw(Json.Serialize(lineLabels));
     var lineValues = @Html.Raw(Json.Serialize(lineValues));
