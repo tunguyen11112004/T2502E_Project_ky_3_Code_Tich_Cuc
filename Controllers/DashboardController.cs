@@ -1,3 +1,4 @@
+using Bus_ticket.Helpers;
 using Bus_ticket.Services;
 using Bus_ticket.ViewModels;
 using Microsoft.AspNetCore.Authorization;
@@ -56,7 +57,7 @@ public class DashboardController : Controller
 
     [HttpGet]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> TotalRevenueDetail(DateTime? fromDate, DateTime? toDate, string? busClass, string? routeName)
+    public async Task<IActionResult> TotalRevenueDetail(DateTime? fromDate, DateTime? toDate, string? busClass, string? routeName, string? paymentMethod)
     {
         var (from, to) = NormalizeDateRange(fromDate, toDate, 30);
         var model = await _dashboardService.GetSystemTotalRevenueAsync(from, to);
@@ -75,6 +76,7 @@ public class DashboardController : Controller
 
         var routeFilter = string.IsNullOrWhiteSpace(routeName) ? null : routeName.Trim();
         var busClassFilter = string.IsNullOrWhiteSpace(busClass) ? null : busClass.Trim();
+        var paymentMethodFilter = string.IsNullOrWhiteSpace(paymentMethod) ? null : paymentMethod.Trim();
 
         if (!string.IsNullOrWhiteSpace(routeFilter))
         {
@@ -93,7 +95,19 @@ public class DashboardController : Controller
                 .ToList();
         }
 
-        if (!string.IsNullOrWhiteSpace(routeFilter) || !string.IsNullOrWhiteSpace(busClassFilter))
+        if (!string.IsNullOrWhiteSpace(paymentMethodFilter))
+        {
+            model.TableData = model.TableData
+                .Where(x => string.Equals(
+                    PaymentMethodDisplayHelper.GetDisplayName(x.PaymentMethod),
+                    paymentMethodFilter,
+                    StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        if (!string.IsNullOrWhiteSpace(routeFilter)
+            || !string.IsNullOrWhiteSpace(busClassFilter)
+            || !string.IsNullOrWhiteSpace(paymentMethodFilter))
         {
             model.ChartData = model.TableData
                 .GroupBy(x => x.BusClass)
@@ -109,6 +123,7 @@ public class DashboardController : Controller
         ViewBag.ToDateValue = to.ToString("yyyy-MM-dd");
         ViewBag.BusClassFilter = busClassFilter;
         ViewBag.RouteNameFilter = routeFilter;
+        ViewBag.PaymentMethodFilter = paymentMethodFilter;
 
         return View(model);
     }

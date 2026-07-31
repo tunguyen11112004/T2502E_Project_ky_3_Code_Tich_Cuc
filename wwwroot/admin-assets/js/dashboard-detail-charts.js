@@ -62,8 +62,11 @@
             legendOptions.onClick = window.createRevenuePieLegendClickHandler();
         }
 
+        const piePlugins = window.pieChartExternalLabelPlugin ? [window.pieChartExternalLabelPlugin] : [];
+
         window.detailCharts[chartId] = new Chart(canvas.getContext('2d'), {
             type: 'pie',
+            plugins: piePlugins,
             data: {
                 labels: labels,
                 datasets: [{
@@ -77,14 +80,19 @@
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                layout: typeof window.getPieChartLayoutPadding === 'function'
+                    ? { padding: window.getPieChartLayoutPadding() }
+                    : undefined,
                 plugins: {
                     legend: legendOptions,
                     tooltip: {
                         callbacks: {
-                            label: function (context) {
-                                const value = Number(context.raw || 0);
-                                return context.label + ': ' + value.toLocaleString('vi-VN') + valueSuffix;
-                            }
+                            label: typeof window.createPieChartTooltipLabel === 'function'
+                                ? window.createPieChartTooltipLabel(valueSuffix)
+                                : function (context) {
+                                    const value = Number(context.raw || 0);
+                                    return context.label + ': ' + value.toLocaleString('vi-VN') + valueSuffix;
+                                }
                         }
                     }
                 },

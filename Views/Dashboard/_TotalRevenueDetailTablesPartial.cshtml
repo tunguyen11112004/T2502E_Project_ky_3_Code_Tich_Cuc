@@ -29,7 +29,17 @@
     var busClassFilterOptions = ViewBag.BusClassFilterOptions as List<string> ?? new List<string>();
     var routeNameFilter = ViewBag.RouteNameFilter as string ?? string.Empty;
     var busClassFilter = ViewBag.BusClassFilter as string ?? string.Empty;
-    var hasTableFilters = !string.IsNullOrWhiteSpace(routeNameFilter) || !string.IsNullOrWhiteSpace(busClassFilter);
+    var paymentMethodFilter = ViewBag.PaymentMethodFilter as string ?? string.Empty;
+    var hasTableFilters = !string.IsNullOrWhiteSpace(routeNameFilter)
+                          || !string.IsNullOrWhiteSpace(busClassFilter)
+                          || !string.IsNullOrWhiteSpace(paymentMethodFilter);
+
+    if (!string.IsNullOrWhiteSpace(paymentMethodFilter))
+    {
+        paymentSummaries = paymentSummaries
+            .Where(x => string.Equals(x.Method, paymentMethodFilter, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+    }
 }
 
 <div class="space-y-6">

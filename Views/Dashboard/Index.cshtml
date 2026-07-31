@@ -201,6 +201,7 @@ var canViewVehicleRevenue = isAdmin;
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="/admin-assets/js/pie-chart-percent-labels.js?v=6"></script>
 
 <style>
     .dashboard-range-popup {
@@ -317,9 +318,13 @@ var canViewVehicleRevenue = isAdmin;
         return `/Dashboard/${action}?${params.toString()}`;
     }
 
-    function renderDashboardPieChart(chartId, labels, data, colors, labelText, onSliceClick, enableTableFilter) {
+    function renderDashboardPieChart(chartId, labels, data, colors, labelText, onSliceClick, options) {
         const canvas = document.getElementById(chartId);
         if (!canvas || typeof Chart === 'undefined') return;
+
+        options = options || {};
+        const enableTableFilter = options.enableTableFilter === true;
+        const valueSuffix = options.valueSuffix != null ? options.valueSuffix : '';
 
         window.dashboardCharts = window.dashboardCharts || {};
 
@@ -346,8 +351,11 @@ var canViewVehicleRevenue = isAdmin;
             legendOptions.onClick = window.createRevenuePieLegendClickHandler();
         }
 
+        const piePlugins = window.pieChartExternalLabelPlugin ? [window.pieChartExternalLabelPlugin] : [];
+
         window.dashboardCharts[chartId] = new Chart(canvas.getContext('2d'), {
             type: 'pie',
+            plugins: piePlugins,
             data: {
                 labels,
                 datasets: [{
@@ -361,14 +369,19 @@ var canViewVehicleRevenue = isAdmin;
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                layout: typeof window.getPieChartLayoutPadding === 'function'
+                    ? { padding: window.getPieChartLayoutPadding() }
+                    : undefined,
                 plugins: {
                     legend: legendOptions,
                     tooltip: {
                         callbacks: {
-                            label: function (context) {
-                                const value = Number(context.raw || 0);
-                                return `${context.label}: ${value.toLocaleString('vi-VN')} đ`;
-                            }
+                            label: typeof window.createPieChartTooltipLabel === 'function'
+                                ? window.createPieChartTooltipLabel(valueSuffix)
+                                : function (context) {
+                                    const value = Number(context.raw || 0);
+                                    return `${context.label}: ${value.toLocaleString('vi-VN')}${valueSuffix}`;
+                                }
                         }
                     }
                 },

@@ -82,7 +82,7 @@
         const vehicleClass = chartLabels[index];
         if (!vehicleClass) return null;
         return buildDashboardDetailUrl('VehicleRevenueStatisticsDetail', currentFromDate || '@fromDateValue', currentToDate || '@toDateValue', 'vehicleClass', vehicleClass);
-    });
+    }, { valueSuffix: ' đ' });
 
     function exportVehicleRevenueStatisticsExcel() {
         var start = currentFromDate || '@fromDateValue';

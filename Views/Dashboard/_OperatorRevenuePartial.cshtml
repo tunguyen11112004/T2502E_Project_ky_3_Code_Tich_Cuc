@@ -80,7 +80,7 @@
         const operatorName = chartLabels[index];
         if (!operatorName) return null;
         return buildDashboardDetailUrl('OperatorRevenueDetail', currentFromDate || '@fromDateValue', currentToDate || '@toDateValue', 'operatorName', operatorName);
-    });
+    }, { valueSuffix: ' đ' });
 
     function exportOperatorRevenueExcel() {
         var start = currentFromDate || '@fromDateValue';
