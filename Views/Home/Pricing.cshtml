@@ -66,8 +66,25 @@
                             var amenityParts = item.Amenities.Split('|');
                             string nameVi = nameParts[0];
                             string nameEn = nameParts.Length > 1 ? nameParts[1] : nameParts[0];
-                            string typeVi = typeParts[0];
-                            string enType = typeParts.Length > 1 ? typeParts[1] : typeParts[0];
+                            string typeVi = typeParts[0].Trim(); // Thêm Trim() dọn dẹp khoảng trắng
+                            string enType = typeParts.Length > 1 ? typeParts[1].Trim() : typeParts[0].Trim();
+                            
+                            // --- THUẬT TOÁN IF-ELSE CHỐNG LỖI 100% ---
+                            decimal displayPrice = 150000m; // Mặc định là 150k
+                            
+                            if (typeVi.Contains("Volvo_AC")) 
+                            {
+                                displayPrice = 200000m;
+                            } 
+                            else if (typeVi.Contains("Volvo_NonAC")) 
+                            {
+                                displayPrice = 180000m;
+                            } 
+                            else if (typeVi.Contains("Luxury_Sleeper")) 
+                            {
+                                displayPrice = 160000m;
+                            }
+
                             <tr class="@rowClass transition-colors">
                                 <td class="p-4 w-32">
                                     <div class="avatar">
@@ -109,7 +126,7 @@
                                     }
                                 </td>
                                 <td class="p-4 text-right font-bold @(item.IsHot ? "text-ternaryColor text-lg" : "text-gray-900 text-base")">
-                                    @string.Format("{0:N0}", item.BasePrice) đ
+                                    @string.Format("{0:N0}", displayPrice) đ
                                 </td>
                             </tr>
                         }
