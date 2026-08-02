@@ -78,12 +78,12 @@ namespace Bus_ticket.Data
 
             var isDataAlreadySeeded = _context.Branches != null && await _context.Branches.Find(_ => true).AnyAsync();
 
-            if (isDataAlreadySeeded)
+            /*if (isDataAlreadySeeded)
             {
                 Console.WriteLine("--> [BỎ QUA] Dữ liệu nghiệp vụ đã tồn tại. Chỉ cập nhật role/permission/user.");
                 await BackfillPaymentMethodsAsync();
                 return;
-            }
+            }*/
             
             Console.WriteLine("--> Bắt đầu seeding dữ liệu liên tỉnh chuẩn...");
 
@@ -388,7 +388,7 @@ namespace Bus_ticket.Data
                     Id = BusClassVolvoNonAc40Id,
                     ClassName = "Volvo 40 (Non A/C - Giường nằm thông khí tự nhiên)",
                     BusType = "Volvo_NonAC",
-                    ImageUrl = "https://images.unsplash.com/photo-1544620307-c4fd4fc3b2f5?auto=format&fit=crop&w=800&q=80",
+                    ImageUrl = "https://res.cloudinary.com/nguyenanhtu/image/upload/v1785673173/xe-bus-giuong-nam-thaco-resize_i6y6sb.jpg",
                     Status = "Active",
                     TotalRows = 4,
                     TotalColumns = 3,
@@ -404,7 +404,7 @@ namespace Bus_ticket.Data
                     Id = BusClassVolvoAc40Id,
                     ClassName = "Volvo 40 (A/C Premium)",
                     BusType = "Volvo_AC",
-                    ImageUrl = "https://images.unsplash.com/photo-1570125909232-e94333dd4c43?auto=format&fit=crop&w=800&q=80",
+                    ImageUrl = "https://res.cloudinary.com/nguyenanhtu/image/upload/v1785673076/images_czt00a.jpg",
                     Status = "Active",
                     TotalRows = 4,
                     TotalColumns = 3,
