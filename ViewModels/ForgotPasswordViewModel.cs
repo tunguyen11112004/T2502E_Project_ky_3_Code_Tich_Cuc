@@ -4,7 +4,8 @@ namespace Bus_ticket.ViewModels;
 
 public class ForgotPasswordViewModel
 {
-    [Required]
-    [EmailAddress]
+    [Required(ErrorMessage = "Vui lòng nhập email.")]
+    [EmailAddress(ErrorMessage = "Email không đúng định dạng.")]
+    [Display(Name = "Email")]
     public string Email { get; set; } = string.Empty;
 }

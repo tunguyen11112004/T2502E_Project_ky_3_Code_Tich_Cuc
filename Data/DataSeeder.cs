@@ -120,10 +120,35 @@ namespace Bus_ticket.Data
 
             foreach (var user in sampleUsers)
             {
-                await _context.Users.ReplaceOneAsync(
-                    u => u.Email == user.Email,
-                    user,
-                    new ReplaceOptions { IsUpsert = true });
+                var existingUser = await _context.Users
+                    .Find(u => u.Email == user.Email)
+                    .FirstOrDefaultAsync();
+
+                if (existingUser == null)
+                {
+                    // Tài khoản chưa tồn tại: tạo mới cùng mật khẩu mặc định.
+                    await _context.Users.InsertOneAsync(user);
+                    continue;
+                }
+
+                // Tài khoản đã tồn tại: chỉ cập nhật thông tin role/chi nhánh,
+                // tuyệt đối không ghi đè PasswordHash, Id và ActiveSessionId.
+                var update = Builders<User>.Update
+                    .Set(u => u.UserCode, user.UserCode)
+                    .Set(u => u.EmployeeCode, user.EmployeeCode)
+                    .Set(u => u.FullName, user.FullName)
+                    .Set(u => u.Email, user.Email)
+                    .Set(u => u.Username, user.Username)
+                    .Set(u => u.Role, user.Role)
+                    .Set(u => u.RoleId, user.RoleId)
+                    .Set(u => u.BranchId, user.BranchId)
+                    .Set(u => u.Status, user.Status)
+                    .Set(u => u.UpdatedAt, DateTime.UtcNow)
+                    .Set(u => u.UpdatedBy, "SystemSeeder");
+
+                await _context.Users.UpdateOneAsync(
+                    u => u.Id == existingUser.Id,
+                    update);
             }
 
             Console.WriteLine($"--> [THÀNH CÔNG] Upsert {sampleUsers.Count} tài khoản mẫu theo role nghiệp vụ.");
