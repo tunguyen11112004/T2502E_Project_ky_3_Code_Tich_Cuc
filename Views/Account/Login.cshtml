@@ -38,6 +38,13 @@
                     <form asp-action="Login" asp-controller="Account" method="post" class="form-control gap-4">
                         <div asp-validation-summary="All" class="text-red-500 text-sm"></div>
 
+                        @if (ViewBag.SuccessMessage != null)
+                        {
+                            <div class="rounded-lg border border-green-300 bg-green-50 px-4 py-3 text-sm text-green-800">
+                                @ViewBag.SuccessMessage
+                            </div>
+                        }
+
                         @if (ViewBag.LoginMessage != null)
                         {
                             <div class="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">

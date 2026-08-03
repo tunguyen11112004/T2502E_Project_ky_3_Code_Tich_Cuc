@@ -213,5 +213,28 @@ public class UserService
 
         await _users.UpdateOneAsync(user => user.Id == userId, update);
     }
+
+    public async Task<bool> UpdatePasswordAsync(
+        string userId,
+        string passwordHash,
+        string updatedBy)
+    {
+        if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(passwordHash))
+        {
+            return false;
+        }
+
+        var update = Builders<User>.Update
+            .Set(user => user.PasswordHash, passwordHash)
+            .Set(user => user.ActiveSessionId, null)
+            .Set(user => user.UpdatedAt, DateTime.UtcNow)
+            .Set(user => user.UpdatedBy, updatedBy);
+
+        var result = await _users.UpdateOneAsync(
+            user => user.Id == userId && user.Status == "Active",
+            update);
+
+        return result.MatchedCount == 1;
+    }
 }
 
